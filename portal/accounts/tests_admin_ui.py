@@ -189,6 +189,8 @@ class ProfileSettings(TestCase):
         web_login(self.client, "owner")
         html = self.client.get(reverse("staff_leads")).content.decode()
         self.assertNotIn("Private note", html)
+        self.assertNotIn("Follow-up", html)
+        self.assertNotIn("Interested", html)
         self.assertIn("<th>Password</th>", html)
         self.client.post(reverse("staff_customer_update", args=[self.u.id]), {"action": "set_password", "password": "Set-by-admin-123"})
         self.u.refresh_from_db()
