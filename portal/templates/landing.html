@@ -338,24 +338,40 @@
 
 <section class="s rv" id="markets" aria-labelledby="mk-title">
   <div class="wrap">
-    <div class="mk-split">
-      <div>
+    <div class="mk2">
+      <div class="mk2-copy">
         <div class="kicker">Supported markets</div>
         <h2 id="mk-title">Explore Supported MT5 and Binance Trading Workflows</h2>
-        <p class="sub">SamBot supports trading workflows involving MetaTrader 5 and Binance Futures. Its current market focus includes gold, commonly listed as XAUUSD, and bitcoin. Available instruments depend on your broker, exchange, account configuration, and supported connection. Before enabling automation, confirm that your account and instruments are compatible and review the connection requirements and trading permissions.</p>
-        <div class="mk-icons" style="grid-template-columns:repeat(4,1fr)">
-          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10h6M9 14h6"/></svg></div><b>Gold / XAUUSD</b></div>
-          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><b>Bitcoin</b></div>
-          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19V8"/></svg></div><b>MetaTrader 5</b></div>
-          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg></div><b>Binance Futures</b></div>
-        </div>
-        <div class="cta" style="margin-top:20px"><a class="btn primary" href="{% url 'site_mt5' %}">Explore MT5 Trading</a><a class="btn ghost" href="{% url 'site_binance' %}">Explore Binance Automation</a></div>
+        <p class="sub">SamBot supports trading workflows involving MetaTrader 5 and Binance Futures. Its current market focus includes gold, commonly listed as XAUUSD, and bitcoin.</p>
+        <p class="mk2-label">Before enabling automation, confirm that:</p>
+        <ul class="check">
+          <li>Your account and instruments are compatible</li>
+          <li>You have reviewed the connection requirements</li>
+          <li>Trading permissions and execution settings are correct</li>
+        </ul>
+        <div class="cta" style="justify-content:flex-start"><a class="btn primary" href="{% url 'site_mt5' %}">Explore MT5 Trading</a><a class="btn ghost" href="{% url 'site_binance' %}">Explore Binance Automation</a></div>
       </div>
-      <div class="globe-wrap" aria-hidden="true">
-        <div class="globe"></div>
-        <div class="tick t1 up">XAU/USD <small id="tick-xau">+0.45%</small></div>
-        <div class="tick t2 up">BTC/USD <small id="tick-btc">—</small></div>
-        <div class="tick t3 dn">EUR/USD <small>-0.12%</small></div>
+
+      <div class="mk2-board" aria-label="Supported markets">
+        <article class="mk-card" data-sym="PAXGUSDT">
+          <div class="mk-top"><span class="mk-badge gold">XAU</span><div class="mk-name"><b>Gold</b><small>XAUUSD &middot; MT5</small></div><span class="mk-chg up"><small id="tick-xau">&mdash;</small></span></div>
+          <svg class="mk-spark" viewBox="0 0 160 48" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg>
+          <div class="mk-foot"><span class="mk-price mono">&mdash;</span><span class="mk-note">24h &middot; gold-linked reference</span></div>
+        </article>
+        <article class="mk-card" data-sym="BTCUSDT">
+          <div class="mk-top"><span class="mk-badge btc">BTC</span><div class="mk-name"><b>Bitcoin</b><small>BTCUSDT &middot; Binance</small></div><span class="mk-chg up"><small id="tick-btc">&mdash;</small></span></div>
+          <svg class="mk-spark" viewBox="0 0 160 48" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg>
+          <div class="mk-foot"><span class="mk-price mono">&mdash;</span><span class="mk-note">24h &middot; Binance spot reference</span></div>
+        </article>
+        <a class="mk-link" href="{% url 'site_mt5' %}">
+          <span class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+          <div><b>MetaTrader 5</b><small>Terminal connector for supported brokers</small></div><i>&rarr;</i>
+        </a>
+        <a class="mk-link" href="{% url 'site_binance' %}">
+          <span class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l3 3-3 3-3-3 3-3zM6 9l3 3-3 3-3-3 3-3zM18 9l3 3-3 3-3-3 3-3zM12 15l3 3-3 3-3-3 3-3z"/></svg></span>
+          <div><b>Binance Futures</b><small>API workflow, permissions apply</small></div><i>&rarr;</i>
+        </a>
+        <p class="mk-fine">Availability depends on your broker, exchange, account configuration and supported connection. Market data shown for reference only.</p>
       </div>
     </div>
   </div>
@@ -619,6 +635,30 @@
       set(Math.min(n, 4));
       setTimeout(tick, n === 5 ? 3200 : 1250);
     }, 2600);
+  })();
+
+
+  (function marketBoard() {
+    const fmtP = v => Number(v).toLocaleString(undefined, {maximumFractionDigits: v > 1000 ? 0 : 2});
+    document.querySelectorAll('.mk-card[data-sym]').forEach(card => {
+      const sym = card.dataset.sym, line = card.querySelector('.line'), area = card.querySelector('.area');
+      Promise.all([
+        fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + '&interval=1h&limit=24').then(r => r.json()),
+        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + sym).then(r => r.json())
+      ]).then(([k, t]) => {
+        const cl = k.map(x => +x[4]), lo = Math.min(...cl), hi = Math.max(...cl), W = 160, H = 48, pad = 4;
+        const pts = cl.map((v, i) => [i * W / (cl.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / ((hi - lo) || 1))]);
+        const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+        line.setAttribute('d', d); area.setAttribute('d', d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z');
+        const p = +t.priceChangePercent, chg = card.querySelector('.mk-chg');
+        chg.classList.toggle('up', p >= 0); chg.classList.toggle('dn', p < 0);
+        chg.firstElementChild.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+        card.querySelector('.mk-price').textContent = '$' + fmtP(+t.lastPrice);
+      }).catch(() => {
+        const d = 'M0 34 L20 30 L40 33 L60 24 L80 27 L100 18 L120 21 L140 12 L160 14';
+        line.setAttribute('d', d); area.setAttribute('d', d + ' L160 48 L0 48 Z');
+      });
+    });
   })();
 
   function drawEq(svg, pts, W, H) {
