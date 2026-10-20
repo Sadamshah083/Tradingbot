@@ -3,7 +3,7 @@
 {% block head %}
 <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
 {% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
-<meta name="theme-color" content="#FFFFFF">
+<meta name="theme-color" content="#060A12">
 {% block seo %}{% endblock %}
 {% if GA_MEASUREMENT_ID %}
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
@@ -106,6 +106,7 @@
   @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
 </style>
 {% block page_head %}{% endblock %}
+<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=2">
 {% endblock %}
 {% block content %}
 <div class="site {% block site_class %}{% endblock %}">
