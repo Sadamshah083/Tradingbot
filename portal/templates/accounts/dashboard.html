@@ -19,6 +19,29 @@
   .mini{margin-bottom:16px} .mini .stat.small{font-size:18px;line-height:1.3} .mini .muted{margin-top:4px}
   .stat.good{color:#9CF0BE} .stat.bad{color:#FF9B94} .stat.muted{color:var(--muted)}
   .lock-banner{padding:12px 14px;border-radius:10px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.06);margin-bottom:14px;font-size:14px}
+
+  /* compact, enterprise layout */
+  main.wrap,header.top .wrap,footer .wrap{max-width:1240px}   /* navbar, content and footer share one width */
+  main.wrap{padding-top:20px}
+  .back-btn{display:none}
+  .flash{padding:9px 14px;margin-bottom:12px;font-size:13.5px}
+  .dash-head{margin-bottom:12px} .dash-head h1{font-size:26px;margin:0} .dash-head .lead{font-size:13.5px}
+  .grid{gap:12px}
+  .card{padding:16px 18px;border-radius:14px}
+  h2{margin-bottom:8px;font-size:12px}
+  .prod{margin-bottom:12px}
+  .product{position:relative;overflow:hidden}
+  .product:before{content:"";position:absolute;left:0;top:0;right:0;height:3px;background:linear-gradient(90deg,#B6FF2E,#7DE3FF);opacity:.0;transition:opacity .2s}
+  .product.on:before{opacity:1}
+  .p-top{margin-bottom:2px}
+  .p-big{font-size:30px;margin:2px 0 2px} .p-big small{font-size:13px}
+  .p-list{margin:4px 0 0;padding-left:16px;font-size:13px;line-height:1.55;columns:2;column-gap:20px}
+  .p-actions{padding-top:12px} .btn.big{padding:11px 18px;font-size:14px} .p-actions .btn{padding:9px 16px;font-size:13.5px}
+  .product .muted{font-size:12.5px}
+  .mini{margin-bottom:12px} .mini .card{padding:12px 16px} .mini h2{margin-bottom:4px} .mini .stat.small{font-size:16px} .mini .muted{font-size:12px;margin-top:2px}
+  .guide{margin-top:12px;padding:14px 18px} .guide details{padding:9px 12px;margin-bottom:6px} .guide summary{font-size:13.5px} .guide ol{font-size:13px;line-height:1.6;margin-top:6px}
+  #signals th{padding:8px 10px;font-size:11px} #signals td{padding:8px 10px;font-size:13px}
+  @media(max-width:700px){.p-list{columns:1}}
   @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:1fr !important}.p-big{font-size:32px}}
   @media(max-width:520px){.grid.g4{grid-template-columns:1fr}}
 </style>
