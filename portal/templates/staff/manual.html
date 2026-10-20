@@ -33,6 +33,9 @@
     {% for t in trades %}<tr><td class="muted" style="white-space:nowrap">{{ t.when|date:"M d, H:i" }}</td><td><span class="pill {{ t.side }}">{{ t.side|upper }}</span></td><td>{{ t.symbol }}</td><td class="mono">{{ t.qty }}</td><td class="mono bad">{{ t.sl }}</td><td class="mono good">{{ t.tp }}</td><td class="muted">{{ t.note }}</td><td class="code">{{ t.result|truncatechars:80 }}{% if not t.live %} <span class="muted">(paper)</span>{% endif %}</td></tr>
     {% empty %}<tr><td colspan="8" class="empty">No manual trades yet.</td></tr>{% endfor %}
     </tbody></table>
+    {% if trades.paginator.num_pages > 1 %}<div class="pager"><span>Page {{ trades.number }} of {{ trades.paginator.num_pages }}</span><div class="pages">
+      {% if trades.has_previous %}<a href="?mpage={{ trades.previous_page_number }}">‹ Newer</a>{% endif %}{% if trades.has_next %}<a href="?mpage={{ trades.next_page_number }}">Older ›</a>{% endif %}</div></div>{% endif %}
   </div>
 </div>
+{% include "staff/_paid_deliveries.html" %}
 {% endblock %}

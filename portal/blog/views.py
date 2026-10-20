@@ -1,4 +1,5 @@
 from django.contrib import messages
+from axeportal.siteurl import absolute_url
 from django.core.paginator import Paginator
 from django.db.models import F, Q
 from django.http import Http404
@@ -45,7 +46,7 @@ def _listing(request, cat_slug=None):
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(excerpt__icontains=q))   # tags are internal and are not searched
     page = Paginator(qs, 9).get_page(request.GET.get("page"))
-    canonical = request.build_absolute_uri(f"/blog/category/{cat_slug}/" if cat_slug else "/blog/")
+    canonical = absolute_url(f"/blog/category/{cat_slug}/" if cat_slug else "/blog/")
     return render(request, "blog/index.html", {"page": page, "categories": Category.objects.filter(posts__published=True).distinct(),
                                                "current": cat, "category": category, "q": q, "hide_nav": True, "canonical": canonical})
 
@@ -69,8 +70,8 @@ def post(request, slug):
         related = related.filter(category=p.category)
     cover = p.og_image or p.cover_url
     return render(request, "blog/post.html", {"p": p, "related": related[:3], "hide_nav": True,
-                                              "og_image_abs": request.build_absolute_uri(cover) if cover else "",
-                                              "canonical": p.canonical_url or request.build_absolute_uri(p.get_absolute_url())})
+                                              "og_image_abs": absolute_url(cover) if cover else "",
+                                              "canonical": p.canonical_url or absolute_url(p.get_absolute_url())})
 
 
 # -- admin side ----------------------------------------------------------------

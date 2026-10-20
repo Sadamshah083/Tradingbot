@@ -262,4 +262,4 @@ class MT5Status(TestCase):
 
     def test_customers_cannot_open_the_admin_overview(self):
         web_login(self.client, "trader")
-        self.assertEqual(self.client.get(reverse("staff_connections")).status_code, 302)
+        self.assertEqual(self.client.get(reverse("staff_connections")).status_code, 403)

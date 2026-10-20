@@ -1,4 +1,5 @@
 from django.conf import settings
+from axeportal.siteurl import absolute_url
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -28,7 +29,7 @@ def landing(request):
         "stat_users": get_user_model().objects.filter(is_superuser=False).count(),
         "stat_signals": Signal.objects.filter(event="signal").count(),
         "hide_nav": True,
-        "canonical": request.build_absolute_uri("/"),
+        "canonical": absolute_url("/"),
         "nav_page": "home",
     })
 
@@ -365,7 +366,7 @@ def site_page(request, slug):
         "faq_schema": page.get("faq_schema", False),
         "cta_label": page.get("cta_label", "Create an Account"),
         "cta_href": cta_href,
-        "canonical": request.build_absolute_uri(f"/{slug}/"),
+        "canonical": absolute_url(f"/{slug}/"),
         "page_faqs": PAGE_EXTRA.get(slug, {}).get("faqs", []),
         "related_pages": [
             {"slug": r, "url": reverse(f"site_{r}"), "title": SITE_PAGES[r]["kicker"], "blurb": SITE_PAGES[r]["lead"]}
@@ -406,7 +407,7 @@ def legal(request, kind):
         "kind": kind,
         "hide_nav": True,
         "nav_page": "legal",
-        "canonical": request.build_absolute_uri(f"/legal/{kind}/"),
+        "canonical": absolute_url(f"/legal/{kind}/"),
     })
 
 
@@ -446,7 +447,7 @@ class AdminLoginView(LoginView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse(staff_home_name(self.request.user) or "staff_home")
+        return self.get_redirect_url() or reverse(staff_home_name(self.request.user) or "staff_home")
 
 
 class CustomerLogoutView(LogoutView):

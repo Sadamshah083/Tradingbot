@@ -1,5 +1,6 @@
 import hmac
 import json
+from axeportal.siteurl import absolute_url
 from datetime import timedelta
 
 from django.conf import settings
@@ -79,7 +80,7 @@ def dashboard(request):
     bot, _ = BotSettings.objects.get_or_create(user=request.user)
     conns = {c.broker: c for c in request.user.broker_connections.all()}
     executions = Execution.objects.filter(user=request.user)[:40]
-    webhook_base = request.build_absolute_uri("/").rstrip("/")
+    webhook_base = absolute_url("/").rstrip("/")
     steps = [
         ("Bot access", has_access, f"{profile.bot_days_left} days left" if has_access else f"${settings.PRICE_BOT:g} for {settings.BOT_ACCESS_DAYS} days"),
         ("TradingView strategy access", profile.tv_access_granted, "granted" if profile.tv_access_granted else ("requested, waiting for us" if profile.tradingview_username else "enter your TradingView username")),

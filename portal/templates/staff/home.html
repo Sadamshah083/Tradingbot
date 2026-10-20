@@ -38,7 +38,7 @@
     <table><thead><tr><th>E-mail</th><th>Credits</th><th>Bot</th><th>Joined</th></tr></thead><tbody>
     {% for u in recent_customers %}<tr><td><b>{{ u.email|default:u.username }}</b></td><td class="mono">{{ u.profile.credits }}</td><td>{% if u.profile.bot_access %}<span class="pill buy">paid</span>{% else %}<span class="muted">-</span>{% endif %}</td><td class="muted">{{ u.date_joined|naturaltime }}</td></tr>
     {% empty %}<tr><td colspan="4" class="empty">No customers yet - share <a href="{% url 'register' %}">the sign-up page</a>.</td></tr>{% endfor %}</tbody></table>
-    <a class="btn ghost small" href="{% url 'staff_customers' %}" style="margin-top:12px">All customers</a></div>
+    <a class="btn ghost small" href="{% url 'staff_leads' %}" style="margin-top:12px">All leads &amp; customers</a></div>
   <div class="card"><h2>Latest orders</h2>
     <table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th></tr></thead><tbody>
     {% for o in recent_orders %}<tr><td class="mono">{{ o.id }}</td><td>{{ o.user.email|default:o.user.username }}</td><td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td>{% if o.status == 'pending' %}<span class="pill exit">pending</span>{% elif o.status == 'paid' %}<span class="pill buy">paid</span>{% else %}<span class="pill sell">rejected</span>{% endif %}</td></tr>

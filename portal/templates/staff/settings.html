@@ -1,0 +1,46 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Settings · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block page_lead %}The people who can sign in to the team side, and the system values the site is running with. Only the superadmin sees this page.{% endblock %}
+{% block staff %}
+<style>
+  .newpw{border:1px solid rgba(182,255,46,.5);background:rgba(182,255,46,.08);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .newpw code{display:inline-block;font-size:18px;letter-spacing:.5px;padding:6px 12px;border-radius:8px;background:rgba(0,0,0,.3);color:#fff;user-select:all}
+  .role{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:800;border:1px solid var(--line)}
+  .role.superadmin{color:#B6FF2E;border-color:rgba(182,255,46,.45);background:rgba(182,255,46,.1)} .role.admin{color:#7DE3FF;border-color:rgba(125,227,255,.4);background:rgba(125,227,255,.1)} .role.agent{color:#C4B5FF;border-color:rgba(196,181,255,.4)}
+  .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap} .acts form{display:inline-flex;gap:6px;align-items:center;margin:0} .acts input{padding:6px 8px;width:170px}
+  .sys{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px} .sys div{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(10,18,34,.35)} .sys b{display:block;font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:3px} .sys span{font-size:13.5px;word-break:break-all}
+</style>
+{% if shown %}
+<div class="newpw"><b>New password for {{ shown.who }}</b><p class="muted" style="margin:6px 0 10px">Copy it now. It is shown only this once and is stored only as a one-way hash, so nobody (including you) can look it up later; to change it again, use Reset.</p>
+  <code id="npw">{{ shown.password }}</code> <button type="button" class="btn ghost small" onclick="navigator.clipboard.writeText(document.getElementById('npw').textContent);this.textContent='Copied'">Copy</button></div>
+{% endif %}
+<div class="card"><h2>Superadmin, admins and agents</h2>
+  <p class="muted" style="margin:0 0 10px">Passwords are never stored in readable form, so they cannot be displayed. Use <b>Reset</b> to set a new one (leave blank to generate a strong password).</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Person</th><th>Role</th><th>Last login</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+    {% for m in team %}
+      <tr><td><b>{{ m.email|default:m.username }}</b><br><span class="muted">{{ m.username }}</span></td>
+        <td>{% if m.is_superuser %}<span class="role superadmin">Superadmin</span>{% elif m.profile.role == 'admin' %}<span class="role admin">Admin</span>{% else %}<span class="role agent">Agent</span>{% endif %}</td>
+        <td class="muted">{{ m.last_login|naturaltime|default:"never" }}</td>
+        <td>{% if m.is_active %}<span class="pill buy">active</span>{% else %}<span class="pill sell">deactivated</span>{% endif %}</td>
+        <td><div class="acts">
+          <form method="post" action="{% url 'staff_team_action' %}">{% csrf_token %}<input type="hidden" name="action" value="reset_password"><input type="hidden" name="user_id" value="{{ m.id }}"><input name="password" placeholder="New password (optional)" autocomplete="new-password" aria-label="New password"><button class="btn ghost small">Reset password</button></form>
+          {% if not m.is_superuser %}
+          <form method="post" action="{% url 'staff_team_action' %}">{% csrf_token %}<input type="hidden" name="action" value="set_role"><input type="hidden" name="user_id" value="{{ m.id }}"><select name="role" onchange="this.form.submit()" style="width:auto;padding:6px 8px" aria-label="Role"><option value="admin" {% if m.profile.role == 'admin' %}selected{% endif %}>Admin</option><option value="agent" {% if m.profile.role == 'agent' %}selected{% endif %}>Agent</option><option value="customer">Remove from team</option></select></form>
+          <form method="post" action="{% url 'staff_team_action' %}">{% csrf_token %}<input type="hidden" name="action" value="toggle_active"><input type="hidden" name="user_id" value="{{ m.id }}"><button class="btn ghost small">{% if m.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+          {% endif %}
+        </div></td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Add a team member</h2>
+  <form method="post" action="{% url 'staff_team_action' %}" class="row">{% csrf_token %}<input type="hidden" name="action" value="add_member">
+    <div><label>E-mail</label><input name="email" type="email" required placeholder="name@example.com"></div>
+    <div style="max-width:200px"><label>Role</label><select name="role"><option value="agent">Agent (chat only)</option><option value="admin">Admin (leads, signals, chat)</option></select></div>
+    <div style="flex:none;align-self:end"><button class="btn primary">Add</button></div></form>
+  <p class="muted" style="margin:8px 0 0;font-size:12.5px">If the e-mail already has an account it is promoted; otherwise an account is created with a generated password that is shown once. There is only ever one superadmin.</p>
+</div>
+<div class="card" style="margin-top:16px"><h2>System</h2><div class="sys">{% for k, v in system %}<div><b>{{ k }}</b><span>{{ v }}</span></div>{% endfor %}</div></div>
+{% endblock %}

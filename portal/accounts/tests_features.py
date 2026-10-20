@@ -34,7 +34,7 @@ class Leads(TestCase):
 
     def test_only_admins_see_leads(self):
         make("lead1")
-        for name, code in (("owner", 200), ("adm", 200), ("agt", 302), ("lead1", 302)):
+        for name, code in (("owner", 200), ("adm", 200), ("agt", 403), ("lead1", 403)):
             web_login(self.client, name)
             self.assertEqual(self.client.get(reverse("staff_leads")).status_code, code, name)
 

@@ -1,11 +1,11 @@
 {% extends "staff/base.html" %}
 {% load humanize %}
-{% block title %}Leads · {{ SITE_NAME }}{% endblock %}
+{% block title %}Leads &amp; customers · {{ SITE_NAME }}{% endblock %}
 {% block page_title %}Leads{% endblock %}
-{% block page_lead %}Everyone who signs up lands here automatically. Follow up in live chat, track their status, and they stay on this list after they become customers.{% endblock %}
+{% block page_lead %}Everyone who signs up lands here, and stays here after they become a customer. Follow up, manage credits, bot access and the account, all from the icons on each row.{% endblock %}
 {% block staff %}
 <style>
-  .lead-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .lead-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
   .lead-tabs a{padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:700;white-space:nowrap}
   .lead-tabs a b{color:#fff;margin-left:4px}
   .lead-tabs a.on,.lead-tabs a:hover{color:#fff;border-color:rgba(182,255,46,.5);background:rgba(182,255,46,.08);text-decoration:none}
@@ -15,38 +15,86 @@
   .stage.qualified{color:#C4B5FF;border-color:rgba(196,181,255,.4);background:rgba(196,181,255,.1)}
   .stage.customer{color:#9CF0BE;border-color:rgba(156,240,190,.4);background:rgba(156,240,190,.1)}
   .stage.lost{color:#9FB0CA}
-  .lead-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-  .lead-form select{width:auto} .lead-form input{min-width:170px;flex:1}
+  .lead-form{display:flex;gap:6px;align-items:center}
+  .lead-form select{width:auto;padding:6px 8px} .lead-form input{min-width:130px;padding:6px 8px}
+  .acts{display:flex;gap:5px;align-items:center;flex-wrap:wrap;max-width:260px}
+  .acts form{display:inline-flex;margin:0;gap:4px;align-items:center}
+  .ibtn{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#C9D6EE;cursor:pointer;padding:0;transition:background .15s,border-color .15s,color .15s}
+  .ibtn svg{width:16px;height:16px}
+  .ibtn:hover{background:rgba(182,255,46,.1);border-color:rgba(182,255,46,.5);color:#fff;text-decoration:none}
+  .ibtn.on{background:rgba(182,255,46,.14);border-color:rgba(182,255,46,.5);color:#B6FF2E}
+  .ibtn.danger:hover{background:rgba(255,107,98,.14);border-color:rgba(255,107,98,.55);color:#FF9B94}
+  .credit{display:inline-flex;gap:4px;align-items:center} .credit input{width:58px;padding:5px 7px}
+  tr.subrow td{background:rgba(10,18,34,.5);padding:12px 14px}
+  .tablewrap{overflow-x:auto}
 </style>
+<div class="grid g4">
+  <div class="card"><h2>Leads &amp; customers</h2><div class="stat">{{ stats.customers }}</div><div class="muted">{{ stats.active }} active</div></div>
+  <div class="card"><h2>Bot access active</h2><div class="stat">{{ stats.bot_owners }}</div><div class="muted">${{ PRICE_BOT }} per 30 days</div></div>
+  <div class="card"><h2>Credits prepaid</h2><div class="stat">{{ stats.credits }}</div><div class="muted">signals owed at ${{ PRICE_SIGNAL }} each</div></div>
+  <div class="card"><h2>TradingView access to grant</h2><div class="stat {% if stats.tv_pending %}warn{% endif %}">{{ stats.tv_pending }}</div><div class="muted"><a href="?filter=tv">customers waiting</a></div></div>
+</div>
 <div class="lead-tabs">
-  <a href="?status=all{% if q %}&q={{ q }}{% endif %}" class="{% if flt == 'all' %}on{% endif %}">All<b>{{ counts.all }}</b></a>
-  {% for key, label, n in tabs %}<a href="?status={{ key }}{% if q %}&q={{ q }}{% endif %}" class="{% if flt == key %}on{% endif %}">{{ label }}<b>{{ n }}</b></a>{% endfor %}
+  {% for key, label, n in tabs %}<a href="?status={{ key }}&filter={{ flt }}{% if q %}&q={{ q }}{% endif %}" class="{% if status == key %}on{% endif %}">{{ label }}<b>{{ n }}</b></a>{% endfor %}
 </div>
 <div class="card">
-  <form method="get" class="row" style="margin-bottom:10px">
-    <input type="hidden" name="status" value="{{ flt }}">
-    <div style="max-width:320px"><input name="q" value="{{ q }}" placeholder="Search e-mail or username"></div>
-    <div style="flex:none"><button class="btn ghost">Search</button></div>
+  <form method="get" class="row" style="margin-bottom:10px"><input type="hidden" name="status" value="{{ status }}">
+    <div style="max-width:300px"><input name="q" value="{{ q }}" placeholder="Search e-mail or username"></div>
+    <div style="flex:none"><select name="filter" style="width:auto">
+      <option value="all" {% if flt == 'all' %}selected{% endif %}>Everyone</option><option value="paid" {% if flt == 'paid' %}selected{% endif %}>Paid users</option>
+      <option value="bot" {% if flt == 'bot' %}selected{% endif %}>Bot access active</option><option value="credits" {% if flt == 'credits' %}selected{% endif %}>Have credits</option>
+      <option value="paused" {% if flt == 'paused' %}selected{% endif %}>Paused</option><option value="tv" {% if flt == 'tv' %}selected{% endif %}>TradingView to grant</option></select></div>
+    <div style="flex:none"><button class="btn ghost">Filter</button></div>
   </form>
-  <div class="tablewrap">
-  <table><thead><tr><th>Lead</th><th>Signed up</th><th>Stage</th><th>Follow-up</th><th>Last login</th><th></th></tr></thead><tbody>
-  {% for u in users %}
-    <tr>
-      <td><b>{{ u.email|default:"(no e-mail)" }}</b>{% if u.unread %} <span class="badge">{{ u.unread }} new</span>{% endif %}<br><span class="muted">{{ u.username }}</span></td>
-      <td class="muted" style="white-space:nowrap">{{ u.date_joined|date:"M d, Y H:i" }}<br><span style="font-size:11.5px">{{ u.date_joined|naturaltime }}</span></td>
-      <td><span class="stage {{ u.stage }}">{{ u.stage|capfirst }}</span></td>
-      <td>
-        <form method="post" action="{% url 'staff_lead_update' u.id %}" class="lead-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
-          <select name="status">{% for key, label in statuses %}<option value="{{ key }}" {% if u.profile.lead_status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
-          <input name="note" value="{{ u.profile.lead_note }}" placeholder="Note (private)" maxlength="300">
-          <button class="btn ghost small">Save</button>
-        </form>
-      </td>
-      <td class="muted" style="white-space:nowrap">{{ u.last_login|naturaltime|default:"never" }}</td>
-      <td style="white-space:nowrap"><a class="btn primary small" href="{% url 'chat_inbox' %}?u={{ u.id }}">Chat</a> <a class="btn ghost small" href="{% url 'staff_customers' %}?q={{ u.username }}">Account</a></td>
-    </tr>
-  {% empty %}<tr><td colspan="6" class="empty">No leads match.</td></tr>{% endfor %}
-  </tbody></table></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Lead</th><th>Signed up</th><th>Stage</th><th>Follow-up</th><th>Credits</th><th>Bot access</th><th>TradingView</th><th>Paid</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr id="c{{ u.id }}">
+        <td><b>{{ u.email|default:"(no e-mail)" }}</b>{% if u.unread %} <a href="{% url 'chat_inbox' %}?u={{ u.id }}" class="badge">{{ u.unread }} new</a>{% endif %}<br><span class="muted">{{ u.username }} · id {{ u.id }}</span>
+          <br><a class="pill {% if u.mt5_state == 'connected' %}buy{% elif u.mt5_state == 'not_configured' %}exit{% else %}sell{% endif %}" href="{% url 'staff_connections' %}?q={{ u.username }}" title="Verified MT5 connection">MT5: {{ u.mt5_label }}</a></td>
+        <td class="muted" style="white-space:nowrap">{{ u.date_joined|date:"M d, Y H:i" }}<br><span style="font-size:11.5px">login {{ u.last_login|naturaltime|default:"never" }}</span></td>
+        <td><span class="stage {{ u.stage }}">{{ u.stage|capfirst }}</span></td>
+        <td><form method="post" action="{% url 'staff_lead_update' u.id %}" class="lead-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <select name="status" aria-label="Lead status">{% for key, label in statuses %}<option value="{{ key }}" {% if u.profile.lead_status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <input name="note" value="{{ u.profile.lead_note }}" placeholder="Private note" maxlength="300" aria-label="Private note">
+          <button class="ibtn" title="Save follow-up" aria-label="Save follow-up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button></form></td>
+        <td><b class="mono" style="font-size:15px">{{ u.profile.credits }}</b><br><span class="muted" style="font-size:11.5px">{{ u.profile.used }} used · {{ u.received }} recv</span></td>
+        <td>{% if u.profile.bot_active_access %}<span class="pill buy">active</span><br><span class="muted" style="font-size:11.5px">{{ u.profile.bot_days_left }} days left</span>{% elif u.profile.bot_access %}<span class="pill sell">expired</span>{% else %}<span class="pill exit">not paid</span>{% endif %}</td>
+        <td>{% if u.profile.tradingview_username %}<span class="mono" style="font-size:12px">{{ u.profile.tradingview_username }}</span><br>{% if u.profile.tv_access_granted %}<span class="pill buy">granted</span>{% else %}<span class="pill exit">to grant</span>{% endif %}{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="mono">${{ u.spent|default:0|floatformat:0 }}</td>
+        <td>{% if u.profile.active %}<span class="pill buy">active</span>{% else %}<span class="pill sell">paused</span>{% endif %}</td>
+        <td><div class="acts">
+          <a class="ibtn" href="{% url 'chat_inbox' %}?u={{ u.id }}" title="Open chat" aria-label="Open chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg></a>
+          <form method="post" action="{% url 'staff_customer_update' u.id %}" class="credit">{% csrf_token %}<input type="hidden" name="action" value="add_credits"><input type="hidden" name="reason" value="manual top-up"><input name="credits" value="20" type="number" min="1" aria-label="Credits to add">
+            <button class="ibtn" title="Add signal credits" aria-label="Add signal credits"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></form>
+          <form method="post" action="{% url 'staff_customer_update' u.id %}">{% csrf_token %}<input type="hidden" name="action" value="bot_access"><button class="ibtn {% if u.profile.bot_active_access %}on{% endif %}" title="{% if u.profile.bot_active_access %}Revoke bot access{% else %}Grant bot access ({{ PRICE_BOT }} USD / 30 days){% endif %}" aria-label="Toggle bot access"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 3v5M9 14h.01M15 14h.01"/></svg></button></form>
+          {% if u.profile.tradingview_username %}<form method="post" action="{% url 'staff_customer_update' u.id %}">{% csrf_token %}<input type="hidden" name="action" value="tv_access"><button class="ibtn {% if u.profile.tv_access_granted %}on{% endif %}" title="{% if u.profile.tv_access_granted %}Remove TradingView access{% else %}Mark TradingView access granted{% endif %}" aria-label="Toggle TradingView access"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8M14 7h7v7"/></svg></button></form>{% endif %}
+          <form method="post" action="{% url 'staff_customer_update' u.id %}">{% csrf_token %}<input type="hidden" name="action" value="toggle"><button class="ibtn" title="{% if u.profile.active %}Pause this account{% else %}Activate this account{% endif %}" aria-label="Pause or activate">{% if u.profile.active %}<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>{% endif %}</button></form>
+          <button type="button" class="ibtn" title="Edit details" aria-label="Edit details" data-toggle="e{{ u.id }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button type="button" class="ibtn" title="Set a new password" aria-label="Set a new password" data-toggle="p{{ u.id }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 11V8a6 6 0 0 1 12 0v3M5 11h14v10H5z"/></svg></button>
+          {% if is_superadmin %}<form method="post" action="{% url 'staff_customer_update' u.id %}" data-confirm="Delete {{ u.email|default:u.username }}?" data-confirm-title="Delete customer" data-confirm-detail="This removes the account, credits, chat history and orders. It cannot be undone." data-confirm-ok="Delete customer" data-confirm-danger>{% csrf_token %}<input type="hidden" name="action" value="delete"><button class="ibtn danger" title="Delete account" aria-label="Delete account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14"/></svg></button></form>{% endif %}
+        </div></td>
+      </tr>
+      <tr class="subrow" id="e{{ u.id }}" hidden><td colspan="10">
+        <form method="post" action="{% url 'staff_customer_update' u.id %}" class="row">{% csrf_token %}<input type="hidden" name="action" value="details"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <div><label>E-mail</label><input name="email" value="{{ u.email }}"></div><div><label>Telegram id</label><input name="telegram_chat_id" value="{{ u.profile.telegram_chat_id }}"></div><div><label>Account note</label><input name="note" value="{{ u.profile.note }}"></div>
+          <div style="flex:none;align-self:end"><button class="btn primary small">Save details</button></div></form>
+      </td></tr>
+      <tr class="subrow" id="p{{ u.id }}" hidden><td colspan="10">
+        <form method="post" action="{% url 'staff_customer_update' u.id %}" class="row">{% csrf_token %}<input type="hidden" name="action" value="set_password"><input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <div><label>New password (blank = generate one)</label><input name="password" placeholder="at least 8 characters" autocomplete="new-password"></div>
+          <div style="flex:none;align-self:end"><button class="btn primary small">Set password</button></div></form>
+        <p class="muted" style="margin:6px 0 0;font-size:12px">Existing passwords are stored as one-way hashes and cannot be shown. The new one is displayed once after you save.</p>
+      </td></tr>
+    {% empty %}<tr><td colspan="10" class="empty">No leads match.</td></tr>{% endfor %}
+    </tbody></table></div>
   {% include "staff/_pager.html" %}
 </div>
+<script>
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-toggle]'); if (!b) return;
+    const row = document.getElementById(b.dataset.toggle); if (row) row.hidden = !row.hidden;
+  });
+</script>
 {% endblock %}

@@ -51,7 +51,7 @@
       <header class="cc-head">
         <button type="button" class="btn ghost small cc-back" id="ccBack">← List</button>
         <div><b id="ccName"></b><small id="ccMeta"></small></div>
-        <div class="cc-actions">{% if can_admin %}<a class="btn ghost small" id="ccLead" href="{% url 'staff_leads' %}">Lead</a><a class="btn ghost small" id="ccCust" href="{% url 'staff_customers' %}">Account</a>{% endif %}</div>
+        <div class="cc-actions">{% if can_admin %}<a class="btn ghost small" id="ccLead" href="{% url 'staff_leads' %}">Lead</a><a class="btn ghost small" id="ccCust" href="{% url 'staff_leads' %}">Account</a>{% endif %}</div>
       </header>
       <div class="cc-log" id="ccLog" aria-live="polite"></div>
       <div class="cc-err" id="ccErr" hidden>Could not send. Check your connection and try again.</div>
@@ -111,7 +111,7 @@
     $('ccMeta').textContent = '@' + r.username + ' · ' + r.credits + ' credits' + (r.bot ? ' · bot active' : '') + ' · lead: ' + r.lead + ' · joined ' + new Date(r.joined).toLocaleDateString();
     const L = $('ccLead'), C = $('ccCust');
     if (L) L.href = "{% url 'staff_leads' %}?q=" + encodeURIComponent(r.username);
-    if (C) C.href = "{% url 'staff_customers' %}?q=" + encodeURIComponent(r.username);
+    if (C) C.href = "{% url 'staff_leads' %}?q=" + encodeURIComponent(r.username);
   }
 
   function addMsg(m) {

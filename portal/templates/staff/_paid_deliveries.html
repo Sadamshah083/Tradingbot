@@ -1,0 +1,22 @@
+{# Signals customers paid for (one signal credit each). Context: paid_page, dqs #}
+<div class="card" style="margin-top:16px">
+  <h2>Paid signal deliveries <span class="muted" style="text-transform:none;letter-spacing:0">· {{ paid_page.paginator.count }} total · ${{ PRICE_SIGNAL }} each</span></h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>When</th><th>Signal</th><th>Market</th><th>Customer</th><th>Paid</th><th>Credits left</th><th>Telegram</th></tr></thead><tbody>
+    {% for d in paid_page %}
+      <tr><td class="muted" style="white-space:nowrap">{{ d.created|date:"M d, Y H:i" }}</td>
+        <td><span class="mono muted">#{{ d.signal.id }}</span> <span class="pill {{ d.signal.side }}">{{ d.signal.side|upper }}</span> <span class="pill {% if d.signal.source == 'admin' %}exit{% endif %}">{% if d.signal.source == 'admin' %}manual{% else %}strategy{% endif %}</span></td>
+        <td>{{ d.signal.symbol }} <span class="muted">{{ d.signal.timeframe }}</span></td>
+        <td>{{ d.user.email|default:d.user.username }}</td><td class="mono good">${{ PRICE_SIGNAL }}</td><td class="mono">{{ d.credits_after }}</td>
+        <td>{% if d.telegram_sent %}<span class="pill buy">sent</span>{% else %}<span class="muted">—</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="7" class="empty">No customer has paid for a signal yet. A row appears here the moment a customer's credit is used for a delivery.</td></tr>{% endfor %}
+    </tbody></table></div>
+  {% if paid_page.paginator.num_pages > 1 %}
+  <div class="pager"><span>Showing {{ paid_page.start_index }}–{{ paid_page.end_index }} of {{ paid_page.paginator.count }}</span>
+    <div class="pages">
+      {% if paid_page.has_previous %}<a href="?{{ dqs }}dpage=1" title="First">«</a><a href="?{{ dqs }}dpage={{ paid_page.previous_page_number }}" title="Previous">‹</a>{% endif %}
+      {% for n in paid_page.paginator.get_elided_page_range %}{% if n == paid_page.number %}<span class="cur">{{ n }}</span>{% elif n == paid_page.paginator.ELLIPSIS %}<span style="padding:5px 4px">…</span>{% else %}<a href="?{{ dqs }}dpage={{ n }}">{{ n }}</a>{% endif %}{% endfor %}
+      {% if paid_page.has_next %}<a href="?{{ dqs }}dpage={{ paid_page.next_page_number }}" title="Next">›</a><a href="?{{ dqs }}dpage={{ paid_page.paginator.num_pages }}" title="Last">»</a>{% endif %}
+    </div></div>
+  {% endif %}
+</div>

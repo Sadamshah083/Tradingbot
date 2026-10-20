@@ -35,6 +35,16 @@ def paginate(request, qs, per_page=None):
     return Paginator(qs, per_page or settings.PAGE_SIZE).get_page(request.GET.get("page"))
 
 
+def _paid_deliveries(request, per_page=15):
+    """Deliveries a customer paid for (one signal credit each), newest first, paginated with ?dpage=."""
+    from django.core.paginator import Paginator
+    qs = SignalDelivery.objects.filter(charged=True).select_related("signal", "user").order_by("-created")
+    params = request.GET.copy()
+    params.pop("dpage", None)
+    enc = params.urlencode()
+    return Paginator(qs, per_page).get_page(request.GET.get("dpage")), (enc + "&" if enc else "")
+
+
 def _ctx(section: str, **extra):
     """Common context for the admin layout (sidebar section). `bot` comes lazily from the context processor."""
     return {"section": section, "hide_nav": True, **extra}
@@ -64,6 +74,20 @@ def _ts(rows):
 
 
 # â”€â”€ dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+def entry(request):
+    """/accounts/staff/ (old address): sign in if needed, then land on the canonical dashboard for your role."""
+    from django.contrib.auth.views import redirect_to_login
+    from django.core.exceptions import PermissionDenied
+    from django.urls import reverse
+
+    from .roles import is_chat_staff, staff_home_name
+    if not request.user.is_authenticated:
+        return redirect_to_login(reverse("staff_home"), login_url=reverse("admin_login"))
+    if not is_chat_staff(request.user):
+        raise PermissionDenied
+    return redirect(staff_home_name(request.user))
+
+
 @staff_required
 def home(request):
     since = timezone.now() - timezone.timedelta(days=1)
@@ -103,44 +127,11 @@ def bot_mode(request):
 
 # â”€â”€ customers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 @staff_required
-def customers(request):
-    q = request.GET.get("q", "").strip()
-    flt = request.GET.get("filter", "all")
-    users = User.objects.filter(is_superuser=False).select_related("profile").annotate(
-        unread=Count("chat_messages", filter=Q(chat_messages__from_admin=False, chat_messages__read=False), distinct=True),
-        received=Count("signal_deliveries", distinct=True),
-    ).order_by("-date_joined")
-    spent = {r["user_id"]: r["s"] for r in Order.objects.filter(status="paid").values("user_id").annotate(s=Sum("amount_usd"))}
-    if q:
-        users = users.filter(Q(username__icontains=q) | Q(email__icontains=q))
-    now = timezone.now()
-    if flt == "bot":
-        users = users.filter(profile__bot_access=True, profile__bot_access_until__gt=now)
-    elif flt == "paid":
-        users = users.filter(Q(profile__bot_access=True) | Q(orders__status="paid")).distinct()
-    elif flt == "credits":
-        users = users.filter(profile__credits__gt=0)
-    elif flt == "paused":
-        users = users.filter(profile__active=False)
-    elif flt == "tv":
-        users = users.exclude(profile__tradingview_username="").filter(profile__tv_access_granted=False)
-    stats = {
-        "customers": User.objects.filter(is_superuser=False).count(),
-        "active": Profile.objects.filter(active=True, user__is_superuser=False).count(),
-        "bot_owners": Profile.objects.filter(bot_access=True, bot_access_until__gt=now, user__is_superuser=False).count(),
-        "credits": Profile.objects.filter(user__is_superuser=False).aggregate(s=Sum("credits"))["s"] or 0,
-        "tv_pending": Profile.objects.exclude(tradingview_username="").filter(tv_access_granted=False, user__is_superuser=False).count(),
-    }
-    page = paginate(request, users)
-    from bots import health
-    from bots.models import BrokerConnection
-    mt5 = {cn.user_id: cn for cn in BrokerConnection.objects.filter(broker="exness", user__in=[u.id for u in page])}
-    for u in page:
-        u.spent = spent.get(u.id, 0)
-        cn = mt5.get(u.id)
-        u.mt5_state = health.state(cn) if cn else "not_configured"
-        u.mt5_label = health.STATE_LABELS[u.mt5_state]
-    return render(request, "staff/customers.html", _ctx("customers", users=page, page=page, q=q, flt=flt, stats=stats))
+def customers_moved(request):
+    """The old Customers page: everything lives under Leads now (search and filters carry over)."""
+    from django.urls import reverse
+    qs = request.GET.urlencode()
+    return redirect(reverse("staff_leads") + ("?" + qs if qs else ""))
 
 
 @staff_required
@@ -151,7 +142,7 @@ def customer_update(request, user_id):
     action = request.POST.get("action")
     if action in ("delete", "set_role") and not is_superadmin(request.user):
         messages.error(request, "Only the superadmin can do that.")
-        return redirect(request.POST.get("next") or "staff_customers")
+        return redirect(request.POST.get("next") or "staff_leads")
     if action == "set_role":
         role = request.POST.get("role", "customer")
         if role in ("customer", "agent", "admin"):
@@ -222,7 +213,7 @@ def customer_update(request, user_id):
         name = user.email or user.username
         user.delete()
         messages.warning(request, f"Deleted customer {name} and all their data.")
-    return redirect(request.POST.get("next") or "staff_customers")
+    return redirect(request.POST.get("next") or "staff_leads")
 
 
 # â”€â”€ signals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -236,7 +227,8 @@ def signals(request):
     else:
         rows = active_signals(100)
     eligible = Profile.objects.filter(active=True, credits__gt=0, user__is_superuser=False).count()
-    return render(request, "staff/signals.html", _ctx("signals", rows=rows, page=page, view=view, eligible=eligible,
+    paid_page, dqs = _paid_deliveries(request)
+    return render(request, "staff/signals.html", _ctx("signals", rows=rows, page=page, view=view, eligible=eligible, paid_page=paid_page, dqs=dqs,
                                                        recent_alerts=_ts(list(reversed(botlink.journal(10).get("alerts", []))))))
 
 
@@ -295,8 +287,11 @@ def manual(request):
             except botlink.BotOffline as exc:
                 messages.error(request, f"Trade not placed - {exc}")
         return redirect("staff_manual")
-    j = botlink.journal(100)
-    return render(request, "staff/manual.html", _ctx("manual", trades=_ts(list(reversed(j.get("manual_trades", [])))), jerror=j.get("error")))
+    from django.core.paginator import Paginator
+    j = botlink.journal(300)
+    trades = Paginator(_ts(list(reversed(j.get("manual_trades", [])))), 15).get_page(request.GET.get("mpage"))
+    paid_page, dqs = _paid_deliveries(request)
+    return render(request, "staff/manual.html", _ctx("manual", trades=trades, jerror=j.get("error"), paid_page=paid_page, dqs=dqs))
 
 
 # â”€â”€ bot trades â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -314,25 +309,54 @@ def bot(request):
 # -- leads: every sign-up, with follow-up status -------------------------------------------
 @staff_required
 def leads(request):
+    """Every sign-up and customer in one list: follow-up status plus all the account actions."""
     from django.db.models import Exists, OuterRef
+    from bots import health
+    from bots.models import BrokerConnection
     q = request.GET.get("q", "").strip()
-    flt = request.GET.get("status", "all")
+    status = request.GET.get("status", "all")
+    flt = request.GET.get("filter", "all")
+    now = timezone.now()
     base = User.objects.filter(is_superuser=False).exclude(profile__role__in=["agent", "admin"])
     users = base.select_related("profile").annotate(
         paid=Exists(Order.objects.filter(user=OuterRef("pk"), status="paid")),
         unread=Count("chat_messages", filter=Q(chat_messages__from_admin=False, chat_messages__read=False), distinct=True),
+        received=Count("signal_deliveries", distinct=True),
     ).order_by("-date_joined")
     if q:
         users = users.filter(Q(username__icontains=q) | Q(email__icontains=q))
-    if flt in ("new", "contacted", "qualified", "customer", "lost"):
-        users = users.filter(profile__lead_status=flt)
+    if status in dict(Profile.LEAD_STATUS):
+        users = users.filter(profile__lead_status=status)
+    if flt == "bot":
+        users = users.filter(profile__bot_access=True, profile__bot_access_until__gt=now)
+    elif flt == "paid":
+        users = users.filter(Q(profile__bot_access=True) | Q(orders__status="paid")).distinct()
+    elif flt == "credits":
+        users = users.filter(profile__credits__gt=0)
+    elif flt == "paused":
+        users = users.filter(profile__active=False)
+    elif flt == "tv":
+        users = users.exclude(profile__tradingview_username="").filter(profile__tv_access_granted=False)
     counts = {k: Profile.objects.filter(user__in=base, lead_status=k).count() for k, _ in Profile.LEAD_STATUS}
     counts["all"] = base.count()
+    stats = {
+        "customers": counts["all"], "active": Profile.objects.filter(user__in=base, active=True).count(),
+        "bot_owners": Profile.objects.filter(user__in=base, bot_access=True, bot_access_until__gt=now).count(),
+        "credits": Profile.objects.filter(user__in=base).aggregate(s=Sum("credits"))["s"] or 0,
+        "tv_pending": Profile.objects.filter(user__in=base).exclude(tradingview_username="").filter(tv_access_granted=False).count(),
+    }
+    spent = {r["user_id"]: r["s"] for r in Order.objects.filter(status="paid").values("user_id").annotate(s=Sum("amount_usd"))}
     page = paginate(request, users)
+    mt5 = {cn.user_id: cn for cn in BrokerConnection.objects.filter(broker="exness", user__in=[u.id for u in page])}
     for u in page:
         u.stage = "customer" if (u.paid or u.profile.bot_access) else u.profile.lead_status
-    return render(request, "staff/leads.html", _ctx("leads", users=page, page=page, q=q, flt=flt, counts=counts, statuses=Profile.LEAD_STATUS,
-                                                  tabs=[(k, label, counts[k]) for k, label in Profile.LEAD_STATUS]))
+        u.spent = spent.get(u.id, 0)
+        cn = mt5.get(u.id)
+        u.mt5_state = health.state(cn) if cn else "not_configured"
+        u.mt5_label = health.STATE_LABELS[u.mt5_state]
+    tabs = [("all", "All", counts["all"])] + [(k, label, counts[k]) for k, label in Profile.LEAD_STATUS]
+    return render(request, "staff/leads.html", _ctx("leads", users=page, page=page, q=q, status=status, flt=flt, counts=counts, stats=stats,
+                                                    statuses=Profile.LEAD_STATUS, tabs=tabs))
 
 
 @staff_required
@@ -347,3 +371,85 @@ def lead_update(request, user_id):
     profile.save(update_fields=["lead_status", "lead_note"])
     messages.success(request, f"Updated {user.email or user.username}.")
     return redirect(request.POST.get("next") or "staff_leads")
+
+
+# -- settings: the team (superadmin only) ---------------------------------------------------
+def _random_password(n=14):
+    import string
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(n))
+
+
+@superadmin_required
+def settings_page(request):
+    from django.conf import settings as dj
+    team = (User.objects.filter(Q(is_superuser=True) | Q(profile__role__in=["admin", "agent"])).select_related("profile")
+            .order_by("-is_superuser", "profile__role", "username"))
+    shown = request.session.pop("team_new_password", None)        # a new password is shown once, right after it is set
+    system = [
+        ("Public address", dj.SITE_URL), ("Superadmin e-mail", dj.SUPERADMIN_EMAIL or "not set"),
+        ("Login token lifetime", f"{dj.JWT_EXPIRE_HOURS} hours"), ("Signal validity", f"{dj.SIGNAL_TTL_MINUTES} minutes"),
+        ("MT5 heartbeat fresh / stale", f"{dj.MT5_HEARTBEAT_FRESH_SECONDS} s / {dj.MT5_HEARTBEAT_STALE_SECONDS} s"),
+        ("Webhook secret", "set" if dj.WEBHOOK_SECRET else "NOT SET"), ("Card payments (Stripe)", "enabled" if dj.STRIPE_ENABLED else "not configured"),
+        ("Telegram alerts", "configured" if dj.TELEGRAM_BOT_TOKEN else "not configured"),
+    ]
+    return render(request, "staff/settings.html", _ctx("settings", team=team, shown=shown, system=system))
+
+
+@superadmin_required
+@require_POST
+def team_action(request):
+    """Add team members, set roles, reset passwords and (de)activate accounts. Existing passwords are one-way hashes and can never be shown."""
+    action = request.POST.get("action")
+    if action == "add_member":
+        email = request.POST.get("email", "").strip().lower()
+        role = request.POST.get("role")
+        if "@" not in email or role not in ("agent", "admin"):
+            messages.error(request, "Enter a valid e-mail and choose Admin or Agent.")
+            return redirect("staff_settings")
+        user = User.objects.filter(email__iexact=email).first()
+        if user and user.is_superuser:
+            messages.error(request, "That account is the superadmin.")
+            return redirect("staff_settings")
+        pw = None
+        if not user:
+            base = email.split("@")[0][:30] or "member"
+            username, n = base, 2
+            while User.objects.filter(username__iexact=username).exists():
+                username, n = f"{base}{n}", n + 1
+            pw = _random_password()
+            user = User.objects.create_user(username=username, email=email, password=pw)
+        profile, _ = Profile.objects.get_or_create(user=user)
+        profile.role = role
+        profile.save(update_fields=["role"])
+        if pw:
+            request.session["team_new_password"] = {"who": email, "password": pw}
+        messages.success(request, f"{email} is now {'an admin' if role == 'admin' else 'an agent'}.")
+        return redirect("staff_settings")
+    user = get_object_or_404(User, pk=request.POST.get("user_id") or 0)
+    if action == "reset_password":
+        if user.is_superuser and user.pk != request.user.pk:
+            messages.error(request, "Only the superadmin can change the superadmin's password.")
+            return redirect("staff_settings")
+        pw = request.POST.get("password", "").strip() or _random_password()
+        if len(pw) < 8:
+            messages.error(request, "A password needs at least 8 characters.")
+            return redirect("staff_settings")
+        user.set_password(pw)
+        user.save(update_fields=["password"])
+        request.session["team_new_password"] = {"who": user.email or user.username, "password": pw}
+        messages.success(request, f"New password set for {user.email or user.username}. It is shown once below.")
+    elif action in ("set_role", "toggle_active"):
+        if user.is_superuser:
+            messages.error(request, "The superadmin account cannot be changed here.")
+            return redirect("staff_settings")
+        profile, _ = Profile.objects.get_or_create(user=user)
+        if action == "set_role" and request.POST.get("role") in ("customer", "agent", "admin"):
+            profile.role = request.POST["role"]
+            profile.save(update_fields=["role"])
+            messages.success(request, f"{user.email or user.username} is now {profile.get_role_display()}.")
+        elif action == "toggle_active":
+            user.is_active = not user.is_active
+            user.save(update_fields=["is_active"])
+            messages.success(request, f"{user.email or user.username} is now {'active' if user.is_active else 'deactivated'}.")
+    return redirect("staff_settings")

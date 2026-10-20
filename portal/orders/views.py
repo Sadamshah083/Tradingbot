@@ -1,4 +1,5 @@
 ﻿import logging
+from axeportal.siteurl import absolute_url
 from decimal import Decimal
 from pathlib import Path
 
@@ -18,7 +19,7 @@ from chat.models import Message
 from .models import Order
 
 log = logging.getLogger("portal.orders")
-staff_required = user_passes_test(lambda u: u.is_superuser, login_url="admin_login")
+from accounts.roles import superadmin_required as staff_required  # noqa: E402
 
 
 def _payment_options():
@@ -111,7 +112,7 @@ def stripe_checkout(request, product):
     title, amount, quantity = _pricing(product, count)
     order = Order.objects.create(user=request.user, product=product, quantity=quantity, amount_usd=amount, method="card", reference="stripe", stripe_status="created")
     stripe = _stripe()
-    base = request.build_absolute_uri("/").rstrip("/")
+    base = absolute_url("/").rstrip("/")
     try:
         session = stripe.checkout.Session.create(
             mode="payment",
@@ -250,4 +251,4 @@ def staff_payments(request):
     return render(request, "staff/payments.html", {"orders": page, "page": page, "totals": totals, "section": "payments", "hide_nav": True,
                                                    "configured": settings.STRIPE_ENABLED, "has_webhook_secret": bool(settings.STRIPE_WEBHOOK_SECRET),
                                                    "test_mode": settings.STRIPE_SECRET_KEY.startswith("sk_test_"),
-                                                   "webhook_url": request.build_absolute_uri("/orders/stripe/webhook/")})
+                                                   "webhook_url": absolute_url("/orders/stripe/webhook/")})
