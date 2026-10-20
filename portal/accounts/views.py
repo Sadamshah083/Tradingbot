@@ -21,22 +21,13 @@ from .roles import is_chat_staff, staff_home_name
 # The admin side lives in accounts/staff.py and is for the single superadmin only (see `manage.py ensure_superadmin`).
 
 
-HOME_FAQS = [
-    ("What is SamBot?", "SamBot is trading automation software that connects TradingView alerts with paper trading, configurable risk controls and supported execution workflows. It is not a broker and it does not hold your trading capital."),
-    ("How does SamBot work?", "A TradingView alert is posted to your personal webhook. SamBot validates it, applies your risk rules, then records a simulated order in paper mode or routes it through a supported MT5 or Binance workflow. Every step is written to your activity log."),
-    ("Does SamBot support TradingView?", "Yes. TradingView is the supported signal source. Each account has its own webhook address and secret, and the alert message is written in your TradingView alert. TradingView limits webhook alerts to certain plans, so check yours first."),
-    ("Can I use paper mode?", "Yes. Paper mode simulates trading as alerts arrive, without placing real orders, so you can check signals, sizing and risk settings first. Paper results can differ from live execution."),
-    ("Does SamBot support MT5?", "SamBot supports MetaTrader 5 through a small bridge that runs next to your terminal. Confirm that your broker, account type and permissions are compatible before enabling automation."),
-    ("Does SamBot support Binance?", "SamBot supports Binance Futures workflows through the exchange API. Availability depends on your API permissions and any restrictions that apply to you. Never enable withdrawal permission on the key."),
-    ("Does SamBot guarantee profits?", "No. Automated trading involves a risk of loss. Market conditions, costs, slippage, strategy behaviour and technical interruptions can all affect results, and backtests or paper trading do not guarantee future performance."),
-    ("What markets are supported?", "The current focus is gold (XAUUSD) through MetaTrader 5 and Bitcoin (BTCUSDT) through Binance Futures. Markets are added only when the workflow has been implemented and tested."),
-]
-
-
 def landing(request):
     """Public home page (also for logged-in users; the navbar then offers their dashboard)."""
+    from django.contrib.auth import get_user_model
+    from signals.models import Signal
     return render(request, "landing.html", {
-        "home_faqs": HOME_FAQS,
+        "stat_users": get_user_model().objects.filter(is_superuser=False).count(),
+        "stat_signals": Signal.objects.filter(event="signal").count(),
         "hide_nav": True,
         "canonical": absolute_url("/"),
         "nav_page": "home",

@@ -1,4 +1,6 @@
 """Home page cards/reviews, contact form, blog redirects, noindex and the unchanged hero."""
+import subprocess
+from pathlib import Path
 from unittest import mock
 
 from django.core import mail
@@ -10,26 +12,30 @@ from blog.models import Post, SlugRedirect
 from content.models import ContactMessage, Review
 from orders.models import Order
 
+LANDING = Path(__file__).resolve().parent.parent / "templates" / "landing.html"
 MAIL = dict(EMAIL_HOST="smtp.example.test", SUPPORT_EMAIL="support@sambot.test", DEFAULT_FROM_EMAIL="noreply@sambot.test")
 
 
-class HomeAndHero(TestCase):
-    def test_hero_keeps_headline_and_calls_to_action(self):
-        html = self.client.get("/").content.decode()
-        self.assertEqual(html.count("<h1"), 1)
-        hero = html[html.index('id="hero-title"'):html.index("</section>", html.index('id="hero-title"'))]
-        for text in ("Your Strategy.", "Your Rules.", "Automated.", "Create Your Account", "Explore How It Works", "paper mode"):
-            self.assertIn(text, hero)
+def hero_block(text: str) -> str:
+    text = text.replace("\r\n", "\n")
+    a = text.index('<div class="hero-band">')
+    return text[a:text.index('<div class="statbar"', a)]
 
-    def test_home_links_to_real_pages_and_has_no_invented_statistics(self):
+
+class HomeAndHero(TestCase):
+    def test_hero_markup_is_identical_to_the_last_commit(self):
+        head = subprocess.run(["git", "show", "HEAD:portal/templates/landing.html"], cwd=LANDING.parent.parent.parent, capture_output=True, text=True, encoding="utf-8")
+        if head.returncode != 0:
+            self.skipTest("git history not available")
+        self.assertEqual(hero_block(head.stdout), hero_block(LANDING.read_text(encoding="utf-8")))
+
+    def test_card_section_links_to_real_pages_and_search_is_gone(self):
         html = self.client.get("/").content.decode()
-        for name in ("site_tradingview", "site_markets", "site_paper", "site_risk", "site_mt5", "site_binance", "site_how", "site_performance", "site_faq"):
-            self.assertIn(f'href="{reverse(name)}"', html)
-        for bad in ("Registered users", "Signals delivered", "guaranteed profit", "risk-free"):
-            self.assertNotIn(bad, html)
-        self.assertIn("Illustrative example", html)
-        self.assertEqual(html.count('id="hmFaq"'), 1)
-        self.assertIn('"@type":"FAQPage"', html)
+        self.assertEqual(html.count('class="hc"'), 6)
+        cards = html[html.index('id="features"'):]
+        for name in ("site_tradingview", "site_markets", "site_paper", "site_risk", "site_mt5", "site_how"):
+            self.assertIn(f'href="{reverse(name)}"', cards)
+        self.assertEqual(html.count("<h1"), 1)
         self.assertNotIn("Search articles", self.client.get(reverse("blog")).content.decode())
         nav = html[html.index('<ul class="links">'):html.index("</ul>", html.index('<ul class="links">'))]
         self.assertNotIn("Search", nav)
