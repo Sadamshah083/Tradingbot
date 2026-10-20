@@ -99,3 +99,64 @@ a{color:var(--spark)}
 .home .perf-stats .v{color:var(--spark)}
 .home .final-mock{background:rgba(15,24,40,.8);border-color:var(--line)}
 .home .final-mock .bar{background:var(--spark);opacity:.7}
+
+
+/* ===== Hero: signal-to-execution flow ===== */
+.home .stage{min-height:0}
+.flow{position:relative;width:100%;max-width:540px;padding:34px 0 34px}
+.flow:before{content:"";position:absolute;inset:6% -6% 2% -6%;border-radius:40px;background:radial-gradient(60% 55% at 60% 40%,rgba(182,255,46,.16),transparent 70%),radial-gradient(40% 40% at 10% 90%,rgba(79,209,232,.12),transparent 70%);filter:blur(6px);pointer-events:none}
+.term{position:relative;border-radius:22px;padding:16px 16px 14px;background:linear-gradient(180deg,#101A2C,#0A111D);border:1px solid rgba(182,255,46,.22);box-shadow:0 40px 90px rgba(0,0,0,.62),0 0 70px rgba(182,255,46,.08),inset 0 1px 0 rgba(255,255,255,.05)}
+.term-top{display:flex;align-items:center;gap:12px;margin-bottom:8px;font-size:12px;color:var(--muted)}
+.term-top b{color:#fff;font-size:13px;letter-spacing:.3px} .term-top b small{color:var(--muted);font-weight:600;margin-left:4px}
+.term-top .live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;color:var(--gold);font-weight:800;font-size:10.5px;letter-spacing:1px;text-transform:uppercase}
+.term-top .live i{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 0 rgba(245,196,81,.5);animation:gpulse 1.8s infinite}
+@keyframes gpulse{0%,100%{box-shadow:0 0 0 0 rgba(245,196,81,.45)}70%{box-shadow:0 0 0 7px transparent}}
+.dots{display:inline-flex;gap:5px}.dots i{width:9px;height:9px;border-radius:50%;background:#26354D}.dots i:first-child{background:#FF6B62}.dots i:nth-child(2){background:#F5C451}.dots i:nth-child(3){background:#B6FF2E}
+.chart{width:100%;height:185px;display:block;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,0))}
+.chart-note{font-size:10.5px;color:#5F7089;text-align:right;margin:4px 2px 12px}
+.chart .gl{stroke:rgba(148,170,205,.1);stroke-width:1;vector-effect:non-scaling-stroke}
+.chart .cu{fill:#B6FF2E}.chart .cd{fill:#FF6B62}
+.chart .cuw{stroke:#B6FF2E;stroke-width:1.2;vector-effect:non-scaling-stroke}.chart .cdw{stroke:#FF6B62;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.chart .z-tp{fill:rgba(182,255,46,.1)}.chart .z-sl{fill:rgba(255,107,98,.1)}
+.chart .l-en{stroke:#E8EEF8;stroke-width:1;stroke-dasharray:4 4;vector-effect:non-scaling-stroke;opacity:.7}
+.chart .l-tp{stroke:#B6FF2E;stroke-width:1.2;vector-effect:non-scaling-stroke}.chart .l-sl{stroke:#FF6B62;stroke-width:1.2;vector-effect:non-scaling-stroke}
+.chart .t-tp{fill:#B6FF2E;font:700 11px Manrope,sans-serif}.chart .t-sl{fill:#FF6B62;font:700 11px Manrope,sans-serif}
+.chart .arrow{fill:#B6FF2E;filter:drop-shadow(0 0 6px rgba(182,255,46,.8))}
+.chart .tag{fill:#B6FF2E}.chart .tag-t{fill:#0A101C;font:800 10px Manrope,sans-serif;letter-spacing:.6px}
+.chart .candles{animation:reveal 2.4s cubic-bezier(.4,.1,.2,1) both}
+.chart.run .candles{animation:none}
+@keyframes reveal{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+.chart .zone,.chart .marker{opacity:0;transition:opacity .6s ease,transform .6s ease}
+.chart .marker{transform:translateY(8px)}
+.flow:not([data-step="0"]):not([data-step=""]) .chart .marker,.flow[data-step="1"] .chart .marker{opacity:1;transform:none}
+.flow[data-step="3"] .chart .zone,.flow[data-step="4"] .chart .zone{opacity:1}
+.flow:not([data-step]) .chart .zone,.flow:not([data-step]) .chart .marker{opacity:1;transform:none}
+
+/* pipeline */
+.pipe{list-style:none;margin:0 0 14px;padding:0;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;position:relative}
+.pipe:before{content:"";position:absolute;left:12%;right:12%;top:15px;height:2px;background:linear-gradient(90deg,rgba(182,255,46,.5),rgba(182,255,46,.1));border-radius:2px;opacity:.5}
+.pn{position:relative;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.45;transition:opacity .4s,transform .4s}
+.pn .pi{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font:800 12px "JetBrains Mono",monospace;background:#0E1828;border:1.5px solid rgba(148,170,205,.3);color:var(--muted);transition:all .4s;position:relative;z-index:1}
+.pn b{font-size:11.5px;color:#fff;margin-top:6px}.pn small{font-size:10px;color:var(--muted);line-height:1.2}
+.pn.on{opacity:1}.pn.on .pi{background:var(--spark);border-color:var(--spark);color:#0A101C;box-shadow:0 0 0 5px rgba(182,255,46,.16),0 0 18px rgba(182,255,46,.5)}
+.flow:not([data-step]) .pn{opacity:1}
+
+.term .mstats{margin-bottom:10px}
+.term .mcard .lab{white-space:nowrap}
+.mock-tbl.log{margin:0}
+.mock-tbl.log th{padding:5px 4px}.mock-tbl.log td{padding:5px 4px}
+
+/* floating cards */
+.fx-card{position:absolute;z-index:3;background:rgba(10,17,29,.92);border:1px solid rgba(182,255,46,.3);border-radius:14px;backdrop-filter:blur(10px);box-shadow:0 20px 50px rgba(0,0,0,.6)}
+.fx-alert{top:-34px;left:-30px;padding:10px 12px 11px;min-width:196px;animation:floaty 7s ease-in-out infinite}
+.fx-h{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#fff;margin-bottom:6px}
+.fx-dot{width:8px;height:8px;border-radius:50%;background:#4FD1E8;box-shadow:0 0 10px #4FD1E8}
+.fx-alert pre{margin:0;font:600 10.5px/1.5 "JetBrains Mono",monospace;color:var(--muted);white-space:pre}
+.fx-alert pre b{color:#fff}.fx-alert pre em{color:var(--spark);font-style:normal}
+.fx-toast{right:-22px;bottom:-18px;display:flex;align-items:center;gap:10px;padding:10px 14px;animation:floaty 8s ease-in-out -3s infinite}
+.fx-toast .ok{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--spark);color:#0A101C;font-weight:900;font-size:13px;flex:none}
+.fx-toast b{display:block;font-size:12.5px;color:#fff}.fx-toast small{font-size:11px;color:var(--muted)}
+@media(max-width:1080px){.fx-alert{left:-8px}.fx-toast{right:-6px}}
+@media(max-width:920px){.flow{max-width:520px;margin:0 auto}.fx-alert{display:none}}
+@media(max-width:560px){.fx-toast{display:none}.pn small{display:none}.chart{height:170px}.flow{padding:8px 0}}
+@media(prefers-reduced-motion:reduce){.chart .candles,.fx-alert,.fx-toast{animation:none}}
