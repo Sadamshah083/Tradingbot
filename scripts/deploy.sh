@@ -18,5 +18,9 @@ cd "$APP/portal"
 "$APP/portal/.venv/bin/python" manage.py migrate --noinput
 "$APP/portal/.venv/bin/python" manage.py collectstatic --noinput
 
-sudo systemctl restart axealgo-portal axealgo-bot
-sudo systemctl is-active axealgo-portal axealgo-bot
+# No sudo needed: both units run as this user with Restart=always.
+# gunicorn: HUP respawns workers with the new code; uvicorn: TERM makes systemd restart it.
+kill -HUP "$(systemctl show -p MainPID --value axealgo-portal)"
+kill -TERM "$(systemctl show -p MainPID --value axealgo-bot)"
+sleep 3
+systemctl is-active axealgo-portal axealgo-bot
