@@ -106,12 +106,12 @@
   @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
 </style>
 {% block page_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=16">
+<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=18">
 {% endblock %}
 {% block content %}
 <div class="site {% block site_class %}{% endblock %}">
 <header class="nav"><div class="wrap"><nav aria-label="Main">
-  <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></a>
+  <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/sambot-logo.png' %}" alt="{{ SITE_NAME }}" width="154" height="36"></a>
   <ul class="links">
     <li><a href="{% url 'landing' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
     <li><a href="{% url 'site_how' %}" class="{% if nav_page == 'how' %}active{% endif %}">How it Works</a></li>
@@ -159,7 +159,7 @@
   <div class="foot-main"><div class="wrap">
     <div class="fcols">
       <div>
-        <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="38"></a>
+        <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/sambot-logo.png' %}" alt="{{ SITE_NAME }}" width="160" height="38"></a>
         <p class="brand-blurb">Trading automation you can test before you trust — paper mode, backtests and risk rules you control.</p>
         {% if SUPPORT_EMAIL %}<p style="margin:12px 0 0"><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></p>{% endif %}
         <div class="foot-social" aria-label="Social">
