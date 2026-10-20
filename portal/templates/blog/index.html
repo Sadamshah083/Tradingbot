@@ -18,7 +18,6 @@
   <div class="bfilters">
     <a href="{% url 'blog' %}" class="{% if not current %}on{% endif %}">All</a>
     {% for c in categories %}<a href="{% url 'blog_category' c.slug %}" class="{% if current == c.slug %}on{% endif %}">{{ c.name }}</a>{% endfor %}
-    <form method="get" style="margin-left:auto;display:flex;gap:6px"><input name="q" value="{{ q }}" placeholder="Search articles" style="padding:8px 12px;font-size:14px;width:220px"><button class="btn ghost small">Search</button></form>
   </div>
   <div class="bgrid">
     {% for p in page %}

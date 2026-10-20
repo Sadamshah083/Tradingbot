@@ -31,7 +31,17 @@ def landing(request):
         "hide_nav": True,
         "canonical": absolute_url("/"),
         "nav_page": "home",
+        "reviews": _public_reviews(),
     })
+
+
+def _public_reviews():
+    """Approved reviews only, newest first; each carries a Verified-customer flag backed by purchase records."""
+    from content.models import Review
+    out = []
+    for r in Review.objects.filter(status="approved", consent=True).select_related("user")[:6]:
+        out.append({"name": r.display_name, "rating": r.rating, "text": r.text, "verified": r.verified, "date": r.created})
+    return out
 
 
 SITE_PAGES = {
@@ -420,6 +430,7 @@ def site_page(request, slug):
         "needs_lab_js": page.get("lab", False),
         "faq_schema": page.get("faq_schema", False),
         **(_faq_context() if slug == "faq" else {}),
+        **(__import__("content.views", fromlist=["handle_contact"]).handle_contact(request) if slug == "contact" else {}),
         "cta_label": page.get("cta_label", "Create an Account"),
         "cta_href": cta_href,
         "canonical": absolute_url(f"/{slug}/"),
@@ -574,9 +585,14 @@ def _bot_summary(user, profile):
 
 def robots_txt(request):
     base = getattr(settings, "SITE_URL", "https://sambot.aktechsolutions.tech").rstrip("/")
+    from urllib.parse import urlparse
+    host = request.get_host().split(":")[0].lower()
+    if not settings.SEARCH_INDEXING or host != (urlparse(settings.SITE_URL).hostname or "").lower():
+        return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain; charset=utf-8")    # staging, preview and alias hosts
     body = (
         "User-agent: *\n"
         "Allow: /\n"
+        "Disallow: /reviews/\n"
         "Disallow: /accounts/\n"
         "Disallow: /admin/\n"
         "Disallow: /bot/\n"
@@ -618,7 +634,8 @@ def sitemap_xml(request):
     ]
     try:
         from blog.models import Post
-        for p in Post.objects.filter(published=True).only("slug", "updated", "published_at"):
+        from django.db.models import Q
+        for p in Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).only("slug", "updated", "published_at"):
             paths.append((f"/blog/{p.slug}/", "0.65", "monthly"))
     except Exception:
         pass

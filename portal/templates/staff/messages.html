@@ -1,0 +1,20 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Contact messages · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Contact messages{% endblock %}
+{% block page_lead %}Messages from the website contact form. Every message is saved here; the e-mail column shows whether the notification to the support inbox actually went out. {{ unhandled }} not handled yet.{% endblock %}
+{% block staff %}
+<div class="card"><div class="tablewrap"><table>
+  <thead><tr><th>From</th><th>Subject &amp; message</th><th>Received</th><th>E-mail notice</th><th>Handled</th></tr></thead><tbody>
+  {% for m in items %}
+    <tr><td><b>{{ m.name|default:"(no name)" }}</b><br><a href="mailto:{{ m.email }}">{{ m.email }}</a></td>
+      <td style="max-width:460px;white-space:normal"><b>{{ m.subject|default:"(no subject)" }}</b><br><span class="muted" style="white-space:pre-wrap">{{ m.message }}</span></td>
+      <td class="muted" style="white-space:nowrap">{{ m.created|date:"M d, Y H:i" }}<br><span style="font-size:11.5px">{{ m.created|naturaltime }}</span></td>
+      <td>{% if m.email_status == 'sent' %}<span class="pill buy">sent</span>{% elif m.email_status == 'failed' %}<span class="pill sell">failed</span>{% elif m.email_status == 'not_configured' %}<span class="pill exit">not configured</span>{% else %}<span class="pill">pending</span>{% endif %}
+        {% if m.email_error %}<br><span class="muted" style="font-size:11.5px">{{ m.email_error }}</span>{% endif %}</td>
+      <td><form method="post" action="{% url 'staff_message_action' m.id %}">{% csrf_token %}<input type="hidden" name="action" value="handled"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn {% if m.handled %}ghost{% else %}primary{% endif %} small">{% if m.handled %}Handled ✓{% else %}Mark handled{% endif %}</button></form></td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No messages yet.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% include "staff/_pager.html" %}
+</div>
+{% endblock %}

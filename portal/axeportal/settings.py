@@ -55,6 +55,19 @@ PAGE_SIZE = int(os.getenv("PAGE_SIZE", "25"))
 PRICE_SIGNAL = float(os.getenv("PRICE_SIGNAL", "1"))       # price per signal, USD
 PACK_SIZE = int(os.getenv("PACK_SIZE", "20"))              # signals per pack
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "")
+# Transactional e-mail (contact form notifications). Leave EMAIL_HOST empty until a provider is configured: messages are
+# still saved and shown to staff, and marked "E-mail not configured".
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "")      # a sender address verified with the provider (never the visitor's)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+CONTACT_LIMIT_PER_HOUR = int(os.getenv("CONTACT_LIMIT_PER_HOUR", "3"))
+# Search engines: only the canonical production host is indexable (set SEARCH_INDEXING=false on staging/preview).
+SEARCH_INDEXING = os.getenv("SEARCH_INDEXING", "true").lower() == "true"
 SITE_URL = os.getenv("SITE_URL", "https://sambot.aktechsolutions.tech").rstrip("/")
 # Google Analytics 4 measurement ID, e.g. G-XXXXXXXXXX (leave empty to disable)
 GA_MEASUREMENT_ID = os.getenv("GA_MEASUREMENT_ID", "").strip()
@@ -87,6 +100,7 @@ INSTALLED_APPS = [
     "orders",
     "blog",
     "bots",
+    "content",
 ]
 
 MIDDLEWARE = [
@@ -99,6 +113,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "accounts.middleware.NoCacheAuthMiddleware",
+    "accounts.middleware.NoIndexPreviewMiddleware",
 ]
 
 ROOT_URLCONF = "axeportal.urls"

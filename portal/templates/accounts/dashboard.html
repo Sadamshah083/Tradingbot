@@ -50,7 +50,7 @@
 <div class="dash-head">
   <div><h1>Hi {{ display_name }} <span class="muted" style="font-size:14px;font-weight:500"><span class="dot"></span>live</span></h1>
   <p class="lead" style="margin:4px 0 0">Everything about your signals, bot and account in one place.</p></div>
-  <a class="btn ghost small" href="{% url 'account_settings' %}">Profile &amp; settings</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost small" href="{% url 'review_new' %}">Leave a review</a><a class="btn ghost small" href="{% url 'account_settings' %}">Profile &amp; settings</a></div>
 </div>
 
 <div class="grid g2 prod">

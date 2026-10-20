@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Leave a review · {{ SITE_NAME }}{% endblock %}
+{% block head %}
+<style>
+  .rv-card{max-width:640px;padding:26px 28px}
+  .stars{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:4px;margin:6px 0 4px}
+  .stars input{position:absolute;opacity:0;width:0;height:0}
+  .stars label{margin:0;font-size:30px;line-height:1;color:#3A4A6B;cursor:pointer;transition:color .15s}
+  .stars input:checked~label,.stars label:hover,.stars label:hover~label{color:#F5C451}
+  .stars input:focus-visible+label{outline:2px solid #7DE3FF;border-radius:4px}
+  .err{color:#FF9B94;font-size:13px;margin:6px 0 0}
+  .rv-card textarea{min-height:130px;resize:vertical}
+  .chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px} .chk input{width:auto;margin-top:4px} .chk span{font-size:13.5px;color:var(--muted)}
+</style>
+{% endblock %}
+{% block content %}
+<h1>Leave a review</h1>
+<p class="lead">Tell other traders honestly how SamBot works for you. Reviews are checked by our team before they appear on the website.</p>
+{% if existing %}
+<div class="card rv-card">
+  <h2>Your review</h2>
+  <p style="margin:0 0 8px;color:#F5C451;font-size:20px" aria-label="{{ existing.rating }} out of 5">{% for i in "12345" %}{% if forloop.counter <= existing.rating %}&#9733;{% else %}&#9734;{% endif %}{% endfor %}</p>
+  <p style="margin:0 0 10px">{{ existing.text }}</p>
+  <p class="muted" style="margin:0">Shown as <b>{{ existing.display_name }}</b> &middot;
+    {% if existing.status == 'approved' %}<span class="pill buy">published</span>{% elif existing.status == 'rejected' %}<span class="pill sell">not published</span>{% else %}<span class="pill exit">waiting for approval</span>{% endif %}</p>
+  <p class="muted" style="margin:12px 0 0;font-size:12.5px">Each customer can submit one review. Contact support if you need it changed.</p>
+</div>
+{% else %}
+<form method="post" class="card rv-card" novalidate>{% csrf_token %}
+  <label>Your rating</label>
+  <div class="stars" role="radiogroup" aria-label="Rating from 1 to 5">
+    {% for n in "54321" %}<input type="radio" id="st{{ n }}" name="rating" value="{{ n }}" {% if values.rating == n %}checked{% endif %}><label for="st{{ n }}" title="{{ n }} star{{ n|pluralize }}">&#9733;</label>{% endfor %}
+  </div>
+  {% if errors.rating %}<p class="err" role="alert">{{ errors.rating }}</p>{% endif %}
+  <label for="dn">Display name (shown publicly)</label>
+  <input id="dn" name="display_name" maxlength="40" value="{{ values.display_name }}" placeholder="e.g. Sam K." {% if errors.display_name %}aria-invalid="true"{% endif %}>
+  {% if errors.display_name %}<p class="err" role="alert">{{ errors.display_name }}</p>{% endif %}
+  <label for="tx">Your review</label>
+  <textarea id="tx" name="text" maxlength="800" placeholder="What did you use SamBot for, and how did it go?" {% if errors.text %}aria-invalid="true"{% endif %}>{{ values.text }}</textarea>
+  {% if errors.text %}<p class="err" role="alert">{{ errors.text }}</p>{% endif %}
+  <label class="chk"><input type="checkbox" name="consent" {% if values.consent %}checked{% endif %}><span>I agree that SamBot may publish this review on its website under the display name above. My e-mail address is never shown.</span></label>
+  {% if errors.consent %}<p class="err" role="alert">{{ errors.consent }}</p>{% endif %}
+  <button class="btn primary" style="margin-top:18px">Submit review</button>
+</form>
+{% endif %}
+{% endblock %}

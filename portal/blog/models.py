@@ -92,3 +92,10 @@ class Post(models.Model):
         import re
         words = len(re.sub(r"<[^>]+>", " ", self.body_html).split())
         return max(1, round(words / 220))
+
+
+class SlugRedirect(models.Model):
+    """An old published address that now points to a post, so existing links keep working (permanent redirect)."""
+    old_slug = models.SlugField(max_length=180, unique=True)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name="old_slugs")
+    created = models.DateTimeField(auto_now_add=True)

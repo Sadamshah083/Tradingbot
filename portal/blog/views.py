@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.roles import superadmin_required as staff_required
 
-from .models import Category, Post
+from .models import Category, Post, SlugRedirect
 
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 IMAGE_SIGNATURES = {
@@ -38,13 +38,11 @@ def image_error(upload):
 def _listing(request, cat_slug=None):
     qs = Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).select_related("category")   # future dates stay scheduled
     cat = cat_slug or request.GET.get("category")
-    q = request.GET.get("q", "").strip()
+    q = ""
     category = None
     if cat:
         category = get_object_or_404(Category, slug=cat) if cat_slug else Category.objects.filter(slug=cat).first()
         qs = qs.filter(category__slug=cat)
-    if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(excerpt__icontains=q))   # tags are internal and are not searched
     page = Paginator(qs, 9).get_page(request.GET.get("page"))
     canonical = absolute_url(f"/blog/category/{cat_slug}/" if cat_slug else "/blog/")
     return render(request, "blog/index.html", {"page": page, "categories": Category.objects.filter(posts__published=True).distinct(),
@@ -60,7 +58,12 @@ def category(request, slug):
 
 
 def post(request, slug):
-    p = get_object_or_404(Post.objects.select_related("category", "author"), slug=slug)
+    p = Post.objects.select_related("category", "author").filter(slug=slug).first()
+    if p is None:                                          # an old address: send visitors (and search engines) to the current one
+        old = SlugRedirect.objects.select_related("post").filter(old_slug=slug, post__published=True).first()
+        if old:
+            return redirect(old.post.get_absolute_url(), permanent=True)
+        raise Http404
     scheduled = p.published and p.published_at and p.published_at > timezone.now()
     if (not p.published or scheduled) and not request.user.is_superuser:
         raise Http404
@@ -92,6 +95,7 @@ def staff_edit(request, post_id=None):
         data = request.POST
         if not p:
             p = Post(author=request.user)
+        old_slug = p.slug if p.pk else ""
         p.title = data.get("title", "").strip()[:160]
         p.slug = data.get("slug", "").strip()[:180]
         p.excerpt = data.get("excerpt", "").strip()[:300]
@@ -143,6 +147,9 @@ def staff_edit(request, post_id=None):
             messages.error(request, "A post needs a title and a body.")
         else:
             p.save()
+            if old_slug and old_slug != p.slug and p.published:
+                SlugRedirect.objects.update_or_create(old_slug=old_slug, defaults={"post": p})
+            SlugRedirect.objects.filter(old_slug=p.slug).delete()          # a live address never also redirects away
             messages.success(request, f"Saved \"{p.title}\" ({'published' if p.published else 'draft'}).")
             return redirect("staff_blog_edit", post_id=p.pk)
     return render(request, "staff/blog_edit.html", {"p": p, "categories": Category.objects.all(), "section": "blog", "hide_nav": True})

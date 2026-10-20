@@ -5,6 +5,7 @@ from django.views.static import serve
 from django.views.generic import RedirectView
 
 from accounts import staff
+from content import views as content_views
 from accounts.views import AdminLoginView, landing, legal, robots_txt, site_page, sitemap_xml
 
 SITE_SLUGS = [
@@ -27,6 +28,10 @@ urlpatterns = [
     path("legal/<slug:kind>/", legal, name="legal"),
     path("admin/", RedirectView.as_view(pattern_name="staff_home", permanent=False)),
     path("admin/Dashboard", staff.home, name="staff_home"),                                   # canonical admin dashboard
+    path("admin/Reviews", content_views.staff_reviews, name="staff_reviews"),
+    path("admin/Reviews/<int:review_id>/", content_views.staff_review_action, name="staff_review_action"),
+    path("admin/Messages", content_views.staff_messages, name="staff_messages"),
+    path("admin/Messages/<int:message_id>/", content_views.staff_message_action, name="staff_message_action"),
     path("admin/Settings", staff.settings_page, name="staff_settings"),
     path("admin/Settings/team/", staff.team_action, name="staff_team_action"),
     path("admin/Dashboard/", RedirectView.as_view(pattern_name="staff_home", permanent=False)),
@@ -34,6 +39,7 @@ urlpatterns = [
     path("admin/login/", AdminLoginView.as_view(), name="admin_login"),
     path("accounts/", include("accounts.urls")),
     path("signals/", include("signals.urls")),
+    path("reviews/", include("content.urls")),
     path("chat/", include("chat.urls")),
     path("orders/", include("orders.urls")),
     path("blog/", include("blog.urls")),

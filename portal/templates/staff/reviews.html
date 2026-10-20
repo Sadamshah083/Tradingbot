@@ -1,0 +1,32 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Reviews · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Reviews{% endblock %}
+{% block page_lead %}Customer reviews wait here until you approve them. Only approved reviews appear on the home page, and the Verified customer label appears only when the customer has a paid order or bot access.{% endblock %}
+{% block staff %}
+<style>
+  .tabs2{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px} .tabs2 a{padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:700}
+  .tabs2 a b{color:#fff;margin-left:4px} .tabs2 a.on,.tabs2 a:hover{color:#fff;border-color:rgba(182,255,46,.5);background:rgba(182,255,46,.08);text-decoration:none}
+  .stars{color:#F5C451;letter-spacing:2px;white-space:nowrap}
+</style>
+<div class="tabs2">  <a href="?status=pending" class="{% if flt == 'pending' %}on{% endif %}">Pending<b>{{ counts.pending }}</b></a>
+  <a href="?status=approved" class="{% if flt == 'approved' %}on{% endif %}">Approved<b>{{ counts.approved }}</b></a>
+  <a href="?status=rejected" class="{% if flt == 'rejected' %}on{% endif %}">Rejected<b>{{ counts.rejected }}</b></a>
+</div>
+<div class="card"><div class="tablewrap"><table>
+  <thead><tr><th>Customer</th><th>Rating</th><th>Review</th><th>Submitted</th><th>Actions</th></tr></thead><tbody>
+  {% for r in reviews %}
+    <tr><td><b>{{ r.display_name }}</b>{% if r.is_verified %} <span class="pill buy">verified</span>{% endif %}<br><span class="muted">{{ r.user.email }}</span></td>
+      <td class="stars">{% for i in "12345" %}{% if forloop.counter <= r.rating %}&#9733;{% else %}&#9734;{% endif %}{% endfor %}</td>
+      <td style="max-width:420px;white-space:normal">{{ r.text }}</td>
+      <td class="muted" style="white-space:nowrap">{{ r.created|date:"M d, Y H:i" }}</td>
+      <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+        {% if r.status != 'approved' %}<form method="post" action="{% url 'staff_review_action' r.id %}">{% csrf_token %}<input type="hidden" name="action" value="approve"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn primary small">Approve</button></form>{% endif %}
+        {% if r.status != 'rejected' %}<form method="post" action="{% url 'staff_review_action' r.id %}">{% csrf_token %}<input type="hidden" name="action" value="reject"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn ghost small">Reject</button></form>{% endif %}
+        <form method="post" action="{% url 'staff_review_action' r.id %}" data-confirm="Delete this review?" data-confirm-title="Delete review" data-confirm-detail="It is removed for good." data-confirm-ok="Delete" data-confirm-danger>{% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="next" value="{{ request.get_full_path }}"><button class="btn ghost small">Delete</button></form>
+      </div></td></tr>
+  {% empty %}<tr><td colspan="5" class="empty">No {{ flt }} reviews.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% include "staff/_pager.html" %}
+</div>
+{% endblock %}

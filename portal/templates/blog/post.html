@@ -24,6 +24,7 @@
 {% block site %}
 <div class="wrap">
   <article class="art">
+    <nav class="crumbs-b" aria-label="Breadcrumb" style="font-size:12.5px;color:var(--muted);margin-bottom:10px"><a href="{% url 'landing' %}">Home</a> / <a href="{% url 'blog' %}">Blog</a>{% if p.category %} / <a href="{% url 'blog_category' p.category.slug %}">{{ p.category.name }}</a>{% endif %} / <span>{{ p.title|truncatechars:50 }}</span></nav>
     <div class="kicker"><a href="{% url 'blog' %}" style="color:inherit">Blog</a>{% if p.category %} · <a href="{% url 'blog_category' p.category.slug %}" style="color:inherit">{{ p.category.name }}</a>{% endif %}</div>
     <h1>{{ p.title }}</h1>
     <div class="ameta"><span>{{ p.author_name|default:SITE_NAME }}</span><span>{{ p.published_at|date:"F d, Y" }}</span><span>{{ p.reading_minutes }} min read</span>{% if not p.published %}<span class="a">DRAFT PREVIEW</span>{% endif %}</div>

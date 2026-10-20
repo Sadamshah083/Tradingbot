@@ -1,29 +1,55 @@
-<section class="s rv" id="contact">
+<section class="s contactpage" id="contact" aria-labelledby="contact-title">
+  <style>
+    .contactpage>.kicker,.contactpage>h2,.contactpage>.sub{display:none !important}
+    .c-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:20px;max-width:1040px;margin:0 auto;text-align:left;align-items:start}
+    @media(max-width:860px){.c-grid{grid-template-columns:1fr}}
+    .c-card{padding:24px 26px;border-radius:18px}
+    .c-card h2,.c-card h3{text-align:left;margin:0 0 6px;font-size:20px;max-width:none}
+    .c-form label{display:block;margin:14px 0 6px;font-size:13px;font-weight:700;color:var(--muted)}
+    .c-form label .req{color:#FF9B94;margin-left:3px} .c-form label .opt{font-weight:500;opacity:.7;margin-left:4px}
+    .c-form input,.c-form textarea{width:100%;padding:12px 14px;border-radius:12px;font:inherit;font-size:15px}
+    .c-form textarea{min-height:150px;resize:vertical}
+    .c-form .err{margin:6px 0 0;color:#FF9B94;font-size:13px}
+    .c-form [aria-invalid="true"]{border-color:rgba(255,107,98,.7)}
+    .c-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+    .c-ok{padding:18px 20px;border-radius:14px;border:1px solid rgba(182,255,46,.5);background:rgba(182,255,46,.08);margin-bottom:16px}
+    .c-ok b{display:block;color:#fff;font-size:16px;margin-bottom:4px}
+    .c-alert{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,107,98,.5);background:rgba(255,107,98,.08);color:#FFB4AE;margin-bottom:12px;font-size:14px}
+    .c-side ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.8}
+  </style>
   <div class="kicker">Contact</div>
-  <h2>Have a question about Sambot?</h2>
-  <p class="sub">Tell us what you are trying to understand and we will help with the platform, setup or documentation.</p>
-  <div class="plans-mid" style="max-width:720px">
-    <div class="panel mid-card" style="padding:32px">
-      <h3 style="margin:0 0 12px;font-size:20px;color:#fff">We can assist with</h3>
-      <ul class="check-list">
-        <li>account access;</li>
-        <li>TradingView connection;</li>
-        <li>webhook setup;</li>
-        <li>paper mode;</li>
-        <li>dashboard functionality;</li>
-        <li>supported Binance integration;</li>
-        <li>supported MT5 integration;</li>
-        <li>platform settings;</li>
-        <li>backtest information; and</li>
-        <li>billing.</li>
-      </ul>
-      {% if SUPPORT_EMAIL %}
-      <a class="btn primary" href="mailto:{{ SUPPORT_EMAIL }}" style="margin-top:20px">Contact Sambot Support</a>
-      <p class="muted" style="margin:14px 0 0">{{ SUPPORT_EMAIL }}</p>
+  <h2 id="contact-title">Contact SamBot support</h2>
+  <p class="sub">Questions about setup, billing or the platform? Send a message and we will reply to the e-mail address you give. For a faster answer, signed-in customers can use the 24/7 chat.</p>
+  <div class="c-grid">
+    <div class="panel c-card">
+      {% if sent %}
+      <div class="c-ok" role="status"><b>Thank you, your message was received.</b>We will reply to the e-mail address you provided as soon as we can.</div>
+      <a class="btn ghost" href="{% url 'site_contact' %}">Send another message</a>
       {% else %}
-      <a class="btn primary" href="{% url 'register' %}" style="margin-top:20px">Create an account to open live chat</a>
+      <h3>Send us a message</h3>
+      <p class="muted" style="margin:0 0 4px;font-size:13px"><span style="color:#FF9B94">*</span> Required. No phone number needed.</p>
+      {% if errors.form %}<div class="c-alert" role="alert">{{ errors.form }}</div>{% endif %}
+      <form method="post" class="c-form" novalidate action="{% url 'site_contact' %}#contact">{% csrf_token %}
+        <div class="c-hp" aria-hidden="true"><label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+        <label for="c-name">Name <span class="opt">(optional)</span></label>
+        <input id="c-name" name="name" maxlength="80" value="{{ values.name }}" autocomplete="name">
+        <label for="c-email">E-mail <span class="req" aria-hidden="true">*</span></label>
+        <input id="c-email" name="email" type="email" required maxlength="254" value="{{ values.email }}" autocomplete="email" aria-describedby="c-email-e" {% if errors.email %}aria-invalid="true"{% endif %}>
+        {% if errors.email %}<p class="err" id="c-email-e" role="alert">{{ errors.email }}</p>{% endif %}
+        <label for="c-subject">Subject <span class="opt">(optional)</span></label>
+        <input id="c-subject" name="subject" maxlength="120" value="{{ values.subject }}">
+        <label for="c-message">Message <span class="req" aria-hidden="true">*</span></label>
+        <textarea id="c-message" name="message" required maxlength="3000" aria-describedby="c-message-e" {% if errors.message %}aria-invalid="true"{% endif %}>{{ values.message }}</textarea>
+        {% if errors.message %}<p class="err" id="c-message-e" role="alert">{{ errors.message }}</p>{% endif %}
+        <button class="btn primary" type="submit" style="margin-top:18px">Send message</button>
+      </form>
       {% endif %}
-      <p class="fine" style="margin-top:18px;max-width:none">For questions involving personal investment decisions, consider speaking with an appropriately qualified financial professional.</p>
     </div>
+    <aside class="panel c-card c-side" aria-label="What we can help with">
+      <h3>We can help with</h3>
+      <ul><li>account access and passwords</li><li>connecting TradingView alerts and webhooks</li><li>paper mode and risk settings</li><li>the MT5 bridge and Binance connection</li><li>billing and signal credits</li><li>how the backtests were produced</li></ul>
+      <p class="muted" style="margin:16px 0 0;font-size:13px">Looking for a quick answer? Read the <a href="{% url 'site_faq' %}">FAQ</a> or <a href="{% url 'site_how' %}">how SamBot works</a>.</p>
+      <p class="muted" style="margin:12px 0 0;font-size:12.5px">For questions about personal investment decisions, speak with a qualified financial professional.</p>
+    </aside>
   </div>
 </section>
