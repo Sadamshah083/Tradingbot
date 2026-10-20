@@ -15,11 +15,13 @@ from django.views.decorators.http import require_GET, require_POST
 
 from accounts.models import Profile
 
+from . import health
 from .markets import MARKETS, TIMEFRAMES, all_status
 from .models import BROKERS, MODES, BotEvent, BotSettings, BrokerConnection, Execution
 
 User = get_user_model()
-staff_required = user_passes_test(lambda u: u.is_superuser, login_url="admin_login")
+from accounts.roles import admin_required as staff_required  # noqa: E402  (superadmin and the admin role)
+from accounts.roles import superadmin_required  # noqa: E402
 
 
 def _f(v, default):
@@ -90,6 +92,7 @@ def dashboard(request):
         "access_days": settings.BOT_ACCESS_DAYS, "tv_url": settings.TRADINGVIEW_STRATEGY_URL,
         "events": BotEvent.objects.filter(user=request.user)[:12], "stats": stats_for(request.user), "markets": all_status(),
         "MARKETS": MARKETS, "TIMEFRAMES": TIMEFRAMES, "BROKERS": BROKERS, "MODES": MODES,
+        "mt5": _mt5_card(conns.get("exness"), bot),
         "webhook_url": f"{webhook_base}/webhook/u/{bot.webhook_token}",
         "example_json": json.dumps({"secret": bot.webhook_token, "event": "signal", "symbol": "BTCUSD", "side": "buy", "tf": "60",
                                     "price": 65000, "sl": 64200, "tp2": 66600, "id": "{{time}}"}, indent=2),
@@ -304,3 +307,96 @@ def staff_bot_action(request, user_id):
         n = BotSettings.objects.filter(enabled=True).update(kill_switch=True, enabled=False)
         messages.warning(request, f"Emergency stop set on {n} bot(s).")
     return redirect("staff_bots")
+
+
+# -- verified MT5 connection monitoring ----------------------------------------------------
+def _mt5_card(conn, bot):
+    """What the customer sees for MT5: one state, the separate checks, the last contact and a short safe error."""
+    if not conn:
+        return {"state": "not_configured", "label": health.STATE_LABELS["not_configured"], "pill": "exit", "checks": [], "ready": False, "last_heartbeat": None, "error": ""}
+    st = health.state(conn)
+    r = health.readiness(conn, bot)
+    return {"state": st, "label": health.STATE_LABELS[st], "pill": "buy" if st == "connected" else ("exit" if st in ("not_configured", "connecting") else "sell"),
+            "conn_id": conn.id, "checks": r["checks"], "ready": r["ready"], "last_heartbeat": conn.last_heartbeat,
+            "error": conn.last_error, "login": health.login_masked(conn), "server": conn.decrypted().get("server", ""), "mode": conn.account_mode}
+
+
+@csrf_exempt
+@require_POST
+def api_heartbeat(request):
+    """Called every ~30 s by the customer's MT5 bridge. Authenticated by connection id + that connection's own bridge token."""
+    cid = request.headers.get("X-Connection-Id", "")
+    token = request.headers.get("X-Bridge-Token", "")
+    conn = BrokerConnection.objects.filter(pk=int(cid), broker="exness").first() if cid.isdigit() else None
+    secret = conn.decrypted().get("api_secret", "") if conn else ""
+    if not conn or not secret or not hmac.compare_digest(token, secret):
+        return JsonResponse({"ok": False, "error": "unauthorized"}, status=401)     # same answer whether the id exists or not
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "body must be JSON"}, status=400)
+    before = (health.state(conn), conn.error_code)
+    health.apply_heartbeat(conn, payload)
+    after = (health.state(conn), conn.error_code)
+    if after != before and after[0] in ("auth_failed", "degraded", "connected"):
+        _event(conn.user, "broker", f"MT5 {health.STATE_LABELS[after[0]].lower()}" + (f": {conn.last_error}" if conn.last_error else ""))
+    return JsonResponse({"ok": True, "state": after[0], "interval": 30})
+
+
+@staff_required
+def staff_connections(request):
+    """Every customer with their MT5 connection state, entitlement and latest signal delivery. Filterable and searchable."""
+    from django.core.paginator import Paginator
+    from django.db.models import Exists, OuterRef
+
+    from orders.models import Order
+    from signals.models import SignalDelivery
+    from signals.services import signal_status
+
+    q = request.GET.get("q", "").strip()
+    flt = request.GET.get("filter", "all")
+    customers = (User.objects.filter(is_superuser=False).exclude(profile__role__in=["agent", "admin"]).select_related("profile")
+                 .annotate(paid_order=Exists(Order.objects.filter(user=OuterRef("pk"), status="paid"))).order_by("-date_joined"))
+    if q:
+        customers = customers.filter(Q(username__icontains=q) | Q(email__icontains=q))
+    conns = {}
+    for cn in BrokerConnection.objects.filter(broker="exness"):
+        conns.setdefault(cn.user_id, []).append(cn)
+    bots = {b.user_id: b for b in BotSettings.objects.all()}
+    latest = {}
+    for d in SignalDelivery.objects.select_related("signal").order_by("-created")[:2000]:
+        latest.setdefault(d.user_id, d)
+    rows = []
+    for u in customers:
+        prof = u.profile
+        paid = bool(prof.bot_active_access or prof.credits > 0 or u.paid_order)
+        ent = " · ".join(x for x in ((f"bot until {prof.bot_access_until:%b %d}" if prof.bot_active_access else ""),
+                                      (f"{prof.credits} signal credits" if prof.credits else ""), ("paid order" if u.paid_order and not prof.bot_active_access and not prof.credits else "")) if x) or "Unpaid"
+        d = latest.get(u.id)
+        last_sig = (f"{d.signal.event} {d.signal.symbol} · {signal_status(d.signal)} · " + ("read" if d.read_at else ("acknowledged" if d.acknowledged_at else "delivered"))) if d else "none yet"
+        base = {"user": u, "paid": paid, "entitlement": ent, "credits": prof.credits, "last_signal": last_sig}
+        for cn in (conns.get(u.id) or [None]):
+            if cn is None:
+                rows.append({**base, "conn": None, "state": "not_configured", "label": health.STATE_LABELS["not_configured"], "ready": False, "checks": []})
+                continue
+            st = health.state(cn)
+            rd = health.readiness(cn, bots.get(u.id))
+            rows.append({**base, "conn": cn, "state": st, "label": health.STATE_LABELS[st], "ready": rd["ready"], "checks": rd["checks"],
+                         "login": health.login_masked(cn), "server": cn.decrypted().get("server", ""), "mode": cn.account_mode or "unknown"})
+    def match(r, f):
+        if f == "paid":
+            return r["paid"]
+        if f == "unpaid":
+            return not r["paid"]
+        if f == "connected":
+            return r["state"] == "connected"
+        if f == "disconnected":
+            return r["state"] in ("disconnected", "degraded", "connecting")
+        if f == "errors":
+            return r["state"] == "auth_failed" or bool(r["conn"] and r["conn"].last_error)
+        return True
+    counts = {k: sum(1 for r in rows if match(r, k)) for k in ("all", "paid", "unpaid", "connected", "disconnected", "errors")}
+    rows = [r for r in rows if match(r, flt)]
+    page = Paginator(rows, 25).get_page(request.GET.get("page"))
+    return render(request, "staff/connections.html", {"rows": page, "page": page, "q": q, "flt": flt, "counts": counts, "section": "connections", "hide_nav": True,
+                                                    "fresh": settings.MT5_HEARTBEAT_FRESH_SECONDS, "stale": settings.MT5_HEARTBEAT_STALE_SECONDS})

@@ -70,9 +70,9 @@ class Profile(models.Model):
 
     def add_credits(self, n: int) -> None:
         n = max(0, int(n))
-        self.credits += n
-        self.purchased += n
-        self.save(update_fields=["credits", "purchased"])
+        from django.db.models import F
+        type(self).objects.filter(pk=self.pk).update(credits=F("credits") + n, purchased=F("purchased") + n)   # atomic: safe against a concurrent delivery
+        self.refresh_from_db(fields=["credits", "purchased"])
 
 
 class CreditLog(models.Model):

@@ -1,0 +1,73 @@
+{# Customer signal table. Rows come only from this user's own SignalDelivery records (json_script below). Context: signal_rows, locked (bool), price_signal #}
+<div class="tablewrap">
+  <table id="signals">
+    <thead><tr><th>ID</th><th>Instrument</th><th>Direction</th><th>TF</th><th>Entry</th><th>Stop-loss</th><th>Take-profit</th><th>Received</th><th>Expires</th><th>Status</th><th>Read</th></tr></thead>
+    <tbody id="signals-body"><tr id="empty-row"><td colspan="11" class="empty">No signals received yet.<br><span class="muted" style="font-size:12.5px">{% if locked %}Signals are delivered only to accounts with signal credits ({{ PRICE_SIGNAL }} USD per signal). <a href="{% url 'checkout' 'signals' %}">Buy credits</a>.{% else %}New signals appear here the moment they arrive, and nothing is shown that has not been delivered to your account.{% endif %}</span></td></tr></tbody>
+  </table>
+</div>
+{{ signal_rows|json_script:"signal-data" }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {   // runs after the layout has defined window.fmtTime / csrfToken
+  const body = document.getElementById('signals-body');
+  let rows = JSON.parse(document.getElementById('signal-data').textContent) || [];
+  let after = rows.reduce((m, r) => Math.max(m, r.id), 0);
+  const NP = '<span class="muted" style="white-space:nowrap;font-size:12px" title="This field was not included in the signal">Not provided</span>';
+  const csrf = () => window.csrfToken;
+  const num = v => v === null || v === undefined ? NP : String(v);
+  const fmt = iso => iso ? window.fmtTime(iso) : '—';
+  const post = (url, ids) => fetch(url, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf()}, body: JSON.stringify({ids})}).catch(() => {});
+
+  function statusOf(r) { return r.status === 'active' && r.expires && Date.now() > Date.parse(r.expires) ? 'expired' : r.status; }
+  const LABEL = {active: 'Active', expired: 'Expired', closed: 'Closed', exit: 'Exit notice'};
+
+  function td(html, cls) { const c = document.createElement('td'); if (cls) c.className = cls; c.innerHTML = html; return c; }
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[ch]));
+
+  function build(r) {
+    const tr = document.createElement('tr'); tr.dataset.id = r.id;
+    const st = statusOf(r);
+    const dir = r.event === 'signal' ? `<span class="pill ${esc(r.side)}">${esc((r.side || '').toUpperCase()) || NP}</span>` : `<span class="pill exit">EXIT</span>`;
+    tr.append(
+      td('#' + r.signal_id, 'mono muted'),
+      td(esc(r.symbol)),
+      td(dir),
+      td(esc(r.tf) || NP),
+      td(num(r.price), 'mono'), td(num(r.sl), 'mono bad'), td(num(r.tp2 ?? r.tp1), 'mono good'),
+      td(fmt(r.received), 'muted'),
+      td(r.event === 'exit' ? '—' : (r.expires ? fmt(r.expires) : NP), 'muted'),
+      td(`<span class="pill ${st === 'active' ? 'buy' : (st === 'expired' ? 'sell' : 'exit')}">${LABEL[st] || esc(st)}</span>${r.event === 'exit' && r.reason ? ' <span class="muted">' + esc(r.reason) + '</span>' : ''}`)
+    );
+    const rd = document.createElement('td');
+    if (r.read) { rd.className = 'muted'; rd.textContent = 'Read'; }
+    else { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ghost small'; b.textContent = 'Mark read';
+      b.addEventListener('click', () => { b.disabled = true; post("{% url 'signal_read' %}", [r.id]).then(() => { r.read = true; rd.className = 'muted'; rd.textContent = 'Read'; }); }); rd.appendChild(b); }
+    tr.appendChild(rd);
+    return tr;
+  }
+  function paint() {
+    body.textContent = '';
+    if (!rows.length) {
+      const tr = document.createElement('tr'); tr.id = 'empty-row'; tr.innerHTML = '<td colspan="11" class="empty">No signals received yet.</td>'; body.appendChild(tr); return;
+    }
+    [...rows].sort((a, b) => Date.parse(b.received) - Date.parse(a.received) || b.id - a.id).forEach(r => body.appendChild(build(r)));
+  }
+  paint();
+  const unacked = rows.filter(r => !r.acknowledged).map(r => r.id);
+  if (unacked.length) post("{% url 'signal_ack' %}", unacked);
+
+  async function poll() {
+    try {
+      const r = await fetch("{% url 'signal_feed' %}?after=" + after, {credentials: 'same-origin'});
+      if (!r.ok) return; const d = await r.json();
+      const cr = document.getElementById('credits'); if (cr && typeof d.credits === 'number') cr.textContent = d.credits;
+      const fresh = d.items.filter(it => !rows.some(x => x.id === it.id));
+      d.items.forEach(it => { after = Math.max(after, it.id); });
+      if (fresh.length) { rows = rows.concat(fresh); paint(); post("{% url 'signal_ack' %}", fresh.map(x => x.id)); }
+      if (d.items.length >= 50) poll();   // more waiting after a long offline period
+    } catch (e) { /* offline: the next tick fetches everything that was missed */ }
+  }
+  setInterval(poll, 5000);
+  setInterval(paint, 60000);   // keeps Expired status current
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+});
+</script>

@@ -9,6 +9,7 @@ Setup (once, ~10 minutes)
   2. Install Python 3.11+ from python.org (tick "Add to PATH").
   3. In this folder:  pip install -r requirements.txt
   4. Copy config.example.json to config.json and fill: login, password, server (e.g. "Exness-MT5Real"), token (any long random text).
+  5b. Add "server_url" and "connection_id" (shown on Sambot -> My bot -> Exness) so the bridge can report its live status.
   5. Run:  python bridge.py        -> "bridge listening on http://0.0.0.0:5055"
   6. Make it reachable from the internet (router port-forward 5055, or a VPS public IP, or a Cloudflare/ngrok tunnel),
      then paste the URL and the token into Sambot -> My bot -> Exness.
@@ -22,7 +23,9 @@ Endpoints (all require header  X-Bridge-Token: <token>)
 """
 import json
 import sys
+import threading
 import time
+import urllib.request
 from pathlib import Path
 
 try:
@@ -39,6 +42,45 @@ app = Flask(__name__)
 def connect():
     if not mt5.initialize(login=int(CFG["login"]), password=CFG["password"], server=CFG["server"]):
         raise RuntimeError(f"MT5 initialize failed: {mt5.last_error()}")
+
+
+def heartbeat_payload():
+    """Facts the Sambot server needs to verify this connection. The MT5 password is never included."""
+    code, err = "", ""
+    info = mt5.terminal_info()
+    acc = mt5.account_info() if info is not None else None
+    if info is None or acc is None:                      # terminal restarted or logged out: try to recover, and report why if not
+        try:
+            connect()
+            info, acc = mt5.terminal_info(), mt5.account_info()
+        except Exception as exc:
+            last = mt5.last_error()
+            code = "auth_failed" if isinstance(last, tuple) and last and last[0] in (-6, -2) else "terminal_disconnected"
+            err = ("Authorization failed" if code == "auth_failed" else "Terminal not connected") + f" ({last[0] if isinstance(last, tuple) and last else 'n/a'})"
+    connected = bool(info is not None and info.connected and acc is not None)
+    return {
+        "terminal_connected": connected, "login": acc.login if acc else None, "server": acc.server if acc else None,
+        "trade_allowed": bool(acc is not None and acc.trade_allowed and info is not None and info.trade_allowed),
+        "trade_mode": {0: "demo", 1: "contest", 2: "real"}.get(acc.trade_mode) if acc else None,
+        "balance": acc.balance if acc else None, "equity": acc.equity if acc else None, "error_code": code, "error": err,
+    }
+
+
+def heartbeat_loop():
+    """Tell the Sambot server every ~30 s what this bridge can really see. Without this the server shows Connecting/Disconnected."""
+    url, cid = CFG.get("server_url", "").rstrip("/"), CFG.get("connection_id")
+    if not url or not cid:
+        print("heartbeat disabled: add server_url and connection_id to config.json (shown on Sambot -> My bot -> Exness)")
+        return
+    while True:
+        try:
+            req = urllib.request.Request(f"{url}/bot/api/heartbeat/", data=json.dumps(heartbeat_payload()).encode(),
+                                         headers={"Content-Type": "application/json", "X-Connection-Id": str(cid), "X-Bridge-Token": CFG["token"]})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                r.read()
+        except Exception as exc:                          # the server being unreachable must not stop the bridge
+            print(f"heartbeat failed: {exc}")
+        time.sleep(int(CFG.get("heartbeat_seconds", 30)))
 
 
 def auth():
@@ -121,7 +163,11 @@ def close():
 
 
 if __name__ == "__main__":
-    connect()
-    print(f"connected to MT5 account {CFG['login']} on {CFG['server']}")
+    threading.Thread(target=heartbeat_loop, daemon=True).start()
+    try:
+        connect()
+        print(f"connected to MT5 account {CFG['login']} on {CFG['server']}")
+    except RuntimeError as exc:                           # keep running: the heartbeat reports the problem to Sambot and retries
+        print(f"not connected yet: {exc}")
     print(f"bridge listening on http://0.0.0.0:{CFG.get('port', 5055)}  (token required)")
     app.run(host="0.0.0.0", port=int(CFG.get("port", 5055)))

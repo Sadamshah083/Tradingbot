@@ -11,6 +11,7 @@ from django.utils import timezone
 from chat.models import Message
 from orders.models import Order
 from signals.models import SignalDelivery
+from signals.services import delivery_row
 
 from .forms import LoginForm, RegisterForm
 from .models import Profile
@@ -489,7 +490,7 @@ def dashboard(request):
     latest = Message.objects.filter(customer=request.user).order_by("-created")[:3]
     orders = Order.objects.filter(user=request.user).order_by("-created")[:5]
     return render(request, "accounts/dashboard.html", {
-        "profile": profile, "deliveries": deliveries, "latest_chat": latest, "orders": orders,
+        "profile": profile, "signal_rows": [delivery_row(d) for d in deliveries], "latest_chat": latest, "orders": orders,
         "last_delivery_id": deliveries[0].id if deliveries else 0, "noindex": True,
     })
 

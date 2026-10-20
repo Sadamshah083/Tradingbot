@@ -70,16 +70,7 @@
 <div class="grid g2" style="margin-top:16px;grid-template-columns:1.6fr 1fr">
   <div class="card">
     <h2>Your signals {% if not profile.credits %}<span class="pill sell" style="margin-left:6px">locked · 0 credits</span>{% endif %}</h2>
-    <div class="tablewrap"><table id="signals"><thead><tr><th>Time</th><th>Signal</th><th>Entry</th><th>Stop</th><th>Target</th><th>Credits</th></tr></thead>
-    <tbody>
-    {% for d in deliveries %}
-      <tr><td class="muted">{{ d.created|date:"M d, H:i" }}</td>
-        <td>{% if d.signal.event == 'signal' %}<span class="pill {{ d.signal.side }}">{{ d.signal.side|upper }} {{ d.signal.symbol }} {{ d.signal.timeframe }}</span>{% else %}<span class="pill exit">EXIT {{ d.signal.symbol }} · {{ d.signal.reason }}</span>{% endif %}</td>
-        <td class="mono">{{ d.signal.price|default_if_none:"—" }}</td><td class="mono bad">{{ d.signal.sl|default_if_none:"—" }}</td><td class="mono good">{{ d.signal.tp2|default_if_none:"—" }}</td><td class="muted">{{ d.credits_after }}</td></tr>
-    {% empty %}
-      <tr id="empty-row"><td colspan="6" class="empty">{% if profile.credits %}No signals yet. The next gold 1h setup will show up here automatically.{% else %}Pay ${{ PRICE_SIGNAL }} per signal to unlock delivery — <a href="{% url 'checkout' 'signals' %}">buy credits</a>.{% endif %}</td></tr>
-    {% endfor %}
-    </tbody></table></div>
+    {% include "signals/_table.html" with locked=profile.credits|yesno:",1" %}
   </div>
   <div class="card">
     <h2>Live chat</h2>
@@ -88,27 +79,4 @@
   </div>
 </div>
 {% endblock %}
-{% block scripts %}
-<script>
-  let after = {{ last_delivery_id }};
-  const tbody = document.querySelector('#signals tbody');
-  async function poll() {
-    try {
-      const r = await fetch(`{% url 'signal_feed' %}?after=${after}`, {credentials: 'same-origin'});
-      if (!r.ok) return;
-      const data = await r.json();
-      document.getElementById('credits').textContent = data.credits;
-      for (const it of data.items) {
-        after = Math.max(after, it.id);
-        const empty = document.getElementById('empty-row'); if (empty) empty.remove();
-        const tr = document.createElement('tr');
-        const pill = it.event === 'signal' ? `<span class="pill ${it.side}">${it.side.toUpperCase()} ${it.symbol} ${it.tf}</span>` : `<span class="pill exit">EXIT ${it.symbol} · ${it.reason || ''}</span>`;
-        tr.innerHTML = `<td class="muted">${fmtTime(it.time)}</td><td>${pill}</td><td class="mono">${it.price ?? '—'}</td><td class="mono bad">${it.sl ?? '—'}</td><td class="mono good">${it.tp2 ?? '—'}</td><td class="muted">${it.credits_after}</td>`;
-        tbody.prepend(tr);
-        tr.style.background = 'rgba(45,212,191,.12)'; setTimeout(() => tr.style.background = '', 2500);
-      }
-    } catch (e) { /* offline; try again next tick */ }
-  }
-  setInterval(poll, 5000);
-</script>
-{% endblock %}
+{% block scripts %}{% endblock %}

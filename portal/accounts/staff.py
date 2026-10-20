@@ -13,7 +13,7 @@ from django.views.decorators.http import require_POST
 from chat.models import Message
 from orders.models import Order
 from signals.models import Signal, SignalDelivery
-from signals.services import active_signals, deliver
+from signals.services import active_signals, default_expiry, deliver
 
 from . import botlink
 from .models import CreditLog, Profile
@@ -132,8 +132,14 @@ def customers(request):
         "tv_pending": Profile.objects.exclude(tradingview_username="").filter(tv_access_granted=False, user__is_superuser=False).count(),
     }
     page = paginate(request, users)
+    from bots import health
+    from bots.models import BrokerConnection
+    mt5 = {cn.user_id: cn for cn in BrokerConnection.objects.filter(broker="exness", user__in=[u.id for u in page])}
     for u in page:
         u.spent = spent.get(u.id, 0)
+        cn = mt5.get(u.id)
+        u.mt5_state = health.state(cn) if cn else "not_configured"
+        u.mt5_label = health.STATE_LABELS[u.mt5_state]
     return render(request, "staff/customers.html", _ctx("customers", users=page, page=page, q=q, flt=flt, stats=stats))
 
 
@@ -249,7 +255,8 @@ def signal_create(request):
         return redirect("staff_signals")
     sig = Signal.objects.create(event="signal", side=side, symbol=symbol, timeframe=request.POST.get("tf", "").strip()[:8],
                                 strategy="manual", price=price, sl=sl, tp1=_f(request.POST.get("tp1")), tp2=tp, source="admin",
-                                external_id=f"admin|{secrets.token_hex(6)}", raw={"note": request.POST.get("note", "")[:200]})
+                                external_id=f"admin|{secrets.token_hex(6)}", raw={"note": request.POST.get("note", "")[:200]},
+                                expires_at=default_expiry())
     n = deliver(sig)
     messages.success(request, f"Signal {side.upper()} {symbol} sent to {n} paying customer{'s' if n != 1 else ''} (1 credit each).")
     return redirect("staff_signals")

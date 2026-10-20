@@ -20,6 +20,7 @@ class Signal(models.Model):
     source = models.CharField(max_length=16, default="bot", help_text="bot = forwarded from TradingView, admin = typed in by the owner")
     closed = models.BooleanField(default=False, help_text="Marked closed by the owner (or superseded by an exit event).")
     result = models.CharField(max_length=16, blank=True, help_text="Optional outcome noted by the owner: tp / sl / be / manual")
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="After this moment a \"signal\" is stale and must not trigger anything.")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -45,6 +46,8 @@ class SignalDelivery(models.Model):
     charged = models.BooleanField(default=False)
     credits_after = models.IntegerField(default=0)
     telegram_sent = models.BooleanField(default=False)
+    acknowledged_at = models.DateTimeField(null=True, blank=True, help_text="The user's dashboard confirmed it received and displayed this delivery.")
+    read_at = models.DateTimeField(null=True, blank=True, help_text="Set only when the user explicitly marks it as read.")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

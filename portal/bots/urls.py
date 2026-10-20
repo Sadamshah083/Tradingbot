@@ -12,4 +12,6 @@ urlpatterns = [
     path("api/tenants/", views.api_tenants, name="bot_api_tenants"),
     path("api/execution/", views.api_execution, name="bot_api_execution"),
     path("api/connection/", views.api_connection, name="bot_api_connection"),
+    path("api/heartbeat/", views.api_heartbeat, name="bot_api_heartbeat"),
+    path("staff/connections/", views.staff_connections, name="staff_connections"),
 ]

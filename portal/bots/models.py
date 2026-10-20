@@ -98,6 +98,15 @@ class BrokerConnection(models.Model):
     balance = models.FloatField(null=True, blank=True)
     equity = models.FloatField(null=True, blank=True)
     last_checked = models.DateTimeField(null=True, blank=True)
+    # live health reported by the MT5 bridge (see bots/health.py): only a fresh, authenticated heartbeat proves a connection
+    last_heartbeat = models.DateTimeField(null=True, blank=True)
+    terminal_connected = models.BooleanField(default=False, help_text="The MT5 terminal is logged in to the broker.")
+    identity_verified = models.BooleanField(default=False, help_text="The account the terminal reports matches the login saved here.")
+    trade_allowed = models.BooleanField(default=False, help_text="The account and terminal permit automated trading.")
+    account_mode = models.CharField(max_length=8, blank=True, help_text="demo / real / contest, as reported by the terminal.")
+    reported_login = models.CharField(max_length=24, blank=True)
+    reported_server = models.CharField(max_length=60, blank=True)
+    error_code = models.CharField(max_length=24, blank=True, help_text="auth_failed / terminal_disconnected / account_mismatch / other")
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

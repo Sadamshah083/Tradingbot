@@ -122,6 +122,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator", "OPTIONS": {"min_length": 8}},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
 ]
+# Signals: how long a "signal" event stays actionable, and how fresh an MT5 bridge heartbeat must be to count as live.
+SIGNAL_TTL_MINUTES = int(os.getenv("SIGNAL_TTL_MINUTES", "90"))
+MT5_HEARTBEAT_FRESH_SECONDS = int(os.getenv("MT5_HEARTBEAT_FRESH_SECONDS", "90"))    # newer than this: live
+MT5_HEARTBEAT_STALE_SECONDS = int(os.getenv("MT5_HEARTBEAT_STALE_SECONDS", "300"))   # older than this: disconnected
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "landing"

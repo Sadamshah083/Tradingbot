@@ -4,5 +4,8 @@
   "server": "Exness-MT5Real",
   "token": "paste-a-long-random-text-here-and-also-into-sambot",
   "port": 5055,
+  "server_url": "https://sambot.aktechsolutions.tech",
+  "connection_id": 0,
+  "heartbeat_seconds": 30,
   "symbols": {"XAUUSD": "XAUUSDm", "BTCUSD": "BTCUSDm"}
 }
