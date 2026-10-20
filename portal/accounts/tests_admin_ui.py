@@ -75,6 +75,9 @@ class SettingsTeam(TestCase):
         self.assertNotIn("cust@example.com", html)
         self.assertNotIn("pbkdf2_", html)
         self.assertNotIn(PW, html)
+        self.assertIn("••••••••••", html)      # password column is masked
+        self.assertIn('id="popReset"', html)
+        self.assertIn('id="popAdd"', html)
 
     def test_reset_password_shows_the_new_one_exactly_once(self):
         web_login(self.client, "owner")
@@ -95,7 +98,8 @@ class SettingsTeam(TestCase):
         self.assertEqual(u.profile.role, "agent")
         self.assertTrue(u.has_usable_password())
         html = self.client.get(reverse("staff_settings")).content.decode()
-        self.assertIn("New password for new@example.com", html)
+        self.assertIn("New password set", html)
+        self.assertIn("new@example.com", html)
 
     def test_admins_cannot_use_the_team_actions_and_superadmin_is_protected(self):
         web_login(self.client, "adm")

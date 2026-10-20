@@ -385,6 +385,8 @@ def settings_page(request):
     from django.conf import settings as dj
     team = (User.objects.filter(Q(is_superuser=True) | Q(profile__role__in=["admin", "agent"])).select_related("profile")
             .order_by("-is_superuser", "profile__role", "username"))
+    from django.core.paginator import Paginator
+    page = Paginator(team, 10).get_page(request.GET.get("page"))
     shown = request.session.pop("team_new_password", None)        # a new password is shown once, right after it is set
     system = [
         ("Public address", dj.SITE_URL), ("Superadmin e-mail", dj.SUPERADMIN_EMAIL or "not set"),
@@ -393,7 +395,7 @@ def settings_page(request):
         ("Webhook secret", "set" if dj.WEBHOOK_SECRET else "NOT SET"), ("Card payments (Stripe)", "enabled" if dj.STRIPE_ENABLED else "not configured"),
         ("Telegram alerts", "configured" if dj.TELEGRAM_BOT_TOKEN else "not configured"),
     ]
-    return render(request, "staff/settings.html", _ctx("settings", team=team, shown=shown, system=system))
+    return render(request, "staff/settings.html", _ctx("settings", team=page, page=page, shown=shown, system=system))
 
 
 @superadmin_required
