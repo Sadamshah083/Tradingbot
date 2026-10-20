@@ -106,7 +106,7 @@
   @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
 </style>
 {% block page_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=21">
+<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=24">
 {% endblock %}
 {% block content %}
 <div class="site {% block site_class %}{% endblock %}">
@@ -131,7 +131,7 @@
       <a class="btn primary small" href="{% url 'register' %}">Sign Up</a>
     {% endif %}
   </div>
-  <button class="burger" type="button" aria-label="Menu" aria-expanded="false" onclick="const u=document.getElementById('menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'))">Menu</button>
+  <button class="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false"><span class="bar"></span><span class="bar"></span><span class="bar"></span></button>
   <div class="mobile" id="menu">
     <a href="{% url 'landing' %}">Home</a>
     <a href="{% url 'site_how' %}">How it Works</a>
@@ -220,6 +220,20 @@
 {% endblock %}
 {% block scripts %}
 <script>
+
+  (function navMenu() {
+    const btn = document.querySelector('.burger'), menu = document.getElementById('menu');
+    if (!btn || !menu) return;
+    const set = open => {
+      menu.classList.toggle('open', open); btn.setAttribute('aria-expanded', open);
+      btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu'); document.documentElement.classList.toggle('menu-open', open);
+    };
+    btn.addEventListener('click', () => set(!menu.classList.contains('open')));
+    menu.addEventListener('click', e => { if (e.target.closest('a')) set(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
+    document.addEventListener('click', e => { if (menu.classList.contains('open') && !e.target.closest('#menu, .burger')) set(false); });
+    addEventListener('resize', () => { if (innerWidth > 980) set(false); });
+  })();
   document.querySelectorAll('#menu a, #menu button').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('menu'); if(m) m.classList.remove('open'); }));
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold: .12, rootMargin: '0px 0px -40px 0px'});
   document.querySelectorAll('.rv').forEach(el => io.observe(el));
