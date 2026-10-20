@@ -279,8 +279,10 @@
     </div>
   </section>
   <div class="statbar" aria-label="SamBot in numbers">
-    <div class="sbi"><b class="num" data-to="{{ stat_users }}">{{ stat_users }}</b><span>Registered users</span><small>Live count</small></div>
-    <div class="sbi"><b class="num" data-to="{{ stat_signals }}">{{ stat_signals }}</b><span>Signals delivered</span><small>Live count</small></div>
+    {% if stat_users >= 100 %}<div class="sbi"><b class="num" data-to="{{ stat_users }}">{{ stat_users }}</b><span>Registered users</span><small>Live count</small></div>
+    {% else %}<div class="sbi"><b id="sb-bars">&mdash;</b><span>Candles analysed</span><small>XAUUSD 1H &middot; 2024&ndash;2026 data</small></div>{% endif %}
+    {% if stat_signals >= 100 %}<div class="sbi"><b class="num" data-to="{{ stat_signals }}">{{ stat_signals }}</b><span>Signals delivered</span><small>Live count</small></div>
+    {% else %}<div class="sbi"><b id="sb-pf">&mdash;</b><span>Profit factor</span><small>Backtest &middot; historical, not live</small></div>{% endif %}
     <div class="sbi"><b id="sb-profit">&mdash;</b><span>Backtest profit</span><small>XAUUSD 1H &middot; historical, not live</small></div>
     <div class="sbi"><b id="sb-trades">&mdash;</b><span>Trades in backtest</span><small>Win rate <i id="sb-wr">&mdash;</i> &middot; historical</small></div>
   </div>
@@ -681,6 +683,32 @@
     }
   })();
 
+  (function marketBoard() {
+    const fmtP = v => Number(v).toLocaleString(undefined, {maximumFractionDigits: v > 1000 ? 0 : 2});
+    const ph = 'M0 34 L20 30 L40 33 L60 24 L80 27 L100 18 L120 21 L140 12 L160 14';
+    document.querySelectorAll('.mk-card[data-sym]').forEach(card => {
+      const sym = card.dataset.sym, line = card.querySelector('.line'), area = card.querySelector('.area');
+      line.setAttribute('d', ph); area.setAttribute('d', ph + ' L160 48 L0 48 Z');
+      Promise.all([
+        fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + '&interval=1h&limit=24').then(r => r.json()),
+        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + sym).then(r => r.json())
+      ]).then(([k, t]) => {
+        const cl = k.map(x => +x[4]), lo = Math.min(...cl), hi = Math.max(...cl), W = 160, H = 48, pad = 4;
+        const pts = cl.map((v, i) => [i * W / (cl.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / ((hi - lo) || 1))]);
+        const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
+        line.setAttribute('d', d); area.setAttribute('d', d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z');
+        const p = +t.priceChangePercent, chg = card.querySelector('.mk-chg');
+        chg.classList.toggle('up', p >= 0); chg.classList.toggle('dn', p < 0);
+        chg.firstElementChild.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+        card.querySelector('.mk-price').textContent = '$' + fmtP(+t.lastPrice);
+      }).catch(() => {
+        fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym).then(r => r.json()).then(t => {
+          card.querySelector('.mk-price').textContent = '$' + fmtP(+t.price);
+        }).catch(() => {});
+      });
+    });
+  })();
+
   function drawEq(svg, pts, W, H) {
     if (!svg || !pts || pts.length < 2) return;
     const P = {l: 4, r: 4, t: 10, b: 8};
@@ -708,6 +736,8 @@
     const tr = document.getElementById('h-tr'); if (tr) tr.textContent = g.trades.toLocaleString();
     const sbp = document.getElementById('sb-profit'); if (sbp) sbp.textContent = money(g.net);
     const sbt = document.getElementById('sb-trades'); if (sbt) sbt.textContent = g.trades.toLocaleString();
+    const sbb = document.getElementById('sb-bars'); if (sbb) sbb.textContent = (g.bars || 0).toLocaleString();
+    const sbf = document.getElementById('sb-pf'); if (sbf) sbf.textContent = fmt(g.profit_factor, 2);
     const sbw = document.getElementById('sb-wr'); if (sbw) sbw.textContent = fmt(g.win_rate, 1) + '%';
     const pNet = document.getElementById('p-net'); if (pNet) pNet.textContent = money(g.net);
     const pWr = document.getElementById('p-wr'); if (pWr) pWr.textContent = fmt(g.win_rate, 1) + '%';

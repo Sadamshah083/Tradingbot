@@ -10,13 +10,17 @@
 <meta property="og:site_name" content="{{ SITE_NAME }}">
 <meta property="og:image" content="{{ SITE_URL }}/static/img/logo.jpg">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ page_seo_title }}">
+<meta name="twitter:description" content="{{ page_meta }}">
+<meta name="robots" content="index,follow,max-image-preview:large">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
   {"@type":"WebPage","name":"{{ page_seo_title|escapejs }}","description":"{{ page_meta|escapejs }}","url":"{{ canonical }}","isPartOf":{"@type":"WebSite","name":"{{ SITE_NAME|escapejs }}","url":"{{ SITE_URL }}/"}},
   {"@type":"BreadcrumbList","itemListElement":[
     {"@type":"ListItem","position":1,"name":"Home","item":"{{ SITE_URL }}/"},
     {"@type":"ListItem","position":2,"name":"{{ page_kicker|escapejs }}","item":"{{ canonical }}"}
-  ]}
+  ]}{% if page_faqs %},
+  {"@type":"FAQPage","mainEntity":[{% for q, a in page_faqs %}{"@type":"Question","name":"{{ q|escapejs }}","acceptedAnswer":{"@type":"Answer","text":"{{ a|escapejs }}"}}{% if not forloop.last %},{% endif %}{% endfor %}]}{% endif %}
 ]}
 </script>
 {% endblock %}
@@ -93,6 +97,30 @@
   <div class="wrap page-body">
     {% include section_template %}
   </div>
+  {% if page_faqs %}
+  <section class="seo-extra" aria-labelledby="seo-faq"><div class="wrap">
+    <div class="seo-grid">
+      <div>
+        <h2 id="seo-faq">Common questions: {{ page_kicker }}</h2>
+        <div class="seo-faq">
+          {% for q, a in page_faqs %}
+          <details{% if forloop.first %} open{% endif %}><summary>{{ q }}</summary><p>{{ a }}</p></details>
+          {% endfor %}
+        </div>
+      </div>
+      {% if related_pages %}
+      <aside aria-label="Related pages">
+        <h2>Keep exploring</h2>
+        <ul class="seo-rel">
+          {% for r in related_pages %}
+          <li><a href="{{ r.url }}"><b>{{ r.title }}</b><span>{{ r.blurb|truncatewords:13 }}</span></a></li>
+          {% endfor %}
+        </ul>
+      </aside>
+      {% endif %}
+    </div>
+  </div></section>
+  {% endif %}
   {% if page_slug != 'disclaimer' %}
   <section class="page-cta"><div class="wrap">
     <h2>Ready to continue?</h2>

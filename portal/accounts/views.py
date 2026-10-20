@@ -224,6 +224,115 @@ SITE_PAGES = {
 }
 
 
+# Extra on-page SEO content: unique FAQs (also emitted as FAQPage JSON-LD) and internal links per page.
+PAGE_EXTRA = {
+    "how": {
+        "faqs": [
+            ("How does SamBot process a TradingView alert?", "A TradingView alert posts a message to your personal webhook. SamBot validates the message, applies your risk rules, and then records it in paper mode or passes it to a supported MT5 or Binance workflow. Every step is written to your activity log."),
+            ("Do I need to write code to use SamBot?", "No. You configure the alert message in TradingView and set your limits in the dashboard. Strategy source code is included for users who want to study or modify the rules."),
+            ("What happens if an alert is rejected?", "Rejected alerts are not silently dropped. The activity log records the reason, such as a daily loss limit, a maximum-positions limit or an invalid message, so you can adjust your setup."),
+        ],
+        "related": ["tradingview", "paper", "risk", "pricing"],
+    },
+    "tradingview": {
+        "faqs": [
+            ("What is a TradingView webhook?", "A webhook is an HTTP message that TradingView sends to a URL when your alert condition fires. SamBot gives each account its own webhook endpoint that receives those messages."),
+            ("Which TradingView plan do I need for webhooks?", "TradingView limits webhook alerts to certain paid plans. Check the current TradingView plan requirements before relying on webhook alerts."),
+            ("Can I test the webhook without placing trades?", "Yes. Start in paper mode, send test alerts, and confirm in the activity log that each message arrives and is interpreted the way you expect."),
+        ],
+        "related": ["how", "paper", "mt5", "binance"],
+    },
+    "paper": {
+        "faqs": [
+            ("What is paper trading?", "Paper trading simulates order execution without using real funds. It lets you check incoming alerts, position sizing and risk rules before connecting a trading account."),
+            ("Are paper trading results the same as live results?", "No. Live trading involves changing prices, spreads, fees, liquidity and slippage that a simulation can only approximate. Treat paper results as a workflow check, not a forecast."),
+            ("How long should I paper trade before going live?", "There is no universal answer. Many traders wait until they have reviewed enough signals to be confident in their alert format, sizing and limits under different market conditions."),
+        ],
+        "related": ["backtesting", "risk", "how", "performance"],
+    },
+    "backtesting": {
+        "faqs": [
+            ("What is a backtest?", "A backtest applies strategy rules to historical data to see how they would have behaved under stated assumptions. It is a research tool and does not predict future results."),
+            ("What costs are included in SamBot backtests?", "The published gold backtest states its assumptions, including spread and the data source. Always read the costs and period before relying on any result."),
+            ("Why do backtests differ from live trading?", "Live trading adds execution delay, slippage, changing spreads and platform differences. Compare backtests with paper activity before drawing conclusions."),
+        ],
+        "related": ["strategy-lab", "performance", "paper", "gold"],
+    },
+    "risk": {
+        "faqs": [
+            ("What risk controls does SamBot support?", "Configurable controls include a daily loss limit, a daily profit target, maximum open trades, a trailing stop and an emergency stop."),
+            ("Do risk controls guarantee I will not lose money?", "No. Controls help enforce your plan but cannot eliminate losses or guarantee execution at a particular price, especially in fast markets."),
+            ("How should I choose my limits?", "Base them on your own trading plan and account size, then test their behavior in paper mode before enabling live execution."),
+        ],
+        "related": ["paper", "how", "mt5", "binance"],
+    },
+    "markets": {
+        "faqs": [
+            ("Which markets does SamBot support?", "The current focus is gold (XAUUSD) and bitcoin, through supported MetaTrader 5 and Binance Futures workflows. Available instruments depend on your broker or exchange."),
+            ("Can I trade forex pairs or stocks?", "Availability depends on your broker, account configuration and the supported connection. Confirm your instruments are compatible before enabling automation."),
+            ("Where does the market data on the site come from?", "Reference prices shown on the home page come from public Binance market data and are for context only."),
+        ],
+        "related": ["gold", "bitcoin", "mt5", "binance"],
+    },
+    "gold": {
+        "faqs": [
+            ("How does SamBot handle gold (XAUUSD)?", "Supported TradingView gold alerts enter your SamBot workflow, where risk limits are applied before paper or supported live execution."),
+            ("Is XAUUSD the same as the GLD ETF?", "No. XAUUSD is spot gold quoted in US dollars, while GLD is a US-listed gold ETF with different hours and costs. Do not mix signals from one instrument with execution on the other."),
+            ("Why is gold volatile around news?", "Gold can move quickly around economic releases and changing liquidity, which is why testing and risk limits matter for any automated gold workflow."),
+        ],
+        "related": ["bitcoin", "mt5", "backtesting", "risk"],
+    },
+    "bitcoin": {
+        "faqs": [
+            ("Can SamBot automate bitcoin trading?", "SamBot supports Binance Futures workflows for bitcoin, subject to your account permissions, supported connection and any access restrictions that apply to you."),
+            ("Does bitcoin trade around the clock?", "Crypto markets are open continuously, so automated workflows need limits that work outside normal trading hours."),
+            ("Is leverage required?", "No. Leverage is optional and increases risk. Set exposure limits that match your plan and test them in paper mode first."),
+        ],
+        "related": ["binance", "gold", "risk", "paper"],
+    },
+    "binance": {
+        "faqs": [
+            ("Does SamBot support Binance Futures?", "SamBot lists supported Binance Futures workflows. Availability depends on the connection, API permissions and applicable access restrictions."),
+            ("Does SamBot hold my funds?", "No. SamBot is software. Your funds remain with the exchange you connect."),
+            ("What API permissions should I grant?", "Grant only the permissions the workflow needs and never enable withdrawals. Review the setup guidance before connecting an account."),
+        ],
+        "related": ["bitcoin", "risk", "paper", "mt5"],
+    },
+    "mt5": {
+        "faqs": [
+            ("How does SamBot connect to MetaTrader 5?", "Through a supported connector that works with the MT5 terminal. Broker support and permissions vary, so confirm compatibility before enabling automation."),
+            ("Can I use a demo account first?", "Yes. Testing on a demo account or in paper mode is recommended before connecting live capital."),
+            ("Do I need to keep MT5 running?", "Terminal-based connectors need the MT5 terminal running to execute instructions. Broker-accepted stop-loss and take-profit orders generally remain active if it disconnects."),
+        ],
+        "related": ["gold", "tradingview", "risk", "paper"],
+    },
+    "pricing": {
+        "faqs": [
+            ("How much does SamBot cost?", "SamBot Access is listed at $20 for 30 days, with optional signal credits at $1 per signal. Confirm the latest terms at checkout."),
+            ("Is there a free option?", "Creating an account is free. Paid access is required for automation."),
+            ("How can I pay?", "Card payments via Stripe, or bank transfer or USDT, depending on the options shown at checkout."),
+        ],
+        "related": ["how", "paper", "faq", "contact"],
+    },
+    "performance": {
+        "faqs": [
+            ("Are the performance figures live results?", "No. The figures shown are historical backtests under stated assumptions. They are not live results and do not guarantee future performance."),
+            ("What is the backtest based on?", "The gold sample uses historical XAUUSD-proxy data with stated costs. See the methodology and period on the page."),
+            ("How should I judge a strategy?", "Look at drawdown, trade count and costs as well as profit, and compare backtests with paper activity before considering live use."),
+        ],
+        "related": ["backtesting", "strategy-lab", "paper", "risk"],
+    },
+    "strategy-lab": {
+        "faqs": [
+            ("What is the Strategy Lab?", "A research area that documents the strategies, the data used and the testing methods, including results that did not hold up."),
+            ("Can I use the strategies on my own account?", "The strategy source is provided for study. You are responsible for your own trading decisions and for testing before live use."),
+            ("Why publish failed experiments?", "Recording what did not work reduces cherry-picking and helps readers judge results realistically."),
+        ],
+        "related": ["backtesting", "performance", "gold", "bitcoin"],
+    },
+}
+
+
 def site_page(request, slug):
     page = SITE_PAGES.get(slug)
     if not page:
@@ -257,6 +366,11 @@ def site_page(request, slug):
         "cta_label": page.get("cta_label", "Create an Account"),
         "cta_href": cta_href,
         "canonical": request.build_absolute_uri(f"/{slug}/"),
+        "page_faqs": PAGE_EXTRA.get(slug, {}).get("faqs", []),
+        "related_pages": [
+            {"slug": r, "url": reverse(f"site_{r}"), "title": SITE_PAGES[r]["kicker"], "blurb": SITE_PAGES[r]["lead"]}
+            for r in PAGE_EXTRA.get(slug, {}).get("related", []) if r in SITE_PAGES
+        ],
     })
 
 
