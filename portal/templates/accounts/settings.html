@@ -2,7 +2,10 @@
 {% block title %}Profile & settings · {{ SITE_NAME }}{% endblock %}
 {% block head %}
 <style>
-  .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start} @media(max-width:860px){.set-grid{grid-template-columns:1fr}}
+  .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch;max-width:1000px}
+  .set-grid .card{display:flex;flex-direction:column} .set-grid .card>.btn{align-self:flex-start;margin-top:auto !important}
+  .set-grid .card h2{margin-bottom:14px} .set-grid input{margin-bottom:2px}
+  .set-head{margin-bottom:22px} .set-head h1{margin-bottom:6px} @media(max-width:860px){.set-grid{grid-template-columns:1fr}}
   .av-row{display:flex;gap:16px;align-items:center;margin:6px 0 4px}
   .av-big{width:84px;height:84px;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-size:32px;font-weight:800}
   .av-ph{background:linear-gradient(135deg,#B6FF2E,#7DE3FF);color:#0F1A2E}
@@ -11,8 +14,8 @@
 </style>
 {% endblock %}
 {% block content %}
-<h1>Profile &amp; settings</h1>
-<p class="lead">Your picture, name, e-mail and password.</p>
+<div class="set-head"><h1>Profile &amp; settings</h1>
+<p class="lead" style="margin:0">Your picture, name, e-mail and password.</p></div>
 <div class="set-grid">
   <form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}<input type="hidden" name="action" value="profile">
     <h2>Profile</h2>
