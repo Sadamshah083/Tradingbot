@@ -283,3 +283,84 @@ class DashboardUnlock(TestCase):
         self.assertIn("days left", html)
         self.assertIn("Open my bot", html)
         self.assertNotIn("Unlock for $20", html)
+
+
+class EndChatAndMenu(TestCase):
+    def setUp(self):
+        self.cust = make("chatter")
+        self.agent = make("agt", "agent")
+
+    def test_agent_ends_chat_customer_is_blocked_then_opens_a_new_one(self):
+        from chat.models import Message
+        web_login(self.client, "chatter")
+        self.client.post(reverse("chat_send"), {"text": "hello"})
+        web_login(self.client, "agt")
+        r = self.client.post(reverse("chat_staff_end", args=[self.cust.id]))
+        self.assertTrue(r.json()["ended"])
+        self.assertTrue(self.client.get(reverse("chat_inbox_list")).json()["rows"][0]["ended"])
+        self.assertEqual(self.client.post(reverse("chat_staff_send", args=[self.cust.id]), {"text": "late"}).status_code, 409)   # staff cannot reply into an ended chat
+        web_login(self.client, "chatter")
+        d = self.client.get(reverse("chat_poll")).json()
+        self.assertTrue(d["ended"])
+        self.assertTrue(any("ended" in m["text"] for m in d["items"]))
+        self.assertEqual(self.client.post(reverse("chat_send"), {"text": "still here?"}).status_code, 409)
+        self.assertEqual(self.client.post(reverse("chat_new")).json()["ok"], True)
+        d = self.client.get(reverse("chat_poll")).json()
+        self.assertFalse(d["ended"])
+        self.assertEqual([m["text"] for m in d["items"]][:1], ["New chat started. How can we help? A team member will reply here as soon as they are online."])
+        self.assertEqual(self.client.post(reverse("chat_send"), {"text": "new question"}).status_code, 200)
+        self.assertEqual(self.client.post(reverse("chat_new")).status_code, 409)       # cannot open a second chat while one is open
+        web_login(self.client, "agt")
+        self.assertFalse(self.client.get(reverse("chat_inbox_list")).json()["rows"][0]["ended"])
+        self.assertEqual(self.client.post(reverse("chat_staff_send", args=[self.cust.id]), {"text": "welcome back"}).status_code, 200)
+        self.assertGreaterEqual(Message.objects.filter(customer=self.cust).count(), 5)     # full history is kept for the team
+
+    def test_customers_cannot_end_chats_and_ended_chat_page_shows_the_new_chat_button(self):
+        web_login(self.client, "chatter")
+        self.assertEqual(self.client.post(reverse("chat_staff_end", args=[self.cust.id])).status_code, 403)
+        web_login(self.client, "agt")
+        self.client.post(reverse("chat_staff_end", args=[self.cust.id]))
+        web_login(self.client, "chatter")
+        html = self.client.get(reverse("chat_room")).content.decode()
+        self.assertIn("Start a new chat", html)
+        self.assertNotIn('id="chatEnded" hidden', html)
+
+    def test_account_menu_has_no_duplicate_navigation_links(self):
+        web_login(self.client, "chatter")
+        html = self.client.get(reverse("dashboard")).content.decode()
+        menu = html[html.index('id="umMenu"'):]
+        menu = menu[:menu.index("</div>\n</div>")] if "</div>\n</div>" in menu else menu[:1500]
+        self.assertIn("Profile &amp; settings", menu)
+        self.assertIn("Log out", menu)
+        for dup in ("Dashboard<", "My bot<", "Signals<"):
+            self.assertNotIn(dup, menu)
+
+
+class FooterVisibility(TestCase):
+    def test_footer_on_customer_pages_but_not_on_the_admin_side(self):
+        make("owner", superuser=True)
+        make("foot1")
+        web_login(self.client, "foot1")
+        for name in ("dashboard", "bot_dashboard", "account_settings", "chat_room", "signal_history"):
+            self.assertIn('class="site-foot"', self.client.get(reverse(name)).content.decode(), name)
+        self.assertIn('class="site-foot"', self.client.get("/").content.decode())
+        web_login(self.client, "owner")
+        for name in ("staff_home", "staff_leads", "staff_settings", "chat_inbox"):
+            self.assertNotIn('class="site-foot"', self.client.get(reverse(name)).content.decode(), name)
+
+
+class FaqPage(TestCase):
+    def test_faq_has_grouped_accordion_search_and_valid_structured_data(self):
+        import json, re
+        from accounts.views import FAQ_GROUPS
+        html = self.client.get(reverse("site_faq")).content.decode()
+        total = sum(len(qa) for _, qa in FAQ_GROUPS)
+        self.assertGreaterEqual(total, 25)
+        self.assertEqual(html.count("<details"), total)
+        for name, _ in FAQ_GROUPS:
+            self.assertIn(name.replace("&", "&amp;"), html)
+        self.assertIn('id="faqQ"', html)
+        self.assertIn("$20 for 30 days", html)                  # answers match the real pricing
+        ld = re.search(r'<script type="application/ld\+json">(\{"@context": "https://schema.org", "@type": "FAQPage".*?\})</script>', html, re.S)
+        data = json.loads(ld.group(1))
+        self.assertEqual(len(data["mainEntity"]), total)

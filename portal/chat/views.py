@@ -63,21 +63,39 @@ def _text_from(request) -> str:
 
 
 # Ã¢”â‚¬Ã¢”â‚¬ customer side Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬
+def _profile(user):
+    from accounts.models import Profile
+    return Profile.objects.get_or_create(user=user)[0]
+
+
+def chat_ended(profile) -> bool:
+    """True when support ended the chat and the customer has not opened a new one yet."""
+    return bool(profile.chat_ended_at and (not profile.chat_started_at or profile.chat_started_at < profile.chat_ended_at))
+
+
+def thread(user):
+    """The customer's current conversation: everything since they last opened a new chat."""
+    qs = Message.objects.filter(customer=user).select_related("author")
+    started = _profile(user).chat_started_at
+    return qs.filter(created__gte=started) if started else qs
+
+
 @login_required
 def room(request):
-    msgs = Message.objects.filter(customer=request.user).select_related("author")
+    msgs = thread(request.user)
     Message.objects.filter(customer=request.user, from_admin=True, read=False).update(read=True)
-    return render(request, "chat/room.html", {"messages_list": msgs, "last_id": msgs.last().id if msgs.exists() else 0, "agents_online": agents_online()})
+    return render(request, "chat/room.html", {"messages_list": msgs, "last_id": msgs.last().id if msgs.exists() else 0, "agents_online": agents_online(),
+                                              "ended": chat_ended(_profile(request.user))})
 
 
 @login_required
 @require_GET
 def poll(request):
     after = int(request.GET.get("after", 0) or 0)
-    qs = Message.objects.filter(customer=request.user, id__gt=after).select_related("author")
+    qs = thread(request.user).filter(id__gt=after)
     items = [m.as_dict() for m in qs]
     Message.objects.filter(customer=request.user, from_admin=True, read=False).update(read=True)
-    return JsonResponse({"items": items, "agents_online": agents_online()})
+    return JsonResponse({"items": items, "agents_online": agents_online(), "ended": chat_ended(_profile(request.user))})
 
 
 @login_required
@@ -93,9 +111,24 @@ def send(request):
     text = _text_from(request)
     if not text:
         return HttpResponseBadRequest("empty message")
+    if chat_ended(_profile(request.user)):
+        return JsonResponse({"ok": False, "ended": True, "error": "This chat was ended by support. Start a new chat to continue."}, status=409)
     m = Message.objects.create(customer=request.user, from_admin=False, author=request.user, text=text[:2000])
     _auto_ack(request.user)
     return JsonResponse({"ok": True, "message": m.as_dict()})
+
+
+@login_required
+@require_POST
+def new_chat(request):
+    """Only possible after support has ended the previous chat."""
+    profile = _profile(request.user)
+    if not chat_ended(profile):
+        return JsonResponse({"ok": False, "error": "Your current chat is still open."}, status=409)
+    profile.chat_started_at = timezone.now()
+    profile.save(update_fields=["chat_started_at"])
+    Message.objects.create(customer=request.user, from_admin=True, auto=True, text="New chat started. How can we help? A team member will reply here as soon as they are online.")
+    return JsonResponse({"ok": True})
 
 
 # Ã¢”â‚¬Ã¢”â‚¬ staff side Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬Ã¢”â‚¬
@@ -125,7 +158,7 @@ def inbox_list(request):
             "id": u.id, "name": u.email or u.username, "username": u.username, "unread": u.unread,
             "text": last.text[:90] if last else "", "mine": bool(last and last.from_admin), "time": last.created.isoformat() if last else "",
             "lead": prof.lead_status if prof else "new", "credits": prof.credits if prof else 0,
-            "bot": bool(prof and prof.bot_active_access), "joined": u.date_joined.isoformat(),
+            "bot": bool(prof and prof.bot_active_access), "joined": u.date_joined.isoformat(), "ended": bool(prof and chat_ended(prof)),
         })
     return JsonResponse({"rows": rows, "unread_total": Message.objects.filter(from_admin=False, read=False).count()})
 
@@ -146,7 +179,7 @@ def staff_poll(request, user_id):
     after = int(request.GET.get("after", 0) or 0)
     items = [m.as_dict() for m in Message.objects.filter(customer=customer, id__gt=after).select_related("author")]
     Message.objects.filter(customer=customer, from_admin=False, read=False).update(read=True)
-    return JsonResponse({"items": items})
+    return JsonResponse({"items": items, "ended": chat_ended(_profile(customer))})
 
 
 @staff_required
@@ -156,8 +189,25 @@ def staff_send(request, user_id):
     text = _text_from(request)
     if not text:
         return HttpResponseBadRequest("empty message")
+    if chat_ended(_profile(customer)):
+        return JsonResponse({"ok": False, "ended": True, "error": "This chat has ended. The customer can open a new one."}, status=409)
     m = Message.objects.create(customer=customer, from_admin=True, author=request.user, text=text[:2000])
     return JsonResponse({"ok": True, "message": m.as_dict()})
+
+
+@staff_required
+@require_POST
+def staff_end(request, user_id):
+    """End the live chat. The customer sees that it ended and can open a new chat."""
+    customer = get_object_or_404(_customers(), pk=user_id)
+    profile = _profile(customer)
+    if chat_ended(profile):
+        return JsonResponse({"ok": True, "ended": True})
+    name = request.user.first_name or request.user.username
+    Message.objects.create(customer=customer, from_admin=True, author=request.user, auto=True, text=f"This chat was ended by {name}. You can start a new chat any time.")
+    profile.chat_ended_at = timezone.now()
+    profile.save(update_fields=["chat_ended_at"])
+    return JsonResponse({"ok": True, "ended": True})
 
 
 @staff_required

@@ -1,40 +1,60 @@
-<section class="s rv" id="faq" aria-labelledby="faq-title">
+<section class="s faqpage" id="faq" aria-labelledby="faq-title">
+  <style>
+    .faqpage{padding-top:8px} .faqpage>.kicker{display:none}
+    .faq-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:980px;margin:0 auto 18px}
+    .faq-search{flex:1;min-width:240px;position:relative} .faq-search input{width:100%;padding:13px 16px 13px 42px;border-radius:14px}
+    .faq-search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--muted)}
+    .faq-cats{display:flex;gap:8px;flex-wrap:wrap}
+    .faq-cats button{font:700 12.5px Manrope,sans-serif;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--muted);cursor:pointer}
+    .faq-cats button:hover,.faq-cats button.on{color:#fff;border-color:rgba(182,255,46,.5);background:rgba(182,255,46,.1)}
+    .faq-wrap{max-width:980px;margin:0 auto;text-align:left}
+    .faq-group{margin-bottom:22px} .faq-group h3{margin:0 0 10px;font-size:13px;letter-spacing:1.2px;text-transform:uppercase;color:#B6FF2E}
+    .faq-group details{border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,rgba(32,48,80,.55),rgba(22,36,62,.55));margin-bottom:8px;overflow:hidden;transition:border-color .2s}
+    .faq-group details[open]{border-color:rgba(182,255,46,.4)}
+    .faq-group summary{cursor:pointer;list-style:none;padding:16px 18px;font-weight:700;font-size:15.5px;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:14px}
+    .faq-group summary::-webkit-details-marker{display:none}
+    .faq-group summary:after{content:"+";flex:none;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(182,255,46,.12);color:#B6FF2E;font-size:18px;line-height:1}
+    .faq-group details[open] summary:after{content:"\2212"}
+    .faq-group .ans{padding:0 18px 16px;color:var(--muted);font-size:14.5px;line-height:1.7}
+    .faq-empty{max-width:980px;margin:20px auto;padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+    .faq-help{max-width:980px;margin:28px auto 0;padding:20px 24px;border-radius:16px;border:1px solid rgba(182,255,46,.3);background:rgba(182,255,46,.06);display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;text-align:left}
+    .faq-help b{display:block;color:#fff;font-size:16px;margin-bottom:2px} .faq-help span{color:var(--muted);font-size:13.5px}
+  </style>
   <div class="kicker">FAQ</div>
-  <h2 id="faq-title">Sambot Frequently Asked Questions</h2>
-  <p class="sub">Answers about Sambot, TradingView automation, paper trading, backtesting, Binance, MetaTrader 5, risk controls and pricing.</p>
-  <div class="faq-mid">
-    <article class="panel faq-card"><h3>What is Sambot?</h3><p>Sambot is trading-automation software that connects supported TradingView signals with a configurable workflow including validation, account controls, paper trading and supported execution integrations.</p></article>
-    <article class="panel faq-card"><h3>Does Sambot guarantee profits?</h3><p>No. Trading results cannot be guaranteed. Historical backtests and simulations do not predict future results.</p></article>
-    <article class="panel faq-card"><h3>Can I test Sambot without trading live?</h3><p>Yes. Paper mode is designed for testing the signal and automation workflow using simulated execution.</p></article>
-    <article class="panel faq-card"><h3>Does Sambot hold my money?</h3><p>No. Sambot is software. Funds remain with the account provider you choose to connect.</p></article>
-    <article class="panel faq-card"><h3>What is a TradingView webhook?</h3><p>A webhook allows a TradingView alert to send information to an external application when an alert triggers. Sambot uses a webhook as part of its supported TradingView automation workflow.</p></article>
-    <article class="panel faq-card"><h3>Does Sambot support Binance?</h3><p>Sambot currently supports an integration workflow for Binance Futures. Availability and functionality should always be checked against the current product documentation.</p></article>
-    <article class="panel faq-card"><h3>Does Sambot support MetaTrader 5?</h3><p>Sambot supports an MT5 workflow through its bridge architecture.</p></article>
-    <article class="panel faq-card"><h3>Can Sambot trade gold?</h3><p>Sambot currently includes supported research and automation workflows for gold/XAUUSD.</p></article>
-    <article class="panel faq-card"><h3>Can Sambot automate Bitcoin?</h3><p>Sambot currently includes supported Bitcoin-oriented automation workflows.</p></article>
-    <article class="panel faq-card"><h3>What risk controls are available?</h3><p>Depending on the current product version, supported controls can include position risk, daily loss limits, active-position limits, exposure controls, losing-streak limits, stop loss, take profit, break-even, trailing stops and an emergency stop.</p></article>
-    <article class="panel faq-card"><h3>Are backtests live results?</h3><p>No. A backtest is a historical simulation based on historical data and defined assumptions.</p></article>
-    <article class="panel faq-card"><h3>Why are losing trades shown?</h3><p>Because a strategy cannot be evaluated responsibly using winning trades alone.</p></article>
-    <article class="panel faq-card"><h3>How much does Sambot cost?</h3><p>Refer to the current <a href="{% url 'site_pricing' %}">Pricing</a> page for the latest software-access and signal pricing.</p></article>
-    <article class="panel faq-card"><h3>Is Sambot financial advice?</h3><p>No. Sambot provides software, research tools and informational functionality. It does not provide personalised financial advice.</p></article>
+  <h2 id="faq-title">Frequently asked questions</h2>
+  <p class="sub">{{ faq_total }} answers about pricing, signals, paper trading, MT5, Binance, risk and support. Can't find yours? Chat with us 24/7.</p>
+  <div class="faq-tools">
+    <div class="faq-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="faqQ" type="search" placeholder="Search the questions" aria-label="Search the questions" autocomplete="off"></div>
   </div>
+  <div class="faq-tools faq-cats" id="faqCats"><button type="button" class="on" data-cat="all">All</button>{% for g in faq_groups %}<button type="button" data-cat="{{ g.slug }}">{{ g.name }}</button>{% endfor %}</div>
+  <div class="faq-wrap" id="faqList">
+    {% for g in faq_groups %}
+    <div class="faq-group" data-cat="{{ g.slug }}"><h3>{{ g.name }}</h3>
+      {% for q, a in g.items %}<details{% if forloop.parentloop.first and forloop.first %} open{% endif %}><summary>{{ q }}</summary><div class="ans">{{ a }}</div></details>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  <div class="faq-empty" id="faqEmpty" hidden>No questions match that search. Try a different word, or ask us in the chat.</div>
+  <div class="faq-help"><div><b>Still have a question?</b><span>Our team answers in the chat 24/7, or read the <a href="{% url 'site_how' %}">How it works</a> and <a href="{% url 'site_pricing' %}">Pricing</a> pages.</span></div>
+    <a class="btn primary" href="{% url 'site_contact' %}">Contact us</a></div>
+  <script>
+    (function () {
+      const list = document.getElementById('faqList'), q = document.getElementById('faqQ'), cats = document.getElementById('faqCats'), empty = document.getElementById('faqEmpty');
+      let cat = 'all';
+      function apply() {
+        const term = q.value.trim().toLowerCase(); let shown = 0;
+        list.querySelectorAll('.faq-group').forEach(g => {
+          const inCat = cat === 'all' || g.dataset.cat === cat; let any = 0;
+          g.querySelectorAll('details').forEach(d => {
+            const hit = inCat && (!term || d.textContent.toLowerCase().includes(term)); d.hidden = !hit; if (hit) { any++; if (term) d.open = true; }
+          });
+          g.hidden = !any; shown += any;
+        });
+        empty.hidden = shown > 0;
+      }
+      q.addEventListener('input', apply);
+      cats.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; cat = b.dataset.cat; cats.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); apply(); });
+    })();
+  </script>
 </section>
-{% if faq_schema %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {"@type":"Question","name":"What is Sambot?","acceptedAnswer":{"@type":"Answer","text":"Sambot is trading-automation software that connects supported TradingView signals with a configurable workflow including validation, account controls, paper trading and supported execution integrations."}},
-    {"@type":"Question","name":"Does Sambot guarantee profits?","acceptedAnswer":{"@type":"Answer","text":"No. Trading results cannot be guaranteed. Historical backtests and simulations do not predict future results."}},
-    {"@type":"Question","name":"Can I test Sambot without trading live?","acceptedAnswer":{"@type":"Answer","text":"Yes. Paper mode is designed for testing the signal and automation workflow using simulated execution."}},
-    {"@type":"Question","name":"Does Sambot hold my money?","acceptedAnswer":{"@type":"Answer","text":"No. Sambot is software. Funds remain with the account provider you choose to connect."}},
-    {"@type":"Question","name":"What is a TradingView webhook?","acceptedAnswer":{"@type":"Answer","text":"A webhook allows a TradingView alert to send information to an external application when an alert triggers."}},
-    {"@type":"Question","name":"Does Sambot support Binance?","acceptedAnswer":{"@type":"Answer","text":"Sambot currently supports an integration workflow for Binance Futures."}},
-    {"@type":"Question","name":"Does Sambot support MetaTrader 5?","acceptedAnswer":{"@type":"Answer","text":"Sambot supports an MT5 workflow through its bridge architecture."}},
-    {"@type":"Question","name":"Are backtests live results?","acceptedAnswer":{"@type":"Answer","text":"No. A backtest is a historical simulation based on historical data and defined assumptions."}},
-    {"@type":"Question","name":"Is Sambot financial advice?","acceptedAnswer":{"@type":"Answer","text":"No. Sambot provides software, research tools and informational functionality. It does not provide personalised financial advice."}}
-  ]
-}
-</script>
-{% endif %}
+{% if faq_schema %}<script type="application/ld+json">{{ faq_jsonld|safe }}</script>{% endif %}

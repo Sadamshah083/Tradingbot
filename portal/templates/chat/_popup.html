@@ -8,6 +8,7 @@
       <button type="button" class="cp-x" id="cpClose" aria-label="Close chat">&times;</button>
     </header>
     <div class="cp-log" id="cpLog" aria-live="polite"><p class="cp-hello" id="cpHello">Hi {{ user.first_name|default:user.username }}! Ask us anything. We reply here, any time of day.</p></div>
+    <div class="cp-ended" id="cpEnded" hidden><p>This chat was ended by support.</p><button type="button" class="cp-new" id="cpNew">Start a new chat</button></div>
     <div class="cp-err" id="cpErr" hidden>Could not send. Check your connection and try again.</div>
     <form class="cp-form" id="cpForm" autocomplete="off">
       <input id="cpText" maxlength="2000" placeholder="Type a message…" aria-label="Message" required>
@@ -26,6 +27,16 @@
   const root = $('cp'), panel = $('cpPanel'), fab = $('cpFab'), log = $('cpLog'), form = $('cpForm'), input = $('cpText'), badge = $('cpBadge'), err = $('cpErr');
   let after = 0, isOpen = false, timer = null, loaded = false; const seen = new Set();
 
+  const ended = $('cpEnded'), newBtn = $('cpNew');
+  function setEnded(on) { ended.hidden = !on; form.hidden = on; }
+  newBtn.addEventListener('click', async () => {
+    newBtn.disabled = true;
+    try {
+      const r = await fetch("{% url 'chat_new' %}", {method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': window.csrfToken}});
+      if (r.ok) { log.textContent = ''; seen.clear(); setEnded(false); await poll(true); input.focus(); }
+    } catch (e) {}
+    newBtn.disabled = false;
+  });
   const setBadge = n => { badge.textContent = n; badge.hidden = !n; };
   function add(m) {
     if (seen.has(m.id)) return; seen.add(m.id);
@@ -40,6 +51,7 @@
       const r = await fetch("{% url 'chat_poll' %}?after=" + after, {credentials: 'same-origin'});
       if (!r.ok) return; const d = await r.json();
       d.items.forEach(m => { m._force = force; add(m); });
+      setEnded(!!d.ended);
       if (typeof d.agents_online === 'boolean') $('cpStatus').textContent = d.agents_online ? 'Agent online' : 'Support runs 24/7 · we reply as soon as we can';
       if (force) log.scrollTop = log.scrollHeight;
     } catch (e) {}
@@ -65,7 +77,9 @@
     e.preventDefault(); const t = input.value.trim(); if (!t) return; input.value = ''; err.hidden = true;
     try {
       const r = await fetch("{% url 'chat_send' %}", {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text: t})});
-      if (r.ok) { const d = await r.json(); d.message._force = true; add(d.message); setTimeout(() => poll(false), 700); } else { input.value = t; err.hidden = false; }
+      if (r.ok) { const d = await r.json(); d.message._force = true; add(d.message); setTimeout(() => poll(false), 700); }
+      else if (r.status === 409) { setEnded(true); poll(false); }
+      else { input.value = t; err.hidden = false; }
     } catch (x) { input.value = t; err.hidden = false; }
     input.focus();
   });

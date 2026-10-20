@@ -7,7 +7,8 @@
       <div class="empty" id="chat-empty">{% if me_is_admin %}No messages yet in this conversation.{% else %}Say hello. Support is available 24/7 and replies appear right here.{% endif %}</div>
     {% endfor %}
   </div>
-  <form id="chat-form" autocomplete="off">
+  <div class="chat-ended" id="chatEnded" {% if not ended %}hidden{% endif %}><span>This chat was ended by support.</span> <button type="button" class="btn primary small" id="chatNew">Start a new chat</button></div>
+  <form id="chat-form" autocomplete="off" {% if ended %}hidden{% endif %}>
     <input id="chat-text" placeholder="Type a message and press Enter" maxlength="2000" required>
     <button class="btn primary" type="submit">Send</button>
   </form>
@@ -29,11 +30,23 @@
     div.appendChild(meta); log.appendChild(div); log.scrollTop = log.scrollHeight;
     after = Math.max(after, m.id);
   }
+  const endedBar = document.getElementById('chatEnded');
+  function setEnded(on) { endedBar.hidden = !on; form.hidden = on; }
+  const newBtn = document.getElementById('chatNew');
+  if (newBtn) newBtn.addEventListener('click', async () => {
+    newBtn.disabled = true;
+    try {
+      const r = await fetch("{% url 'chat_new' %}", {method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': window.csrfToken}});
+      if (r.ok) { log.textContent = ''; seen.clear(); setEnded(false); await poll(); input.focus(); }
+    } catch (e) {}
+    newBtn.disabled = false;
+  });
   async function poll() {
     try {
       const r = await fetch(`{{ poll_url }}?after=${after}`, {credentials: 'same-origin'});
       if (r.ok) {
         const d = await r.json(); d.items.forEach(add);
+        setEnded(!!d.ended);
         const st = document.getElementById('chat-status-text');
         if (st && typeof d.agents_online === 'boolean') st.textContent = d.agents_online ? 'Agent online' : 'Support runs 24/7 · we reply as soon as an agent is online';
       }

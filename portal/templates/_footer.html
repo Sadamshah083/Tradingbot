@@ -1,0 +1,60 @@
+{% load static %}
+<footer class="site-foot">
+  <div class="foot-main"><div class="wrap">
+    <div class="fcols">
+      <div>
+        <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/sambot-logo.png' %}" alt="{{ SITE_NAME }}" width="160" height="38"></a>
+        <p class="brand-blurb">Trading automation you can test before you trust — paper mode, backtests and risk rules you control.</p>
+        {% if SUPPORT_EMAIL %}<p style="margin:12px 0 0"><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></p>{% endif %}
+        <div class="foot-social" aria-label="Social">
+          <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.94 6.5A2.19 2.19 0 1 1 4.75 4.3 2.19 2.19 0 0 1 6.94 6.5zM4.9 8.77h4.08V19.5H4.9zm6.55 0h3.91v1.46h.06c.54-1 1.87-2.05 3.85-2.05 4.12 0 4.88 2.71 4.88 6.23V19.5h-4.08v-4.67c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46V19.5h-4.08z"/></svg></a>
+          <a href="https://x.com/" target="_blank" rel="noopener noreferrer" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 3H21l-6.48 7.41L22 21h-5.6l-4.38-5.73L6.9 21H4.8l6.93-7.92L2.5 3h5.74l3.96 5.25L18.9 3zm-1.97 16.2h1.55L7.58 4.7H5.92l11.01 14.5z"/></svg></a>
+          <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="{% url 'landing' %}">Home</a>
+        <a href="{% url 'site_how' %}">How it Works</a>
+        <a href="{% url 'site_pricing' %}">Pricing</a>
+        <a href="{% url 'site_markets' %}">Supported Markets</a>
+        <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
+        <a href="{% url 'site_performance' %}">Performance</a>
+        <a href="{% url 'blog' %}">Blog</a>
+        <a href="{% url 'site_contact' %}">Contact</a>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="{% url 'site_tradingview' %}">TradingView</a>
+        <a href="{% url 'site_paper' %}">Paper trading</a>
+        <a href="{% url 'site_gold' %}">Gold / XAUUSD</a>
+        <a href="{% url 'site_bitcoin' %}">Bitcoin</a>
+        <a href="{% url 'site_binance' %}">Binance</a>
+        <a href="{% url 'site_mt5' %}">MT5</a>
+        <a href="{% url 'site_risk' %}">Risk management</a>
+        <a href="{% url 'site_faq' %}">FAQ</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="{% url 'legal' 'terms' %}">Terms of Service</a>
+        <a href="{% url 'legal' 'risk' %}">Risk disclosure</a>
+        <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
+        <a href="{% url 'site_about' %}">About</a>
+      </div>
+    </div>
+    <div class="foot-disc"><div class="inner">
+      <div>
+        <b>Disclaimer</b>
+        <p>{{ SITE_NAME }} is software and information only — not financial advice. Trading gold and crypto involves substantial risk of loss. Backtests are historical simulations, not a promise of future results. You are solely responsible for your trading decisions. <a href="{% url 'site_disclaimer' %}">Read the full disclaimer →</a></p>
+      </div>
+    </div></div>
+    <div class="foot-bottom">
+      <span>© {% now "Y" %} {{ SITE_NAME }}. All rights reserved.</span>
+      <div class="links">
+        <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
+        <a href="{% url 'legal' 'terms' %}">Terms</a>
+        <a href="{% url 'legal' 'risk' %}">Risk</a>
+      </div>
+    </div>
+  </div></div>
+</footer>

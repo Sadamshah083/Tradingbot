@@ -85,3 +85,32 @@ html.sd-lock{overflow:hidden}
   .um-menu{position:fixed;right:12px;top:68px;left:auto;width:min(300px,calc(100vw - 24px))}
   nav ul{box-shadow:0 24px 50px rgba(0,0,0,.5)}
 }
+
+.cp-ended{padding:14px;text-align:center;border-top:1px solid rgba(160,185,230,.18);background:rgba(10,18,34,.35)}
+.cp-ended p{margin:0 0 10px;font-size:13px;color:#9FB0CA}
+.cp-ended[hidden],.chat-ended[hidden],.cp-form[hidden]{display:none}
+.cp-new{padding:10px 16px;border:0;border-radius:12px;background:linear-gradient(180deg,#C6FF4D,#A3EA1C);color:#0F1A2E;font:800 13.5px Manrope,sans-serif;cursor:pointer}
+.chat-ended{display:flex;gap:12px;align-items:center;justify-content:center;padding:14px;border-top:1px solid rgba(160,185,230,.18);color:#9FB0CA;font-size:14px;flex-wrap:wrap}
+
+/* Site footer (templates/_footer.html), used on public pages and for signed-in customers */
+footer.site-foot{padding:0;border-top:1px solid rgba(160,185,230,.14);color:rgba(255,255,255,.62);font-size:13.5px;background:#0B1424;margin-top:24px}
+footer.site-foot .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.foot-main{padding:40px 0 22px}
+.fcols{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:28px;text-align:left}
+.fcols h4{margin:0 0 12px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#B6FF2E}
+.fcols a{display:block;color:rgba(255,255,255,.62);padding:5px 0;transition:color .15s,transform .15s}
+.fcols a:hover{color:#B6FF2E;text-decoration:none;transform:translateX(2px)}
+.fcols .brand-blurb{margin:10px 0 0;max-width:320px;line-height:1.6;color:rgba(255,255,255,.55)}
+.fcols .logo img{height:40px;width:auto;border:0}
+.foot-disc{margin:26px 0 0;padding:16px 20px;border:1px solid rgba(182,255,46,.28);border-radius:14px;background:rgba(182,255,46,.08);text-align:left}
+.foot-disc b{display:inline-block;color:#B6FF2E;font-size:11px;letter-spacing:1.3px;text-transform:uppercase;margin:0 0 6px}
+.foot-disc p{margin:0;line-height:1.65;font-size:13px;color:rgba(255,255,255,.58)}
+.foot-disc a{color:#B6FF2E;font-weight:700}
+.foot-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);font-size:12.5px;color:rgba(255,255,255,.45)}
+.foot-bottom .links{display:flex;gap:14px;flex-wrap:wrap} .foot-bottom .links a{color:rgba(255,255,255,.5)} .foot-bottom .links a:hover{color:#fff}
+.foot-social{display:flex;gap:10px;margin-top:14px}
+.foot-social a{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;color:rgba(255,255,255,.7);padding:0}
+.foot-social a:hover{background:rgba(182,255,46,.15);border-color:rgba(182,255,46,.45);color:#B6FF2E;transform:none}
+.foot-social svg{width:16px;height:16px}
+@media(max-width:1000px){.fcols{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.fcols{grid-template-columns:1fr}.foot-bottom{flex-direction:column;align-items:flex-start}}

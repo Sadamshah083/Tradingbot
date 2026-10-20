@@ -29,6 +29,8 @@ class Profile(models.Model):
     LEAD_STATUS = [("new", "New"), ("contacted", "Contacted"), ("qualified", "Interested"), ("customer", "Customer"), ("lost", "Not interested")]
     lead_status = models.CharField(max_length=10, choices=LEAD_STATUS, default="new", help_text="Where this sign-up is in the sales follow-up.")
     lead_note = models.CharField(max_length=300, blank=True, help_text="Internal follow-up note, never shown to the user.")
+    chat_ended_at = models.DateTimeField(null=True, blank=True, help_text="Support ended the live chat at this time.")
+    chat_started_at = models.DateTimeField(null=True, blank=True, help_text="The customer opened a new chat after one was ended.")
     last_seen = models.DateTimeField(null=True, blank=True, help_text="Last time this staff member had the chat inbox open.")
     created = models.DateTimeField(auto_now_add=True)
 

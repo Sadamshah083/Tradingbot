@@ -22,6 +22,8 @@
   .cc-head b{font-size:15px;display:block} .cc-head small{color:var(--muted);font-size:12px}
   .cc-head .cc-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
   .cc-back{display:none}
+  .cc-ended{padding:4px 10px;border-radius:999px;border:1px solid rgba(255,107,98,.4);color:#FF9B94;font-size:12px;font-weight:800}
+  .cc-row .end{display:inline-block;margin-left:6px;font-size:10px;color:#FF9B94;font-weight:800}
   .cc-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
   .cc-msg{max-width:74%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
   .cc-msg.me{align-self:flex-end;background:linear-gradient(135deg,#2A4A8A,#1E3866);color:#fff;border-bottom-right-radius:4px}
@@ -51,7 +53,7 @@
       <header class="cc-head">
         <button type="button" class="btn ghost small cc-back" id="ccBack">← List</button>
         <div><b id="ccName"></b><small id="ccMeta"></small></div>
-        <div class="cc-actions">{% if can_admin %}<a class="btn ghost small" id="ccLead" href="{% url 'staff_leads' %}">Lead</a><a class="btn ghost small" id="ccCust" href="{% url 'staff_leads' %}">Account</a>{% endif %}</div>
+        <div class="cc-actions"><button type="button" class="btn ghost small" id="ccEnd">End chat</button><span class="cc-ended" id="ccEndedTag" hidden>Chat ended</span>{% if can_admin %}<a class="btn ghost small" id="ccLead" href="{% url 'staff_leads' %}">Lead</a><a class="btn ghost small" id="ccCust" href="{% url 'staff_leads' %}">Account</a>{% endif %}</div>
       </header>
       <div class="cc-log" id="ccLog" aria-live="polite"></div>
       <div class="cc-err" id="ccErr" hidden>Could not send. Check your connection and try again.</div>
@@ -86,7 +88,7 @@
       const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-row' + (r.id === active ? ' on' : '');
       const av = document.createElement('div'); av.className = 'cc-av'; av.textContent = initials(r.name);
       const mid = document.createElement('div'); mid.className = 'cc-mid';
-      const n = document.createElement('b'); n.textContent = r.name;
+      const n = document.createElement('b'); n.textContent = r.name; if (r.ended) { const e = document.createElement('span'); e.className = 'end'; e.textContent = 'ENDED'; n.appendChild(e); }
       const t = document.createElement('span'); t.textContent = (r.mine ? 'You: ' : '') + r.text;
       mid.append(n, t);
       const side = document.createElement('div'); side.className = 'cc-side'; side.textContent = ago(r.time);
@@ -110,10 +112,21 @@
     $('ccName').textContent = r.name;
     $('ccMeta').textContent = '@' + r.username + ' · ' + r.credits + ' credits' + (r.bot ? ' · bot active' : '') + ' · lead: ' + r.lead + ' · joined ' + new Date(r.joined).toLocaleDateString();
     const L = $('ccLead'), C = $('ccCust');
+    setEnded(!!r.ended);
     if (L) L.href = "{% url 'staff_leads' %}?q=" + encodeURIComponent(r.username);
     if (C) C.href = "{% url 'staff_leads' %}?q=" + encodeURIComponent(r.username);
   }
 
+  function setEnded(on) {
+    $('ccEndedTag').hidden = !on; $('ccEnd').hidden = on; form.hidden = on; $('ccQuick').hidden = on;
+  }
+  $('ccEnd').addEventListener('click', async () => {
+    if (!active) return;
+    const go = window.SamDialog ? await SamDialog.confirm({title: 'End this chat?', message: 'The customer will be told the chat has ended and can open a new one.', confirmText: 'End chat', danger: true}) : confirm('End this chat?');
+    if (!go) return;
+    const r = await fetch('{% url "chat_inbox" %}' + active + '/end/', {method: 'POST', credentials: 'same-origin', headers: {'X-CSRFToken': window.csrfToken}});
+    if (r.ok) { setEnded(true); pollConv(true); loadList(); }
+  });
   function addMsg(m) {
     if (seen.has(m.id)) return; seen.add(m.id);
     const d = document.createElement('div'); d.className = 'cc-msg ' + (m.from_admin ? 'me' : 'them'); d.textContent = m.text;
@@ -132,7 +145,7 @@
     if (!active) return;
     try {
       const r = await fetch('{% url "chat_inbox" %}' + active + '/poll/?after=' + after, {credentials: 'same-origin'});
-      if (!r.ok) return; const d = await r.json(); d.items.forEach(m => { m._force = force || m.from_admin; addMsg(m); });
+      if (!r.ok) return; const d = await r.json(); d.items.forEach(m => { m._force = force || m.from_admin; addMsg(m); }); if (typeof d.ended === 'boolean') setEnded(d.ended);
       if (force) log.scrollTop = log.scrollHeight;
     } catch (e) {}
   }
@@ -142,7 +155,7 @@
     busy = true; err.hidden = true; text.value = ''; text.style.height = '';
     try {
       const r = await fetch('{% url "chat_inbox" %}' + active + '/send/', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text: t})});
-      if (r.ok) { const d = await r.json(); d.message._force = true; addMsg(d.message); loadList(); } else { text.value = t; err.hidden = false; }
+      if (r.ok) { const d = await r.json(); d.message._force = true; addMsg(d.message); loadList(); } else if (r.status === 409) { setEnded(true); } else { text.value = t; err.hidden = false; }
     } catch (x) { text.value = t; err.hidden = false; }
     busy = false; text.focus();
   });

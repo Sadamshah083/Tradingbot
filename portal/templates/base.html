@@ -95,7 +95,7 @@
   input:focus,textarea:focus,select:focus{border-color:#7DE3FF;box-shadow:0 0 0 3px rgba(125,227,255,.18)}
   .chat-err{margin:0;padding:10px 14px;background:rgba(240,113,103,.12);color:#FFB4AE;font-size:13px;border-top:1px solid rgba(240,113,103,.3)}
 </style>
-<link rel="stylesheet" href="{% static 'css/sambot-ui.css' %}?v=4">
+<link rel="stylesheet" href="{% static 'css/sambot-ui.css' %}?v=6">
 {% block head %}{% endblock %}
 </head>
 <body{% if hide_nav %} class="site-page"{% endif %}>
@@ -133,14 +133,14 @@
   {% if messages and not hide_nav %}{% for m in messages %}<div class="flash {{ m.tags }}">{{ m }}</div>{% endfor %}{% endif %}
   {% block content %}{% endblock %}
 </main>
-{% if not hide_nav %}<footer><div class="wrap">{{ SITE_NAME }} · Software and information only, not financial advice. Trading involves substantial risk of loss.</div></footer>{% endif %}
+{% if not hide_nav %}{% include "_footer.html" %}{% endif %}   {# not shown on the admin side (hide_nav) #}
 {% include "chat/_popup.html" %}
 <script>
   window.csrfToken = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value;
   window.fmtTime = iso => { const d = new Date(iso); return d.toLocaleString(undefined, {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}); };
   document.querySelectorAll('#app-menu a').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('app-menu'); if(m) m.classList.remove('open'); }));
 </script>
-<script src="{% static 'js/sambot-ui.js' %}?v=4" defer></script>
+<script src="{% static 'js/sambot-ui.js' %}?v=5" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

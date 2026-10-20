@@ -334,6 +334,61 @@ PAGE_EXTRA = {
 }
 
 
+# The FAQ page: grouped questions rendered as an accordion, plus FAQPage structured data built from the same list.
+FAQ_GROUPS = [
+    ("Getting started", [
+        ("What is SamBot?", "SamBot is trading-automation software. It connects TradingView alerts and platform signals to paper trading, risk controls and supported execution workflows (MetaTrader 5 and Binance Futures). It is not a broker and it does not hold your money."),
+        ("How do I get started?", "Create a free account, then follow the steps on your dashboard. Start in paper mode to see how signals, sizing and risk rules behave before you connect a live account. Account creation is free; paid access unlocks the bot and signals."),
+        ("Is SamBot financial advice?", "No. SamBot provides software and information only. It does not give personalised investment advice, and you are responsible for your own trading decisions."),
+        ("Does SamBot hold my funds?", "No. Your money stays with your broker or exchange. SamBot never takes custody of funds."),
+    ]),
+    ("Pricing & payments", [
+        ("How much does SamBot cost?", "Bot access is $20 for 30 days. Signals are optional and cost $1 per delivered signal, paid with prepaid signal credits. Bot access and signal credits are separate: buying one does not include the other."),
+        ("How do signal credits work?", "You buy credits in advance; each signal delivered to you uses one credit. When your credits reach zero, new signals stop until you buy more. Exit updates for a signal you received are free. Signals are only delivered after they arrive; buying credits does not give you old signals."),
+        ("How can I pay?", "Card payments (via Stripe, where enabled) unlock instantly after the payment is confirmed. Bank transfer or USDT payments unlock after we verify them, usually within a few hours. A checkout page alone never grants access; payment must be confirmed first."),
+        ("What happens when my 30 days end?", "Your bot turns off, your personal webhook stops accepting alerts and TradingView access is withdrawn. Your settings and history are kept, and renewing switches everything back on."),
+    ]),
+    ("Signals & TradingView", [
+        ("How do I receive signals?", "Paid signals appear in the table on your dashboard the moment they arrive, and on Telegram if you have linked it. The table starts empty and only shows signals that were really delivered to your account."),
+        ("What is a TradingView webhook?", "A webhook lets a TradingView alert send a message to another application when it fires. Each account gets a personal webhook address and secret. You add them to a TradingView alert, and SamBot checks and processes every message it receives."),
+        ("Do I need a paid TradingView plan?", "TradingView limits webhook alerts to certain paid plans. Check TradingView's current plan requirements. If you use the platform's signals instead, you do not need to run your own alerts."),
+        ("Why do signals expire?", "A signal is only valid for a limited time after it fires. Stale signals are marked Expired and never trigger a trade, because the market may have moved."),
+        ("What if an alert is rejected?", "It is recorded with the reason, for example a daily loss limit, a closed market or an invalid message, so you can see exactly what happened."),
+    ]),
+    ("Paper trading & backtests", [
+        ("Can I test SamBot without trading live?", "Yes. Paper mode simulates execution so you can check alerts, sizing and risk rules without placing real orders. It is the default mode."),
+        ("What is the difference between paper trading and backtesting?", "A backtest applies the strategy to historical data under stated assumptions. Paper trading simulates trades as new signals arrive. Both are research tools; neither guarantees future results."),
+        ("Are the backtest results live results?", "No. The published figures come from a historical backtest on proxy gold data with stated costs. They are not live results and do not predict future performance."),
+        ("Why do you show losing trades?", "A strategy cannot be judged responsibly using winning trades alone. The losses, drawdown and costs are part of the result."),
+    ]),
+    ("MT5 & Binance", [
+        ("Does SamBot support MetaTrader 5?", "Yes, through an MT5 bridge that runs on a Windows PC or VPS next to your MT5 terminal. Your MT5 password stays on that machine. SamBot shows Connected only after your bridge sends a live heartbeat that matches your MT5 account."),
+        ("Does my computer need to stay on?", "For MT5, yes: the MT5 terminal and the bridge must keep running for orders and the connection status to work. A small always-on Windows VPS is a common choice."),
+        ("Does SamBot support Binance?", "SamBot supports a Binance Futures workflow. Use API keys with futures permission only and never enable withdrawals. Availability depends on your account, permissions and any restrictions that apply to you."),
+        ("Which markets can I trade?", "The current focus is gold (XAUUSD) and bitcoin. Available instruments also depend on your broker or exchange."),
+    ]),
+    ("Risk & safety", [
+        ("What risk controls are available?", "Risk per trade, a daily loss limit, a maximum number of open trades, losses-in-a-row limits, stop-loss and take-profit rules, break-even, trailing stops and an emergency stop. They are applied to every signal before an order is considered."),
+        ("Does SamBot guarantee profits?", "No. Trading involves substantial risk of loss. Market conditions, costs, slippage, strategy behaviour and technical interruptions can all affect results."),
+        ("Is the bot learning or using AI?", "No. It follows fixed, tested rules. It does not train itself from your trades."),
+        ("How is my data protected?", "Passwords are stored as one-way hashes, broker credentials are encrypted, and signed-in sessions expire after 24 hours. Your MT5 password never leaves your own machine."),
+    ]),
+    ("Support", [
+        ("How do I contact support?", "Use the chat button at the bottom right of any page. Support runs 24/7: messages are saved and answered as soon as a team member is online, and replies show in your dashboard even if you close the page."),
+        ("Can a chat be ended and restarted?", "Yes. Support can end a conversation when it is resolved. You can then open a new chat whenever you need help again."),
+        ("I forgot my password. What can I do?", "Contact support through the chat or the contact page and we will set a new password for your account."),
+    ]),
+]
+
+
+def _faq_context():
+    import json as _json
+    items = [{"@type": "Question", "name": q, "acceptedAnswer": {"@type": "Answer", "text": a}} for _, qa in FAQ_GROUPS for q, a in qa]
+    ld = _json.dumps({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": items}, ensure_ascii=False).replace("</", "<\\/")
+    groups = [{"name": g, "slug": g.lower().replace(" & ", "-").replace(" ", "-"), "items": qa} for g, qa in FAQ_GROUPS]
+    return {"faq_groups": groups, "faq_jsonld": ld, "faq_total": len(items)}
+
+
 def site_page(request, slug):
     page = SITE_PAGES.get(slug)
     if not page:
@@ -364,6 +419,7 @@ def site_page(request, slug):
         "needs_backtest_js": page["backtest"],
         "needs_lab_js": page.get("lab", False),
         "faq_schema": page.get("faq_schema", False),
+        **(_faq_context() if slug == "faq" else {}),
         "cta_label": page.get("cta_label", "Create an Account"),
         "cta_href": cta_href,
         "canonical": absolute_url(f"/{slug}/"),

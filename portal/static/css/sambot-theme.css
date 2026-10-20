@@ -393,3 +393,4 @@ html,body{overflow-x:clip !important}
 .chat-fab small{font-weight:800;opacity:.7;margin-left:4px}
 .fab-badge{position:absolute;top:-6px;right:-4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#FF5A52;color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #0F1A2E}
 @media(max-width:560px){.chat-fab{right:14px;bottom:14px;padding:13px}.chat-fab .fab-txt{display:none}}
+.fab-badge[hidden]{display:none}

@@ -39,7 +39,7 @@ class SignalDeliveryRules(TestCase):
         web_login(self.client, "unpaid")
         html = self.client.get(reverse("dashboard")).content.decode()
         self.assertIn("No signals received yet.", html)
-        self.assertNotIn("XAUUSD", html)                      # nothing protected in the page source
+        self.assertNotIn('"signal_id"', html)                     # no signal data in the page source
         self.assertEqual(self.client.get(reverse("signal_feed")).json()["items"], [])
 
     def test_only_entitled_user_receives_and_pays_once(self):

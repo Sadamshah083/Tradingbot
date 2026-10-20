@@ -6,8 +6,6 @@
   </button>
   <div class="um-menu" id="umMenu" role="menu" hidden>
     <div class="um-head">{% if avatar_url %}<img src="{{ avatar_url }}" alt="" class="um-av big">{% else %}<span class="um-av um-ph big">{{ display_name|slice:":1"|upper }}</span>{% endif %}<div><b>{{ display_name }}</b><small>{{ user.email }}</small></div></div>
-    <a role="menuitem" href="{% if staff_home_url %}{{ staff_home_url }}{% else %}{% url 'dashboard' %}{% endif %}">{% if staff_home_url %}{{ staff_home_label }}{% else %}Dashboard{% endif %}</a>
-    {% if not staff_home_url %}<a role="menuitem" href="{% url 'bot_dashboard' %}">My bot</a><a role="menuitem" href="{% url 'signal_history' %}">Signals</a>{% endif %}
     <a role="menuitem" href="{% url 'account_settings' %}">Profile &amp; settings</a>
     <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button role="menuitem" type="submit" class="um-out">Log out</button></form>
   </div>
