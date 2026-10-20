@@ -7,29 +7,56 @@
   .guide details{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f1729}
   .guide summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between}
   .guide summary:after{content:"+";color:var(--teal)} .guide details[open] summary:after{content:"−"}
+  .dash-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .prod{margin-bottom:16px;align-items:stretch} .product{display:flex;flex-direction:column}
+  .product.on{border-color:rgba(182,255,46,.4)}
+  .p-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px} .p-top h2{margin:0}
+  .p-big{font-size:38px;font-weight:800;letter-spacing:-1.2px;color:#fff;margin:6px 0 4px;line-height:1.1} .p-big small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0}
+  .p-big.good{color:#9CF0BE}
+  .p-list{margin:8px 0 0;padding:0 0 0 18px;color:var(--muted);font-size:14px;line-height:1.7}
+  .p-actions{margin-top:auto;padding-top:18px;display:flex;gap:10px;flex-wrap:wrap}
+  .btn.big{padding:14px 22px;font-size:15px}
+  .mini{margin-bottom:16px} .mini .stat.small{font-size:18px;line-height:1.3} .mini .muted{margin-top:4px}
+  .stat.good{color:#9CF0BE} .stat.bad{color:#FF9B94} .stat.muted{color:var(--muted)}
   .lock-banner{padding:12px 14px;border-radius:10px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.06);margin-bottom:14px;font-size:14px}
-  @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:1fr !important}}
+  @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:1fr !important}.p-big{font-size:32px}}
   @media(max-width:520px){.grid.g4{grid-template-columns:1fr}}
 </style>
 {% endblock %}
 {% block content %}
-<h1>Hi {{ user.username }} <span class="muted" style="font-size:14px;font-weight:500"><span class="dot"></span>live</span></h1>
-<p class="lead">Pay for what you need: <b>${{ PRICE_BOT }}</b> unlocks the bot for 30 days; <b>${{ PRICE_SIGNAL }}</b> buys one signal credit. Nothing unlocks without payment.</p>
+<div class="dash-head">
+  <div><h1>Hi {{ display_name }} <span class="muted" style="font-size:14px;font-weight:500"><span class="dot"></span>live</span></h1>
+  <p class="lead" style="margin:4px 0 0">Everything about your signals, bot and account in one place.</p></div>
+  <a class="btn ghost small" href="{% url 'account_settings' %}">Profile &amp; settings</a>
+</div>
 
-{% if not profile.credits and not profile.bot_active_access %}
-<div class="lock-banner">You have no active bot access and no signal credits. <a href="{% url 'checkout' 'bot' %}">Get the bot (${{ PRICE_BOT }} / 30 days)</a> or <a href="{% url 'checkout' 'signals' %}">buy signal credits (${{ PRICE_SIGNAL }} each)</a>.</div>
-{% elif not profile.credits %}
-<div class="lock-banner">Signal delivery is paused — you have <b>0 credits</b>. Buy more to receive the next signal. Your bot access{% if profile.bot_active_access %} stays active until {{ profile.bot_access_until|date:"M d, Y" }}{% else %} is separate{% endif %}.</div>
-{% endif %}
+<div class="grid g2 prod">
+  <div class="card product {% if profile.bot_active_access %}on{% endif %}">
+    <div class="p-top"><h2>Bot access</h2>
+      {% if profile.bot_active_access %}<span class="pill buy">Active</span>{% elif profile.bot_access_until %}<span class="pill sell">Expired</span>{% else %}<span class="pill exit">Locked</span>{% endif %}</div>
+    {% if profile.bot_active_access %}
+      <div class="p-big good">{{ profile.bot_days_left }} days left</div>
+      <div class="muted">Active until {{ profile.bot_access_until|date:"M d, Y" }}</div>
+      <div class="p-actions"><a class="btn primary" href="{% url 'bot_dashboard' %}">Open my bot</a><a class="btn ghost" href="{% url 'checkout' 'bot' %}">Extend +30 days (${{ PRICE_BOT }})</a></div>
+    {% else %}
+      <div class="p-big">${{ PRICE_BOT }} <small>/ {{ BOT_ACCESS_DAYS }} days</small></div>
+      <ul class="p-list"><li>Your personal trading bot, paper mode included</li><li>Risk controls and activity log</li><li>Binance and MT5 (Exness) connections</li><li>Your own TradingView webhook</li></ul>
+      <div class="p-actions"><a class="btn primary big" href="{% url 'checkout' 'bot' %}">{% if profile.bot_access_until %}Renew{% else %}Unlock{% endif %} for ${{ PRICE_BOT }} / {{ BOT_ACCESS_DAYS }} days</a></div>
+    {% endif %}
+  </div>
+  <div class="card product {% if profile.credits %}on{% endif %}">
+    <div class="p-top"><h2>Signal credits</h2>{% if profile.credits %}<span class="pill buy">{{ profile.credits }} left</span>{% else %}<span class="pill exit">None</span>{% endif %}</div>
+    <div class="p-big {% if profile.credits %}good{% endif %}" id="credits">{{ profile.credits }}</div>
+    <div class="muted">${{ PRICE_SIGNAL }} per signal. Each delivered signal uses 1 credit; at 0, delivery stops until you buy more. Exit updates are free.</div>
+    <div class="p-actions"><a class="btn primary {% if not profile.credits %}big{% endif %}" href="{% url 'checkout' 'signals' %}">Buy signal credits (${{ PRICE_SIGNAL }} each)</a></div>
+  </div>
+</div>
 
-<div class="grid g4">
-  <div class="card"><h2>Signal credits</h2><div class="stat {% if profile.credits %}good{% else %}bad{% endif %}" id="credits">{{ profile.credits }}</div><div class="muted">${{ PRICE_SIGNAL }} = 1 signal. Each delivery uses 1 credit; at 0, delivery stops until you <a href="{% url 'checkout' 'signals' %}">buy more</a>.</div></div>
-  <div class="card"><h2>Received</h2><div class="stat">{{ profile.used }}</div><div class="muted">signals delivered to you so far</div></div>
-  <div class="card"><h2>Bot access</h2>
-    {% if profile.bot_active_access %}<div class="stat small good">{{ profile.bot_days_left }} days left</div><div class="muted">until {{ profile.bot_access_until|date:"M d, Y" }} · <a href="{% url 'checkout' 'bot' %}">extend</a></div><a class="btn primary small" href="{% url 'bot_dashboard' %}" style="margin-top:8px">Open my bot</a>
-    {% elif profile.bot_access_until %}<div class="stat small bad">Expired</div><div class="muted">{{ profile.bot_access_until|date:"M d, Y" }} · bot &amp; webhook off · <a href="{% url 'checkout' 'bot' %}">renew ${{ PRICE_BOT }}</a></div>
-    {% else %}<div class="stat small">${{ PRICE_BOT }}</div><div class="muted">30 days · Binance, Exness, paper · <a href="{% url 'checkout' 'bot' %}">unlock</a></div>{% endif %}</div>
-  <div class="card"><h2>Status</h2><div class="stat small {% if profile.active %}good{% else %}bad{% endif %}">{% if profile.active %}Active{% else %}Paused{% endif %}</div><div class="muted">{% if profile.telegram_chat_id %}Telegram delivery on{% else %}Telegram off — ask in chat{% endif %}</div></div>
+<div class="grid g4 mini">
+  <div class="card"><h2>Signals received</h2><div class="stat small">{{ profile.used }}</div><div class="muted">delivered to you so far</div></div>
+  <div class="card"><h2>Bot</h2><div class="stat small {{ bot_summary.tone }}">{{ bot_summary.status }}</div><div class="muted">{% if bot_summary.mode == 'live' %}<b class="bad">LIVE</b> mode{% else %}Paper mode (simulated){% endif %}</div></div>
+  <div class="card"><h2>MT5 connection</h2><div class="stat small {{ bot_summary.mt5_tone }}">{{ bot_summary.mt5_label }}</div><div class="muted">Verified from your bridge's heartbeat</div></div>
+  <div class="card"><h2>Account</h2><div class="stat small {% if profile.active %}good{% else %}bad{% endif %}">{% if profile.active %}Active{% else %}Paused{% endif %}</div><div class="muted">{% if profile.telegram_chat_id %}Telegram delivery on{% else %}Telegram off, ask in chat{% endif %}</div></div>
 </div>
 
 <div class="card guide">

@@ -266,3 +266,19 @@ class NavAndBlogSchedule(TestCase):
         web_login(self.client, "owner")
         self.assertEqual(self.client.get(later.get_absolute_url()).status_code, 200)
         self.assertIn("scheduled", self.client.get(reverse("staff_blog")).content.decode())
+
+
+class DashboardUnlock(TestCase):
+    def test_unpaid_customer_sees_the_20_dollar_unlock_and_paid_one_sees_days_left(self):
+        u = make("dash1")
+        web_login(self.client, "dash1")
+        html = self.client.get(reverse("dashboard")).content.decode()
+        self.assertIn("Unlock for $20 / 30 days", html)
+        self.assertIn(reverse("checkout", args=["bot"]), html)
+        self.assertIn("Buy signal credits ($1 each)", html)
+        self.assertIn("No signals received yet.", html)
+        u.profile.extend_bot_access(30)
+        html = self.client.get(reverse("dashboard")).content.decode()
+        self.assertIn("days left", html)
+        self.assertIn("Open my bot", html)
+        self.assertNotIn("Unlock for $20", html)

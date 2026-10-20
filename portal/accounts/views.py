@@ -493,7 +493,27 @@ def dashboard(request):
     return render(request, "accounts/dashboard.html", {
         "profile": profile, "signal_rows": [delivery_row(d) for d in deliveries], "latest_chat": latest, "orders": orders,
         "last_delivery_id": deliveries[0].id if deliveries else 0, "noindex": True,
+        "bot_summary": _bot_summary(request.user, profile),
     })
+
+
+def _bot_summary(user, profile):
+    """Small status block for the dashboard: what the bot is doing and whether MT5 is verified."""
+    from bots import health
+    from bots.models import BotSettings, BrokerConnection
+    bot = BotSettings.objects.filter(user=user).first()
+    mt5 = BrokerConnection.objects.filter(user=user, broker="exness").first()
+    st = health.state(mt5) if mt5 else "not_configured"
+    if not profile.bot_active_access:
+        status, tone = "Locked until you unlock bot access", "bad"
+    elif not bot or not bot.enabled:
+        status, tone = "Off", "muted"
+    elif bot.kill_switch:
+        status, tone = "Emergency stop", "bad"
+    else:
+        status, tone = "On, waiting for a signal", "good"
+    return {"status": status, "tone": tone, "mode": (bot.mode if bot else "paper"), "mt5_label": health.STATE_LABELS[st],
+            "mt5_tone": "good" if st == "connected" else ("muted" if st == "not_configured" else "bad")}
 
 
 def robots_txt(request):
