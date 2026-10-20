@@ -95,7 +95,7 @@
   input:focus,textarea:focus,select:focus{border-color:#7DE3FF;box-shadow:0 0 0 3px rgba(125,227,255,.18)}
   .chat-err{margin:0;padding:10px 14px;background:rgba(240,113,103,.12);color:#FFB4AE;font-size:13px;border-top:1px solid rgba(240,113,103,.3)}
 </style>
-<link rel="stylesheet" href="{% static 'css/sambot-ui.css' %}?v=3">
+<link rel="stylesheet" href="{% static 'css/sambot-ui.css' %}?v=4">
 {% block head %}{% endblock %}
 </head>
 <body{% if hide_nav %} class="site-page"{% endif %}>
@@ -122,7 +122,7 @@
   <div class="nav-right">
     {% if user.is_authenticated %}{% include "_usermenu.html" %}
     {% else %}<a class="btn ghost small" href="{% url 'login' %}">Log In</a><a class="btn primary small" href="{% url 'register' %}">Sign Up</a>{% endif %}
-    <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" onclick="const u=document.getElementById('app-menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'))"><span></span><span></span><span></span></button>
+    <button class="nav-burger" type="button" aria-label="Open menu" aria-expanded="false" onclick="const u=document.getElementById('app-menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'));const m=document.getElementById('umMenu');if(m)m.hidden=true"><span></span><span></span><span></span></button>
   </div>
 </nav></div></header>
 {% endif %}
@@ -140,7 +140,7 @@
   window.fmtTime = iso => { const d = new Date(iso); return d.toLocaleString(undefined, {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}); };
   document.querySelectorAll('#app-menu a').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('app-menu'); if(m) m.classList.remove('open'); }));
 </script>
-<script src="{% static 'js/sambot-ui.js' %}?v=3" defer></script>
+<script src="{% static 'js/sambot-ui.js' %}?v=4" defer></script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

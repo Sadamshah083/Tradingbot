@@ -101,3 +101,9 @@
   document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('#um')) set(false); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
 })();
+(function () {
+  const btn = document.getElementById('umBtn'), burger = document.querySelector('.nav-burger'), links = document.getElementById('app-menu');
+  if (!btn || !burger || !links) return;
+  btn.addEventListener('click', () => { links.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); });
+  document.addEventListener('click', e => { if (links.classList.contains('open') && !e.target.closest('#app-menu, .nav-burger')) { links.classList.remove('open'); burger.setAttribute('aria-expanded', 'false'); } });
+})();

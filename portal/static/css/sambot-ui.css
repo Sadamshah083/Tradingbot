@@ -72,3 +72,16 @@ html.sd-lock{overflow:hidden}
 .um-out{color:#FF9B94}
 .um-menu form{margin:0}
 @media(max-width:700px){.um-name{display:none}.um-btn{padding:4px}.um-car{display:none}}
+
+/* phone header: toggle button animates to an X; account menu stays inside the screen */
+.nav-burger span{transition:transform .25s,opacity .2s}
+.nav-burger[aria-expanded="true"]{border-color:rgba(182,255,46,.5);color:#B6FF2E}
+.nav-burger[aria-expanded="true"] span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.nav-burger[aria-expanded="true"] span:nth-child(2){opacity:0}
+.nav-burger[aria-expanded="true"] span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+@media(max-width:900px){
+  .um-btn{padding:3px;border-radius:50%}
+  .um-av{width:34px;height:34px}
+  .um-menu{position:fixed;right:12px;top:68px;left:auto;width:min(300px,calc(100vw - 24px))}
+  nav ul{box-shadow:0 24px 50px rgba(0,0,0,.5)}
+}
