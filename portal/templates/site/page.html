@@ -113,7 +113,7 @@
         <h2>Keep exploring</h2>
         <ul class="seo-rel">
           {% for r in related_pages %}
-          <li><a href="{{ r.url }}"><b>{{ r.title }}</b><span>{{ r.blurb|truncatewords:13 }}</span></a></li>
+          <li><a href="{{ r.url }}"><b>{{ r.title }}</b><span>{{ r.blurb }}</span></a></li>
           {% endfor %}
         </ul>
       </aside>
