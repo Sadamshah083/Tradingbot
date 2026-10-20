@@ -139,5 +139,8 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]   # logo, backtests.json for the homepage charts
+MEDIA_URL = "/media/"
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT", BASE_DIR / "media"))   # blog pictures uploaded from the admin
+DATA_UPLOAD_MAX_MEMORY_SIZE = 8 * 1024 * 1024
 STATIC_ROOT = Path(os.getenv("STATIC_ROOT", BASE_DIR / "staticfiles"))   # on a server: a folder nginx can read, e.g. /var/www/axealgo/static
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

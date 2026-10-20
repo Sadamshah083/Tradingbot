@@ -1,8 +1,16 @@
+import os
+import uuid
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+
+
+def blog_upload_to(instance, filename):
+    ext = os.path.splitext(filename)[1].lower()
+    return f"blog/{timezone.now():%Y/%m}/{uuid.uuid4().hex}{ext}"
 
 
 class Category(models.Model):
@@ -29,9 +37,10 @@ class Post(models.Model):
     excerpt = models.CharField(max_length=300, blank=True, help_text="Short summary for the listing and social cards.")
     body_html = models.TextField(help_text="Article body in HTML.")
     featured_image = models.URLField(blank=True, help_text="Full URL of the cover image (upload it anywhere public, e.g. Imgur, or /static/).")
+    featured_file = models.FileField(upload_to=blog_upload_to, blank=True, help_text="Picture uploaded from the admin; used before the URL above.")
     featured_image_alt = models.CharField(max_length=160, blank=True)
     category = models.ForeignKey(Category, null=True, blank=True, on_delete=models.SET_NULL, related_name="posts")
-    tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated.")
+    tags = models.CharField(max_length=200, blank=True, help_text="Internal only: used by the team to organise posts and never shown to readers.")
     author = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="posts")
     author_name = models.CharField(max_length=80, blank=True, help_text="Shown publicly; defaults to the site name.")
     # SEO
@@ -65,7 +74,14 @@ class Post(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse("blog_post", args=[self.slug])
+        return reverse("blog_post", args=[self.slug]) if self.slug else ""
+
+    @property
+    def cover_url(self) -> str:
+        """The picture to show: an uploaded file wins over a pasted URL."""
+        if self.featured_file:
+            return self.featured_file.url
+        return self.featured_image
 
     @property
     def tag_list(self):

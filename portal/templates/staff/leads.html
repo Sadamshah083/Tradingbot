@@ -1,0 +1,52 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Leads · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Leads{% endblock %}
+{% block page_lead %}Everyone who signs up lands here automatically. Follow up in live chat, track their status, and they stay on this list after they become customers.{% endblock %}
+{% block staff %}
+<style>
+  .lead-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .lead-tabs a{padding:7px 13px;border-radius:999px;border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:700;white-space:nowrap}
+  .lead-tabs a b{color:#fff;margin-left:4px}
+  .lead-tabs a.on,.lead-tabs a:hover{color:#fff;border-color:rgba(182,255,46,.5);background:rgba(182,255,46,.08);text-decoration:none}
+  .stage{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:800;border:1px solid var(--line)}
+  .stage.new{color:#B6FF2E;border-color:rgba(182,255,46,.4);background:rgba(182,255,46,.1)}
+  .stage.contacted{color:#7DE3FF;border-color:rgba(125,227,255,.4);background:rgba(125,227,255,.1)}
+  .stage.qualified{color:#C4B5FF;border-color:rgba(196,181,255,.4);background:rgba(196,181,255,.1)}
+  .stage.customer{color:#9CF0BE;border-color:rgba(156,240,190,.4);background:rgba(156,240,190,.1)}
+  .stage.lost{color:#9FB0CA}
+  .lead-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .lead-form select{width:auto} .lead-form input{min-width:170px;flex:1}
+</style>
+<div class="lead-tabs">
+  <a href="?status=all{% if q %}&q={{ q }}{% endif %}" class="{% if flt == 'all' %}on{% endif %}">All<b>{{ counts.all }}</b></a>
+  {% for key, label, n in tabs %}<a href="?status={{ key }}{% if q %}&q={{ q }}{% endif %}" class="{% if flt == key %}on{% endif %}">{{ label }}<b>{{ n }}</b></a>{% endfor %}
+</div>
+<div class="card">
+  <form method="get" class="row" style="margin-bottom:10px">
+    <input type="hidden" name="status" value="{{ flt }}">
+    <div style="max-width:320px"><input name="q" value="{{ q }}" placeholder="Search e-mail or username"></div>
+    <div style="flex:none"><button class="btn ghost">Search</button></div>
+  </form>
+  <div class="tablewrap">
+  <table><thead><tr><th>Lead</th><th>Signed up</th><th>Stage</th><th>Follow-up</th><th>Last login</th><th></th></tr></thead><tbody>
+  {% for u in users %}
+    <tr>
+      <td><b>{{ u.email|default:"(no e-mail)" }}</b>{% if u.unread %} <span class="badge">{{ u.unread }} new</span>{% endif %}<br><span class="muted">{{ u.username }}</span></td>
+      <td class="muted" style="white-space:nowrap">{{ u.date_joined|date:"M d, Y H:i" }}<br><span style="font-size:11.5px">{{ u.date_joined|naturaltime }}</span></td>
+      <td><span class="stage {{ u.stage }}">{{ u.stage|capfirst }}</span></td>
+      <td>
+        <form method="post" action="{% url 'staff_lead_update' u.id %}" class="lead-form">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <select name="status">{% for key, label in statuses %}<option value="{{ key }}" {% if u.profile.lead_status == key %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          <input name="note" value="{{ u.profile.lead_note }}" placeholder="Note (private)" maxlength="300">
+          <button class="btn ghost small">Save</button>
+        </form>
+      </td>
+      <td class="muted" style="white-space:nowrap">{{ u.last_login|naturaltime|default:"never" }}</td>
+      <td style="white-space:nowrap"><a class="btn primary small" href="{% url 'chat_inbox' %}?u={{ u.id }}">Chat</a> <a class="btn ghost small" href="{% url 'staff_customers' %}?q={{ u.username }}">Account</a></td>
+    </tr>
+  {% empty %}<tr><td colspan="6" class="empty">No leads match.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% include "staff/_pager.html" %}
+</div>
+{% endblock %}

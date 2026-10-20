@@ -1,5 +1,7 @@
 from django.contrib import admin
-from django.urls import include, path
+from django.conf import settings
+from django.urls import include, path, re_path
+from django.views.static import serve
 from django.views.generic import RedirectView
 
 from accounts.views import AdminLoginView, landing, legal, robots_txt, site_page, sitemap_xml
@@ -9,6 +11,11 @@ SITE_SLUGS = [
     "gold", "bitcoin", "binance", "mt5", "performance", "pricing",
     "strategy-lab", "about", "faq", "contact", "disclaimer",
 ]
+
+def media(request, path):
+    """Uploaded blog pictures (MEDIA_ROOT is read per request)."""
+    return serve(request, path, document_root=settings.MEDIA_ROOT)
+
 
 urlpatterns = [
     path("", landing, name="landing"),
@@ -26,4 +33,5 @@ urlpatterns = [
     path("blog/", include("blog.urls")),
     path("bot/", include("bots.urls")),
     path("django-admin/", admin.site.urls),
+    re_path(r"^media/(?P<path>.*)$", media),
 ]

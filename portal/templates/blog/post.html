@@ -3,9 +3,9 @@
 {% block seo %}
 <meta name="description" content="{{ p.meta_description|default:p.excerpt|default:p.body_html|striptags|truncatechars:155 }}">
 <meta property="og:type" content="article"><meta property="og:url" content="{{ canonical }}"><meta property="og:title" content="{{ p.og_title|default:p.seo_title|default:p.title }}">
-<meta property="og:description" content="{{ p.og_description|default:p.meta_description|default:p.excerpt }}">{% if p.og_image or p.featured_image %}<meta property="og:image" content="{{ p.og_image|default:p.featured_image }}"><meta name="twitter:card" content="summary_large_image">{% endif %}
+<meta property="og:description" content="{{ p.og_description|default:p.meta_description|default:p.excerpt }}">{% if og_image_abs %}<meta property="og:image" content="{{ og_image_abs }}"><meta name="twitter:card" content="summary_large_image">{% endif %}
 <meta property="article:published_time" content="{{ p.published_at|date:'c' }}">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ p.title|escapejs }}","datePublished":"{{ p.published_at|date:'c' }}","dateModified":"{{ p.updated|date:'c' }}","author":{"@type":"Person","name":"{{ p.author_name|default:SITE_NAME|escapejs }}"},"publisher":{"@type":"Organization","name":"{{ SITE_NAME }}"},"mainEntityOfPage":"{{ canonical }}"{% if p.featured_image %},"image":"{{ p.featured_image }}"{% endif %}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ p.title|escapejs }}","datePublished":"{{ p.published_at|date:'c' }}","dateModified":"{{ p.published_at|date:'c' }}","author":{"@type":"Person","name":"{{ p.author_name|default:SITE_NAME|escapejs }}"},"publisher":{"@type":"Organization","name":"{{ SITE_NAME }}"},"mainEntityOfPage":"{{ canonical }}"{% if p.featured_image %},"image":"{{ p.featured_image }}"{% endif %}}</script>
 {% endblock %}
 {% block page_head %}
 <style>
@@ -24,12 +24,11 @@
 {% block site %}
 <div class="wrap">
   <article class="art">
-    <div class="kicker"><a href="{% url 'blog' %}" style="color:inherit">Blog</a>{% if p.category %} · <a href="{% url 'blog' %}?category={{ p.category.slug }}" style="color:inherit">{{ p.category.name }}</a>{% endif %}</div>
+    <div class="kicker"><a href="{% url 'blog' %}" style="color:inherit">Blog</a>{% if p.category %} · <a href="{% url 'blog_category' p.category.slug %}" style="color:inherit">{{ p.category.name }}</a>{% endif %}</div>
     <h1>{{ p.title }}</h1>
     <div class="ameta"><span>{{ p.author_name|default:SITE_NAME }}</span><span>{{ p.published_at|date:"F d, Y" }}</span><span>{{ p.reading_minutes }} min read</span>{% if not p.published %}<span class="a">DRAFT PREVIEW</span>{% endif %}</div>
-    {% if p.featured_image %}<img class="cover" src="{{ p.featured_image }}" alt="{{ p.featured_image_alt|default:p.title }}">{% endif %}
+    {% if p.cover_url %}<img class="cover" src="{{ p.cover_url }}" alt="{{ p.featured_image_alt|default:p.title }}">{% endif %}
     <div class="prose">{{ p.body_html|safe }}</div>
-    {% if p.tag_list %}<div class="tags">{% for t in p.tag_list %}<span>#{{ t }}</span>{% endfor %}</div>{% endif %}
     {% if user.is_superuser %}<p><a class="btn ghost small" href="{% url 'staff_blog_edit' p.id %}">Edit this post</a></p>{% endif %}
   </article>
   {% if related %}<div class="rel"><div class="kicker">Read next</div><div class="grid">{% for r in related %}<a class="panel" href="{{ r.get_absolute_url }}">{{ r.title }}<br><span class="muted" style="font-weight:500;font-size:12.5px">{{ r.published_at|date:"M d, Y" }}</span></a>{% endfor %}</div></div>{% endif %}

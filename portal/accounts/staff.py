@@ -302,3 +302,41 @@ def bot(request):
     opened = sum(1 for t in trades if t.get("action") == "open")
     closed = sum(1 for t in trades if t.get("action") == "close_all")
     return render(request, "staff/bot.html", _ctx("bot", trades=trades, paper=paper, alerts=alerts, opened=opened, closed=closed, jerror=j.get("error")))
+
+
+# -- leads: every sign-up, with follow-up status -------------------------------------------
+@staff_required
+def leads(request):
+    from django.db.models import Exists, OuterRef
+    q = request.GET.get("q", "").strip()
+    flt = request.GET.get("status", "all")
+    base = User.objects.filter(is_superuser=False).exclude(profile__role__in=["agent", "admin"])
+    users = base.select_related("profile").annotate(
+        paid=Exists(Order.objects.filter(user=OuterRef("pk"), status="paid")),
+        unread=Count("chat_messages", filter=Q(chat_messages__from_admin=False, chat_messages__read=False), distinct=True),
+    ).order_by("-date_joined")
+    if q:
+        users = users.filter(Q(username__icontains=q) | Q(email__icontains=q))
+    if flt in ("new", "contacted", "qualified", "customer", "lost"):
+        users = users.filter(profile__lead_status=flt)
+    counts = {k: Profile.objects.filter(user__in=base, lead_status=k).count() for k, _ in Profile.LEAD_STATUS}
+    counts["all"] = base.count()
+    page = paginate(request, users)
+    for u in page:
+        u.stage = "customer" if (u.paid or u.profile.bot_access) else u.profile.lead_status
+    return render(request, "staff/leads.html", _ctx("leads", users=page, page=page, q=q, flt=flt, counts=counts, statuses=Profile.LEAD_STATUS,
+                                                  tabs=[(k, label, counts[k]) for k, label in Profile.LEAD_STATUS]))
+
+
+@staff_required
+@require_POST
+def lead_update(request, user_id):
+    user = get_object_or_404(User, pk=user_id, is_superuser=False)
+    profile, _ = Profile.objects.get_or_create(user=user)
+    status = request.POST.get("status", profile.lead_status)
+    if status in dict(Profile.LEAD_STATUS):
+        profile.lead_status = status
+    profile.lead_note = request.POST.get("note", profile.lead_note).strip()[:300]
+    profile.save(update_fields=["lead_status", "lead_note"])
+    messages.success(request, f"Updated {user.email or user.username}.")
+    return redirect(request.POST.get("next") or "staff_leads")

@@ -1,5 +1,4 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import user_passes_test
 from django.core.paginator import Paginator
 from django.db.models import F, Q
 from django.http import Http404
@@ -7,23 +6,56 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from accounts.roles import superadmin_required as staff_required
+
 from .models import Category, Post
 
-staff_required = user_passes_test(lambda u: u.is_superuser, login_url="admin_login")
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+IMAGE_SIGNATURES = {
+    ".jpg": (b"\xff\xd8\xff",), ".jpeg": (b"\xff\xd8\xff",), ".png": (b"\x89PNG\r\n\x1a\n",), ".gif": (b"GIF87a", b"GIF89a"),
+}
 
 
-# â”€â”€ public â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-def index(request):
+def image_error(upload):
+    """Return a message if the uploaded picture is not an acceptable image, else None."""
+    import os
+    ext = os.path.splitext(upload.name)[1].lower()
+    if ext not in IMAGE_SIGNATURES and ext != ".webp":
+        return "Pictures must be JPG, PNG, GIF or WEBP."
+    if upload.size > MAX_IMAGE_BYTES:
+        return "That picture is larger than 5 MB. Please choose a smaller one."
+    head = upload.read(12)
+    upload.seek(0)
+    if ext == ".webp":
+        ok = head[:4] == b"RIFF" and head[8:12] == b"WEBP"
+    else:
+        ok = any(head.startswith(sig) for sig in IMAGE_SIGNATURES[ext])
+    return None if ok else "That file does not look like a real picture."
+
+
+# -- public --------------------------------------------------------------------
+def _listing(request, cat_slug=None):
     qs = Post.objects.filter(published=True).select_related("category")
-    cat = request.GET.get("category")
+    cat = cat_slug or request.GET.get("category")
     q = request.GET.get("q", "").strip()
+    category = None
     if cat:
+        category = get_object_or_404(Category, slug=cat) if cat_slug else Category.objects.filter(slug=cat).first()
         qs = qs.filter(category__slug=cat)
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(excerpt__icontains=q) | Q(tags__icontains=q))
+        qs = qs.filter(Q(title__icontains=q) | Q(excerpt__icontains=q))   # tags are internal and are not searched
     page = Paginator(qs, 9).get_page(request.GET.get("page"))
+    canonical = request.build_absolute_uri(f"/blog/category/{cat_slug}/" if cat_slug else "/blog/")
     return render(request, "blog/index.html", {"page": page, "categories": Category.objects.filter(posts__published=True).distinct(),
-                                               "current": cat, "q": q, "hide_nav": True, "canonical": request.build_absolute_uri("/blog/")})
+                                               "current": cat, "category": category, "q": q, "hide_nav": True, "canonical": canonical})
+
+
+def index(request):
+    return _listing(request)
+
+
+def category(request, slug):
+    return _listing(request, slug)
 
 
 def post(request, slug):
@@ -35,15 +67,17 @@ def post(request, slug):
     related = Post.objects.filter(published=True).exclude(pk=p.pk)
     if p.category:
         related = related.filter(category=p.category)
+    cover = p.og_image or p.cover_url
     return render(request, "blog/post.html", {"p": p, "related": related[:3], "hide_nav": True,
+                                              "og_image_abs": request.build_absolute_uri(cover) if cover else "",
                                               "canonical": p.canonical_url or request.build_absolute_uri(p.get_absolute_url())})
 
 
-# â”€â”€ admin side â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- admin side ----------------------------------------------------------------
 @staff_required
 def staff_list(request):
     from accounts.staff import paginate
-    posts = Post.objects.select_related("category").order_by("-created")
+    posts = Post.objects.select_related("category").order_by("-published_at", "-created")
     page = paginate(request, posts)
     return render(request, "staff/blog_list.html", {"posts": page, "page": page, "section": "blog", "hide_nav": True,
                                                     "published": posts.filter(published=True).count()})
@@ -70,8 +104,22 @@ def staff_edit(request, post_id=None):
         p.og_title = data.get("og_title", "").strip()[:95]
         p.og_description = data.get("og_description", "").strip()[:200]
         p.og_image = data.get("og_image", "").strip()
-        cat_name = data.get("category", "").strip()[:60]
-        p.category = Category.objects.get_or_create(name=cat_name)[0] if cat_name else None
+        error = None
+        upload = request.FILES.get("featured_file")
+        if upload:
+            error = image_error(upload)
+            if not error:
+                p.featured_file = upload
+        elif data.get("remove_image"):
+            p.featured_file = None
+            p.featured_image = ""
+        new_cat = data.get("new_category", "").strip()[:60]
+        if new_cat:
+            p.category = Category.objects.get_or_create(name=new_cat)[0]
+        elif data.get("category_id", "").isdigit():
+            p.category = Category.objects.filter(pk=int(data["category_id"])).first()
+        else:
+            p.category = None
         action = data.get("action", "save")
         if action == "publish":
             p.published = True
@@ -87,7 +135,9 @@ def staff_edit(request, post_id=None):
                     p.published_at = timezone.make_aware(dt) if timezone.is_naive(dt) else dt
             except (ValueError, TypeError):
                 pass
-        if not p.title or not p.body_html.strip():
+        if error:
+            messages.error(request, error)
+        elif not p.title or not p.body_html.strip():
             messages.error(request, "A post needs a title and a body.")
         else:
             p.save()

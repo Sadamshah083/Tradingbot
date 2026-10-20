@@ -467,6 +467,8 @@ def register(request):
     if request.method == "POST" and form.is_valid():
         user = form.save()
         login(request, user)
+        Message.objects.create(customer=user, from_admin=True, auto=True,
+                               text="Welcome to SamBot! Ask us anything here, 24/7. A team member will reply as soon as they are online.")
         messages.success(request, "Welcome! Your account is ready. Pick a product below to get started.")
         nxt = request.GET.get("next") or request.POST.get("next")
         return redirect(nxt if nxt and nxt.startswith("/") else "dashboard")

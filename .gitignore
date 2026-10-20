@@ -22,3 +22,6 @@ logs/
 portal/dist/
 .vscode/
 .idea/
+
+# uploaded pictures
+portal/media/

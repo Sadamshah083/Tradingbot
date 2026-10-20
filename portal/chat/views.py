@@ -102,24 +102,40 @@ def send(request):
 @staff_required
 def inbox(request):
     _touch(request.user)
-    convs = (_customers().filter(chat_messages__isnull=False).distinct()
-             .annotate(unread=Count("chat_messages", filter=Q(chat_messages__from_admin=False, chat_messages__read=False)),
+    selected = request.GET.get("u", "")
+    return render(request, "chat/inbox.html", {"selected": int(selected) if selected.isdigit() else 0, "section": "inbox", "hide_nav": True})
+
+
+@staff_required
+@require_GET
+def inbox_list(request):
+    """Conversation list for the console (unread first). Polled every few seconds."""
+    _touch(request.user)
+    q = request.GET.get("q", "").strip()
+    convs = (_customers().filter(chat_messages__isnull=False).distinct().select_related("profile")
+             .annotate(unread=Count("chat_messages", filter=Q(chat_messages__from_admin=False, chat_messages__read=False), distinct=True),
                        last=Max("chat_messages__created")).order_by("-unread", "-last"))
+    if q:
+        convs = convs.filter(Q(username__icontains=q) | Q(email__icontains=q))
     rows = []
-    for u in convs:
-        last_msg = Message.objects.filter(customer=u).order_by("-created").first()
-        rows.append({"user": u, "unread": u.unread, "last": last_msg})
-    return render(request, "chat/inbox.html", {"rows": rows, "section": "inbox", "hide_nav": True})
+    for u in convs[:200]:
+        last = Message.objects.filter(customer=u).order_by("-created").first()
+        prof = getattr(u, "profile", None)
+        rows.append({
+            "id": u.id, "name": u.email or u.username, "username": u.username, "unread": u.unread,
+            "text": last.text[:90] if last else "", "mine": bool(last and last.from_admin), "time": last.created.isoformat() if last else "",
+            "lead": prof.lead_status if prof else "new", "credits": prof.credits if prof else 0,
+            "bot": bool(prof and prof.bot_active_access), "joined": u.date_joined.isoformat(),
+        })
+    return JsonResponse({"rows": rows, "unread_total": Message.objects.filter(from_admin=False, read=False).count()})
 
 
 @staff_required
 def conversation(request, user_id):
-    _touch(request.user)
-    customer = get_object_or_404(_customers(), pk=user_id)
-    msgs = Message.objects.filter(customer=customer).select_related("author")
-    Message.objects.filter(customer=customer, from_admin=False, read=False).update(read=True)
-    return render(request, "chat/conversation.html", {"customer": customer, "messages_list": msgs, "last_id": msgs.last().id if msgs.exists() else 0,
-                                                       "section": "inbox", "hide_nav": True})
+    """Kept for old links: open the console on that customer."""
+    from django.shortcuts import redirect
+    from django.urls import reverse
+    return redirect(f"{reverse('chat_inbox')}?u={int(user_id)}")
 
 
 @staff_required

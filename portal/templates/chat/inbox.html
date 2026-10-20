@@ -1,16 +1,159 @@
 {% extends "staff/base.html" %}
-{% load humanize %}
-{% block title %}Inbox · {{ SITE_NAME }}{% endblock %}
+{% block title %}Live chat · {{ SITE_NAME }}{% endblock %}
 {% block page_title %}Live chat{% endblock %}
-{% block page_lead %}Conversations with customers, unread first. This list refreshes every 10 seconds.{% endblock %}
+{% block page_lead %}Real-time conversations with customers and new sign-ups. Support is 24/7: every message gets an answer.{% endblock %}
 {% block staff %}
-<div class="card"><table><thead><tr><th>Customer</th><th>Last message</th><th>When</th><th></th></tr></thead><tbody>
-{% for r in rows %}
-  <tr><td><b>{{ r.user.email|default:r.user.username }}</b> {% if r.unread %}<span class="badge">{{ r.unread }}</span>{% endif %}<br><span class="muted">{{ r.user.username }} · {{ r.user.profile.credits }} credits{% if r.user.profile.bot_access %} · bot owner{% endif %}</span></td>
-    <td>{% if r.last %}<span class="{% if r.last.from_admin %}muted{% endif %}">{% if r.last.from_admin %}You: {% endif %}{{ r.last.text|truncatechars:90 }}</span>{% endif %}</td>
-    <td class="muted">{% if r.last %}{{ r.last.created|naturaltime }}{% endif %}</td>
-    <td><a class="btn primary small" href="{% url 'chat_conversation' r.user.id %}">Open</a></td></tr>
-{% empty %}<tr><td colspan="4" class="empty">No conversations yet.</td></tr>{% endfor %}
-</tbody></table></div>
+<style>
+  .cc{display:grid;grid-template-columns:340px 1fr;gap:0;height:calc(100vh - 190px);min-height:480px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:rgba(15,26,46,.6)}
+  .cc-list{display:flex;flex-direction:column;border-right:1px solid var(--line);min-height:0;background:rgba(10,18,34,.55)}
+  .cc-search{padding:12px;border-bottom:1px solid var(--line)} .cc-search input{width:100%}
+  .cc-rows{flex:1;overflow-y:auto}
+  .cc-row{display:flex;gap:10px;width:100%;text-align:left;padding:12px 14px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer;font:inherit;align-items:flex-start}
+  .cc-row:hover{background:rgba(160,185,230,.06)} .cc-row.on{background:rgba(182,255,46,.08);box-shadow:inset 3px 0 0 #B6FF2E}
+  .cc-av{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(125,227,255,.14);color:#7DE3FF;font-weight:800;font-size:14px}
+  .cc-mid{min-width:0;flex:1} .cc-mid b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cc-mid span{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .cc-side{flex:none;text-align:right;font-size:11px;color:var(--muted)} .cc-side .badge{display:inline-flex;margin-top:4px}
+  .cc-empty,.cc-blank{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px}
+  .cc-pane{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .cc-blank{margin:auto}
+  .cc-main{display:flex;flex-direction:column;height:100%;min-height:0}
+  .cc-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .cc-head b{font-size:15px;display:block} .cc-head small{color:var(--muted);font-size:12px}
+  .cc-head .cc-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .cc-back{display:none}
+  .cc-log{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .cc-msg{max-width:74%;padding:10px 14px;border-radius:14px;font-size:14px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+  .cc-msg.me{align-self:flex-end;background:linear-gradient(135deg,#2A4A8A,#1E3866);color:#fff;border-bottom-right-radius:4px}
+  .cc-msg.them{align-self:flex-start;background:rgba(160,185,230,.12);border-bottom-left-radius:4px}
+  .cc-msg .meta{display:block;font-size:11px;opacity:.6;margin-top:4px}
+  .cc-quick{display:flex;gap:6px;flex-wrap:wrap;padding:8px 16px 0}
+  .cc-quick button{font:inherit;font-size:12px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer}
+  .cc-quick button:hover{color:#fff;border-color:rgba(182,255,46,.5)}
+  .cc-form{display:flex;gap:10px;padding:12px 16px 14px;align-items:flex-end}
+  .cc-form textarea{flex:1;resize:none;max-height:140px;font:inherit;padding:10px 12px;border-radius:12px}
+  .cc-err{padding:8px 16px;background:rgba(240,113,103,.12);color:#FFB4AE;font-size:13px}
+  @media(max-width:900px){
+    .cc{grid-template-columns:1fr;height:calc(100vh - 150px)}
+    .cc .cc-pane{display:none} .cc.show-pane .cc-pane{display:flex} .cc.show-pane .cc-list{display:none}
+    .cc-back{display:inline-flex}
+  }
+</style>
+{% csrf_token %}
+<div class="cc" id="cc" data-selected="{{ selected }}">
+  <aside class="cc-list">
+    <div class="cc-search"><input id="ccq" type="search" placeholder="Search by e-mail or username" autocomplete="off"></div>
+    <div class="cc-rows" id="ccRows"><div class="cc-empty">Loading conversations…</div></div>
+  </aside>
+  <section class="cc-pane">
+    <div class="cc-blank" id="ccBlank">Select a conversation to reply.</div>
+    <div class="cc-main" id="ccMain" hidden>
+      <header class="cc-head">
+        <button type="button" class="btn ghost small cc-back" id="ccBack">← List</button>
+        <div><b id="ccName"></b><small id="ccMeta"></small></div>
+        <div class="cc-actions">{% if can_admin %}<a class="btn ghost small" id="ccLead" href="{% url 'staff_leads' %}">Lead</a><a class="btn ghost small" id="ccCust" href="{% url 'staff_customers' %}">Account</a>{% endif %}</div>
+      </header>
+      <div class="cc-log" id="ccLog" aria-live="polite"></div>
+      <div class="cc-err" id="ccErr" hidden>Could not send. Check your connection and try again.</div>
+      <div class="cc-quick" id="ccQuick">
+        <button type="button">Thanks for reaching out! How can I help?</button>
+        <button type="button">Could you share your TradingView username?</button>
+        <button type="button">Your payment was received and your access is active.</button>
+        <button type="button">I'll check this and get back to you shortly.</button>
+      </div>
+      <form class="cc-form" id="ccForm" autocomplete="off">
+        <textarea id="ccText" rows="1" maxlength="2000" placeholder="Write a reply. Enter sends, Shift+Enter adds a new line." required></textarea>
+        <button class="btn primary" type="submit">Send</button>
+      </form>
+    </div>
+  </section>
+</div>
 {% endblock %}
-{% block scripts %}<script>setTimeout(() => location.reload(), 10000);</script>{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const cc = $('cc'), rowsEl = $('ccRows'), log = $('ccLog'), form = $('ccForm'), text = $('ccText'), err = $('ccErr');
+  let rows = [], active = 0, after = 0, q = '', busy = false, seen = new Set();
+  const baseTitle = document.title;
+  const initials = s => (s || '?').trim().charAt(0).toUpperCase();
+  const ago = iso => { if (!iso) return ''; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? 'now' : m < 60 ? m + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : Math.round(m / 1440) + 'd'; };
+
+  function renderList() {
+    if (!rows.length) { rowsEl.innerHTML = '<div class="cc-empty">' + (q ? 'No matches.' : 'No conversations yet. New sign-ups appear here with a welcome message.') + '</div>'; return; }
+    rowsEl.textContent = '';
+    rows.forEach(r => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cc-row' + (r.id === active ? ' on' : '');
+      const av = document.createElement('div'); av.className = 'cc-av'; av.textContent = initials(r.name);
+      const mid = document.createElement('div'); mid.className = 'cc-mid';
+      const n = document.createElement('b'); n.textContent = r.name;
+      const t = document.createElement('span'); t.textContent = (r.mine ? 'You: ' : '') + r.text;
+      mid.append(n, t);
+      const side = document.createElement('div'); side.className = 'cc-side'; side.textContent = ago(r.time);
+      if (r.unread) { const bd = document.createElement('div'); bd.className = 'badge'; bd.textContent = r.unread; side.appendChild(bd); }
+      b.append(av, mid, side); b.addEventListener('click', () => open(r.id)); rowsEl.appendChild(b);
+    });
+  }
+
+  async function loadList() {
+    try {
+      const r = await fetch("{% url 'chat_inbox_list' %}?q=" + encodeURIComponent(q), {credentials: 'same-origin'});
+      if (!r.ok) return; const d = await r.json(); rows = d.rows; renderList();
+      const total = d.unread_total; document.title = (total ? '(' + total + ') ' : '') + baseTitle;
+      const nb = document.getElementById('nav-unread'); if (nb) { nb.textContent = total; nb.style.display = total ? '' : 'none'; }
+      if (active) head(rows.find(x => x.id === active));
+    } catch (e) {}
+  }
+
+  function head(r) {
+    if (!r) return;
+    $('ccName').textContent = r.name;
+    $('ccMeta').textContent = '@' + r.username + ' · ' + r.credits + ' credits' + (r.bot ? ' · bot active' : '') + ' · lead: ' + r.lead + ' · joined ' + new Date(r.joined).toLocaleDateString();
+    const L = $('ccLead'), C = $('ccCust');
+    if (L) L.href = "{% url 'staff_leads' %}?q=" + encodeURIComponent(r.username);
+    if (C) C.href = "{% url 'staff_customers' %}?q=" + encodeURIComponent(r.username);
+  }
+
+  function addMsg(m) {
+    if (seen.has(m.id)) return; seen.add(m.id);
+    const d = document.createElement('div'); d.className = 'cc-msg ' + (m.from_admin ? 'me' : 'them'); d.textContent = m.text;
+    const meta = document.createElement('span'); meta.className = 'meta'; meta.textContent = m.author + ' · ' + window.fmtTime(m.time);
+    d.appendChild(meta); const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 120;
+    log.appendChild(d); if (nearBottom || m._force) log.scrollTop = log.scrollHeight; after = Math.max(after, m.id);
+  }
+
+  async function open(id) {
+    active = id; after = 0; seen = new Set(); log.textContent = ''; $('ccBlank').hidden = true; $('ccMain').hidden = false; cc.classList.add('show-pane');
+    history.replaceState(null, '', '?u=' + id); head(rows.find(x => x.id === id)); renderList();
+    await pollConv(true); text.focus();
+  }
+
+  async function pollConv(force) {
+    if (!active) return;
+    try {
+      const r = await fetch('{% url "chat_inbox" %}' + active + '/poll/?after=' + after, {credentials: 'same-origin'});
+      if (!r.ok) return; const d = await r.json(); d.items.forEach(m => { m._force = force || m.from_admin; addMsg(m); });
+      if (force) log.scrollTop = log.scrollHeight;
+    } catch (e) {}
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); const t = text.value.trim(); if (!t || !active || busy) return;
+    busy = true; err.hidden = true; text.value = ''; text.style.height = '';
+    try {
+      const r = await fetch('{% url "chat_inbox" %}' + active + '/send/', {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text: t})});
+      if (r.ok) { const d = await r.json(); d.message._force = true; addMsg(d.message); loadList(); } else { text.value = t; err.hidden = false; }
+    } catch (x) { text.value = t; err.hidden = false; }
+    busy = false; text.focus();
+  });
+  text.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); } });
+  text.addEventListener('input', () => { text.style.height = 'auto'; text.style.height = Math.min(text.scrollHeight, 140) + 'px'; });
+  $('ccQuick').addEventListener('click', e => { if (e.target.tagName === 'BUTTON') { text.value = e.target.textContent; text.focus(); } });
+  $('ccBack').addEventListener('click', () => { cc.classList.remove('show-pane'); });
+  let timer; $('ccq').addEventListener('input', e => { clearTimeout(timer); timer = setTimeout(() => { q = e.target.value.trim(); loadList(); }, 250); });
+
+  loadList().then(() => { const pre = parseInt(cc.dataset.selected, 10); if (pre) open(pre); });
+  setInterval(() => { if (!document.hidden) { loadList(); pollConv(false); } }, 3000);
+})();
+</script>
+{% endblock %}

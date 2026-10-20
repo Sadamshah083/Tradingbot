@@ -14,18 +14,18 @@
 {% endblock %}
 {% block site %}
 <div class="wrap">
-  <div class="bhead"><div class="kicker">Blog</div><h1>Practical guides to trading automation</h1><p class="sub" style="margin-bottom:0">Understand the technology before relying on the automation. TradingView webhooks, strategy testing, paper trading, risk controls and infrastructure — without guaranteed-return stories or unexplained screenshots.</p></div>
+  <div class="bhead"><div class="kicker">Blog</div><h1>{% if category %}{{ category.name }}{% else %}Practical guides to trading automation{% endif %}</h1><p class="sub" style="margin-bottom:0">Understand the technology before relying on the automation. TradingView webhooks, strategy testing, paper trading, risk controls and infrastructure — without guaranteed-return stories or unexplained screenshots.</p></div>
   <div class="bfilters">
     <a href="{% url 'blog' %}" class="{% if not current %}on{% endif %}">All</a>
-    {% for c in categories %}<a href="?category={{ c.slug }}" class="{% if current == c.slug %}on{% endif %}">{{ c.name }}</a>{% endfor %}
+    {% for c in categories %}<a href="{% url 'blog_category' c.slug %}" class="{% if current == c.slug %}on{% endif %}">{{ c.name }}</a>{% endfor %}
     <form method="get" style="margin-left:auto;display:flex;gap:6px"><input name="q" value="{{ q }}" placeholder="Search articles" style="padding:8px 12px;font-size:14px;width:220px"><button class="btn ghost small">Search</button></form>
   </div>
   <div class="bgrid">
     {% for p in page %}
     <article class="panel bcard">
-      {% if p.featured_image %}<a href="{{ p.get_absolute_url }}"><img class="img" src="{{ p.featured_image }}" alt="{{ p.featured_image_alt|default:p.title }}" loading="lazy"></a>{% else %}<a href="{{ p.get_absolute_url }}" class="img" aria-hidden="true"></a>{% endif %}
+      {% if p.cover_url %}<a href="{{ p.get_absolute_url }}"><img class="img" src="{{ p.cover_url }}" alt="{{ p.featured_image_alt|default:p.title }}" loading="lazy"></a>{% else %}<a href="{{ p.get_absolute_url }}" class="img" aria-hidden="true"></a>{% endif %}
       <div class="body">
-        <div class="bmeta">{% if p.category %}<span class="g">{{ p.category.name }}</span>{% endif %}<span>{{ p.published_at|date:"M d, Y" }}</span><span>{{ p.reading_minutes }} min read</span></div>
+        <div class="bmeta">{% if p.category %}<a class="g" href="{% url 'blog_category' p.category.slug %}">{{ p.category.name }}</a>{% endif %}<span>{{ p.published_at|date:"M d, Y" }}</span><span>{{ p.reading_minutes }} min read</span></div>
         <h3><a href="{{ p.get_absolute_url }}">{{ p.title }}</a></h3>
         <p>{{ p.excerpt|default:p.body_html|striptags|truncatechars:150 }}</p>
       </div>

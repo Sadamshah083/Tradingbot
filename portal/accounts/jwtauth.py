@@ -74,6 +74,9 @@ def _user_from_payload(payload):
 def _flag_issue(sender, request, user, **kwargs):
     if request is not None and not getattr(request, "_jwt_restoring", False):
         request._jwt_issue_for = user
+        from .roles import role_of
+        if role_of(user) == "customer" and hasattr(request, "session"):
+            request.session["open_chat_popup"] = True   # the chat panel opens once after login
 
 
 @receiver(user_logged_out)

@@ -1,0 +1,78 @@
+{# Right-side chat pop-up for logged-in customers. Uses /chat/poll/, /chat/send/ and /chat/unread/. #}
+{% if user.is_authenticated and not staff_home_url and request.resolver_match.url_name != 'chat_room' %}
+<div class="cp" id="cp" data-open="{% if open_chat_popup %}1{% endif %}">
+  <section class="cp-panel" id="cpPanel" role="dialog" aria-label="Chat with SamBot support" hidden>
+    <header class="cp-head">
+      <div class="cp-av" aria-hidden="true">S</div>
+      <div class="cp-title"><b>SamBot Support</b><small id="cpStatus">Support runs 24/7</small></div>
+      <button type="button" class="cp-x" id="cpClose" aria-label="Close chat">&times;</button>
+    </header>
+    <div class="cp-log" id="cpLog" aria-live="polite"><p class="cp-hello" id="cpHello">Hi {{ user.first_name|default:user.username }}! Ask us anything. We reply here, any time of day.</p></div>
+    <div class="cp-err" id="cpErr" hidden>Could not send. Check your connection and try again.</div>
+    <form class="cp-form" id="cpForm" autocomplete="off">
+      <input id="cpText" maxlength="2000" placeholder="Type a message…" aria-label="Message" required>
+      <button type="submit" class="cp-send" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </form>
+  </section>
+  <button type="button" class="cp-fab" id="cpFab" aria-expanded="false" aria-controls="cpPanel">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>
+    <span class="cp-fab-txt">Chat with us <small>24/7</small></span>
+    <b class="cp-badge" id="cpBadge" {% if not unread_chat %}hidden{% endif %}>{{ unread_chat }}</b>
+  </button>
+</div>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const root = $('cp'), panel = $('cpPanel'), fab = $('cpFab'), log = $('cpLog'), form = $('cpForm'), input = $('cpText'), badge = $('cpBadge'), err = $('cpErr');
+  let after = 0, isOpen = false, timer = null, loaded = false; const seen = new Set();
+
+  const setBadge = n => { badge.textContent = n; badge.hidden = !n; };
+  function add(m) {
+    if (seen.has(m.id)) return; seen.add(m.id);
+    const hello = $('cpHello'); if (hello) hello.remove();
+    const d = document.createElement('div'); d.className = 'cp-msg ' + (m.from_admin ? 'them' : 'me'); d.textContent = m.text;
+    const t = document.createElement('span'); t.className = 'cp-meta'; t.textContent = (m.from_admin ? m.author : 'You') + ' · ' + window.fmtTime(m.time);
+    d.appendChild(t); const near = log.scrollHeight - log.scrollTop - log.clientHeight < 140;
+    log.appendChild(d); if (near || m._force) log.scrollTop = log.scrollHeight; after = Math.max(after, m.id);
+  }
+  async function poll(force) {
+    try {
+      const r = await fetch("{% url 'chat_poll' %}?after=" + after, {credentials: 'same-origin'});
+      if (!r.ok) return; const d = await r.json();
+      d.items.forEach(m => { m._force = force; add(m); });
+      if (typeof d.agents_online === 'boolean') $('cpStatus').textContent = d.agents_online ? 'Agent online' : 'Support runs 24/7 · we reply as soon as we can';
+      if (force) log.scrollTop = log.scrollHeight;
+    } catch (e) {}
+  }
+  async function unread() {
+    try { const r = await fetch("{% url 'chat_unread' %}", {credentials: 'same-origin'}); if (r.ok) { const d = await r.json(); setBadge(d.unread); } } catch (e) {}
+  }
+  function open(focus) {
+    isOpen = true; panel.hidden = false; fab.setAttribute('aria-expanded', 'true'); root.classList.add('is-open'); setBadge(0);
+    try { sessionStorage.setItem('cpOpen', '1'); } catch (e) {}
+    clearInterval(timer); poll(!loaded); loaded = true; timer = setInterval(() => { if (!document.hidden) poll(false); }, 3000);
+    if (focus !== false) setTimeout(() => input.focus(), 120);
+  }
+  function close() {
+    isOpen = false; panel.hidden = true; fab.setAttribute('aria-expanded', 'false'); root.classList.remove('is-open');
+    try { sessionStorage.setItem('cpOpen', '0'); } catch (e) {}
+    clearInterval(timer); timer = setInterval(() => { if (!document.hidden) unread(); }, 15000);
+  }
+  fab.addEventListener('click', () => isOpen ? close() : open());
+  $('cpClose').addEventListener('click', close);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen && !document.querySelector('.sd-overlay')) close(); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); const t = input.value.trim(); if (!t) return; input.value = ''; err.hidden = true;
+    try {
+      const r = await fetch("{% url 'chat_send' %}", {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text: t})});
+      if (r.ok) { const d = await r.json(); d.message._force = true; add(d.message); setTimeout(() => poll(false), 700); } else { input.value = t; err.hidden = false; }
+    } catch (x) { input.value = t; err.hidden = false; }
+    input.focus();
+  });
+  let remembered = false; try { remembered = sessionStorage.getItem('cpOpen') === '1'; } catch (e) {}
+  if (root.dataset.open === '1') setTimeout(() => open(false), 900);   // right after login
+  else if (remembered) open(false);
+  else { timer = setInterval(() => { if (!document.hidden) unread(); }, 15000); }
+})();
+</script>
+{% endif %}

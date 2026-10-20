@@ -37,8 +37,16 @@ def site(request):
     params = request.GET.copy()
     params.pop("page", None)
     qs = params.urlencode()
+    new_leads = 0
+    open_chat = False
+    if role in ("superadmin", "admin"):
+        from .models import Profile
+        new_leads = Profile.objects.filter(lead_status="new", role="customer", user__is_superuser=False).count()
+    if role == "customer" and hasattr(request, "session"):
+        open_chat = bool(request.session.pop("open_chat_popup", False))
     home = staff_home_name(request.user)
     return {
+        "new_leads": new_leads, "open_chat_popup": open_chat,
         "role": role, "is_superadmin": role == "superadmin", "can_admin": role in ("superadmin", "admin"),
         "staff_home_url": reverse(home) if home else "", "staff_home_label": "Admin" if role in ("superadmin", "admin") else "Inbox",
         "qs": (qs + "&") if qs else "",   # current filters, for pagination links

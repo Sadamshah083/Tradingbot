@@ -124,6 +124,7 @@
   {% block content %}{% endblock %}
 </main>
 {% if not hide_nav %}<footer><div class="wrap">{{ SITE_NAME }} · Software and information only, not financial advice. Trading involves substantial risk of loss.</div></footer>{% endif %}
+{% include "chat/_popup.html" %}
 <script>
   window.csrfToken = (document.cookie.match(/csrftoken=([^;]+)/) || [])[1] || (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value;
   window.fmtTime = iso => { const d = new Date(iso); return d.toLocaleString(undefined, {month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'}); };

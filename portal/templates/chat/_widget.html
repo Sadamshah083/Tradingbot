@@ -18,7 +18,9 @@
   let after = {{ last_id }};
   const log = document.getElementById('log'), form = document.getElementById('chat-form'), input = document.getElementById('chat-text');
   const meIsAdmin = {{ me_is_admin|yesno:"true,false" }};
+  const seen = new Set();
   function add(m) {
+    if (seen.has(m.id)) return; seen.add(m.id);
     const empty = document.getElementById('chat-empty'); if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = 'msg ' + (m.from_admin === meIsAdmin ? 'me' : 'them');

@@ -18,6 +18,9 @@ class Profile(models.Model):
     tv_access_granted = models.BooleanField(default=False, help_text="Admin has added this TradingView username to the invite-only strategy.")
     role = models.CharField(max_length=10, default="customer", choices=[("customer", "Customer"), ("agent", "Agent"), ("admin", "Admin")],
                             help_text="Staff role. The single superadmin is the Django superuser, not a role.")
+    LEAD_STATUS = [("new", "New"), ("contacted", "Contacted"), ("qualified", "Interested"), ("customer", "Customer"), ("lost", "Not interested")]
+    lead_status = models.CharField(max_length=10, choices=LEAD_STATUS, default="new", help_text="Where this sign-up is in the sales follow-up.")
+    lead_note = models.CharField(max_length=300, blank=True, help_text="Internal follow-up note, never shown to the user.")
     last_seen = models.DateTimeField(null=True, blank=True, help_text="Last time this staff member had the chat inbox open.")
     created = models.DateTimeField(auto_now_add=True)
 

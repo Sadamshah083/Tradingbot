@@ -5,13 +5,13 @@
 {% block page_lead %}{{ published }} published article{{ published|pluralize }}. Posts are written in HTML and appear at <a href="{% url 'blog' %}" target="_blank">/blog/</a>.{% endblock %}
 {% block staff %}
 <p><a class="btn primary" href="{% url 'staff_blog_new' %}">+ New post</a></p>
-<div class="card"><table><thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Published</th><th>Views</th><th>Updated</th><th></th></tr></thead><tbody>
+<div class="card"><table><thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Published</th><th>Views</th><th></th></tr></thead><tbody>
 {% for p in posts %}
   <tr><td><b>{{ p.title }}</b><br><span class="muted">/blog/{{ p.slug }}/</span></td><td>{{ p.category|default:"—" }}</td>
     <td>{% if p.published %}<span class="pill buy">published</span>{% else %}<span class="pill exit">draft</span>{% endif %}</td>
-    <td class="muted">{{ p.published_at|date:"M d, Y H:i"|default:"—" }}</td><td class="mono">{{ p.views }}</td><td class="muted">{{ p.updated|naturaltime }}</td>
+    <td class="muted">{{ p.published_at|date:"M d, Y H:i"|default:"Not published" }}</td><td class="mono">{{ p.views }}</td>
     <td style="white-space:nowrap"><a class="btn ghost small" href="{% url 'staff_blog_edit' p.id %}">Edit</a> <a class="btn ghost small" href="{{ p.get_absolute_url }}" target="_blank">View</a>
       <form method="post" action="{% url 'staff_blog_delete' p.id %}" style="display:inline" data-confirm="Delete this post?" data-confirm-title="Delete post" data-confirm-detail="It will be removed from the blog and cannot be restored." data-confirm-ok="Delete post" data-confirm-danger>{% csrf_token %}<button class="btn danger small">Delete</button></form></td></tr>
-{% empty %}<tr><td colspan="7" class="empty">No posts yet. Click "New post".</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="6" class="empty">No posts yet. Click "New post".</td></tr>{% endfor %}
 </tbody></table>{% include "staff/_pager.html" %}</div>
 {% endblock %}
