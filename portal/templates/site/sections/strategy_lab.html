@@ -1,0 +1,96 @@
+<section class="s rv lab" id="strategy-lab" aria-labelledby="lab-title">
+  <div class="kicker">Strategy Lab</div>
+  <h2 id="lab-title">Gold &amp; BTC Strategy Lab — two independent bots</h2>
+  <p class="sub">Trend-filtered pullbacks on completed daily candles. See the rules, measured history, in-sample vs held-out results, and risk controls before you connect anything.</p>
+
+  <div class="panel callout lab-warn" style="max-width:920px;padding:20px 24px;margin:0 auto 28px;text-align:left">
+    <h3 style="margin:0 0 8px;font-size:16px;color:var(--graphite)">Instrument clarity</h3>
+    <p class="muted" style="margin:0;line-height:1.65"><b>Gold bot = XAUUSD</b> (research data: Yahoo GC=F continuous futures as a proxy). <b>GLD is a US gold ETF</b> — different hours, prices and costs. Do not generate signals on GLD and execute them on XAUUSD. <b>BTC bot = BTC/USD spot</b> (24/7), separate from gold exposure limits.</p>
+  </div>
+
+  <div class="lab-bots">
+    <article class="panel lab-bot" id="bot-gold">
+      <div class="lab-bot-top">
+        <div>
+          <div class="n">BOT 01 · DAILY</div>
+          <h3>Gold · XAUUSD</h3>
+          <p class="muted">Trend pullback · long only</p>
+        </div>
+        <span class="lab-badge">Independent</span>
+      </div>
+      <div class="lab-metrics" id="m-gold"></div>
+      <div class="lab-split" id="split-gold"></div>
+      <h4 class="lab-h">Rules</h4>
+      <ul class="lab-rules" id="rules-gold"></ul>
+      <p class="lab-note" id="note-gold"></p>
+      <svg class="lab-eq" id="eq-gold" viewBox="0 0 640 160" preserveAspectRatio="none" aria-label="Gold equity curve"></svg>
+      <details class="lab-trades"><summary>Trade list</summary><div class="trades"><table><thead><tr><th>Entry</th><th>Exit</th><th>P/L</th><th>Why</th></tr></thead><tbody id="tb-gold"></tbody></table></div></details>
+    </article>
+
+    <article class="panel lab-bot" id="bot-btc">
+      <div class="lab-bot-top">
+        <div>
+          <div class="n">BOT 02 · DAILY · 24/7</div>
+          <h3>Bitcoin · BTCUSD</h3>
+          <p class="muted">Trend pullback + 30d momentum · long only</p>
+        </div>
+        <span class="lab-badge">Independent</span>
+      </div>
+      <div class="lab-metrics" id="m-btc"></div>
+      <div class="lab-split" id="split-btc"></div>
+      <h4 class="lab-h">Rules</h4>
+      <ul class="lab-rules" id="rules-btc"></ul>
+      <p class="lab-note" id="note-btc"></p>
+      <svg class="lab-eq" id="eq-btc" viewBox="0 0 640 160" preserveAspectRatio="none" aria-label="BTC equity curve"></svg>
+      <details class="lab-trades"><summary>Trade list</summary><div class="trades"><table><thead><tr><th>Entry</th><th>Exit</th><th>P/L</th><th>Why</th></tr></thead><tbody id="tb-btc"></tbody></table></div></details>
+    </article>
+  </div>
+
+  <div class="mid-cards" style="margin-top:36px;max-width:960px">
+    <article class="panel mid-card">
+      <h3>About the “80% win rate” goal</h3>
+      <p>We can measure whether a version reaches 80%. We cannot responsibly design a bot that guarantees it. A strategy can win often and still lose money if losers are large. Useful measures: expectancy, drawdown, profit factor, costs, and held-out sample size.</p>
+    </article>
+    <article class="panel mid-card">
+      <h3>How we tested</h3>
+      <p>Rules were fixed first. History was split at <b id="holdout-date">2024-01-01</b> (in-sample before, held-out after). Costs are modelled. Searching hundreds of thresholds until one chart hits 80% is overfitting — we do not do that here.</p>
+    </article>
+  </div>
+
+  <h3 class="sec-h">Risk rules for both bots</h3>
+  <div class="mid-cards three" style="max-width:1100px">
+    <article class="panel mid-card"><h3>Allocation</h3><p>Max ~10% of equity per instrument (configurable). Gold and BTC limits stay separate, plus one combined account cap.</p></article>
+    <article class="panel mid-card"><h3>Protective stop</h3><p>2× ATR(14) below entry is the test default. A stop limits the intended exit; it cannot guarantee the fill price when markets gap.</p></article>
+    <article class="panel mid-card"><h3>Reject / pause</h3><p>Reject if candle is missing/stale, funds are insufficient, an order is pending, or the daily loss limit is hit. Pause new entries after 3 consecutive losses until review.</p></article>
+  </div>
+
+  <div class="cta" style="margin-top:36px;justify-content:center">
+    <a class="btn primary" href="{% url 'register' %}" data-modal="register">Paper trade this lab</a>
+    <a class="btn ghost" href="{% url 'site_performance' %}">Other verified backtests</a>
+  </div>
+  <p class="fine" style="margin:20px auto 0;text-align:center;max-width:640px">Historical simulations are not forecasts. Label every result with instrument, data source, dates, costs and strategy version before trusting it live.</p>
+</section>
+
+<style>
+  .lab-bots{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:1100px;margin:0 auto;text-align:left}
+  .lab-bot{padding:26px;overflow:hidden}
+  .lab-bot-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:18px}
+  .lab-bot .n{font-family:"JetBrains Mono",monospace;color:var(--accent2);font-size:11px;letter-spacing:1.4px;margin-bottom:6px}
+  .lab-bot h3{margin:0 0 4px;font-size:24px;color:var(--graphite);font-family:Fraunces,Georgia,serif}
+  .lab-badge{flex:none;padding:6px 10px;border-radius:999px;background:rgba(182,255,46,.22);border:1px solid rgba(182,255,46,.45);font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--graphite)}
+  .lab-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .lab-metrics div{padding:12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+  .lab-metrics .k{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .lab-metrics .v{font-size:18px;font-weight:800;color:var(--graphite);font-family:"JetBrains Mono",monospace}
+  .lab-split{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:12.5px}
+  .lab-split div{padding:10px 12px;border-radius:12px;border:1px dashed var(--line);color:var(--muted)}
+  .lab-split b{color:var(--graphite)}
+  .lab-h{margin:0 0 8px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--accent2)}
+  .lab-rules{margin:0 0 12px;padding:0 0 0 18px;color:var(--muted);font-size:13.5px;line-height:1.55}
+  .lab-note{font-size:12.5px;color:var(--muted);line-height:1.55;margin:0 0 14px}
+  .lab-eq{width:100%;height:160px;display:block;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+  .lab-trades{margin-top:14px;background:transparent;border:0;padding:0;text-align:left}
+  .lab-trades summary{cursor:pointer;font-weight:700;color:var(--accent2);font-size:14px}
+  .lab-warn{border-color:rgba(182,255,46,.45)!important;background:rgba(182,255,46,.1)!important}
+  @media(max-width:900px){.lab-bots{grid-template-columns:1fr}.lab-metrics{grid-template-columns:1fr 1fr}}
+</style>

@@ -1,0 +1,10 @@
+{% if page.paginator.count %}
+<div class="pager">
+  <span>Showing {{ page.start_index }}–{{ page.end_index }} of {{ page.paginator.count }}</span>
+  <div class="pages">
+    {% if page.has_previous %}<a href="?{{ qs }}page=1" title="First">«</a><a href="?{{ qs }}page={{ page.previous_page_number }}" title="Previous">‹</a>{% endif %}
+    {% for n in page.paginator.get_elided_page_range %}{% if n == page.number %}<span class="cur">{{ n }}</span>{% elif n == page.paginator.ELLIPSIS %}<span style="padding:5px 4px">…</span>{% else %}<a href="?{{ qs }}page={{ n }}">{{ n }}</a>{% endif %}{% endfor %}
+    {% if page.has_next %}<a href="?{{ qs }}page={{ page.next_page_number }}" title="Next">›</a><a href="?{{ qs }}page={{ page.paginator.num_pages }}" title="Last">»</a>{% endif %}
+  </div>
+</div>
+{% endif %}

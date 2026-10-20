@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Create account · {{ SITE_NAME }}{% endblock %}
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+<style>
+  header.top,footer{display:none !important}
+  main{padding:0 !important;max-width:none !important;margin:0 !important}
+  body{min-height:100vh;background:
+    radial-gradient(700px 420px at 80% 10%,rgba(182,255,46,.22) 0%,transparent 55%),
+    radial-gradient(600px 380px at 10% 90%,rgba(182,255,46,.1) 0%,transparent 50%),
+    #FFFFFF !important}
+  .auth-pop{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;animation:rise .45s ease}
+  @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .auth-card{width:100%;max-width:440px;padding:36px 32px 28px;border-radius:20px;background:#fff;border:1px solid rgba(35,38,47,.1);box-shadow:0 28px 80px rgba(35,38,47,.12);animation:pop .35s cubic-bezier(.22,1,.36,1)}
+  @keyframes pop{from{transform:translateY(16px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+  .auth-card .brand{display:flex;justify-content:center;margin-bottom:22px}
+  .auth-card .brand img{height:40px;width:auto;border-radius:8px}
+  .auth-card h2{margin:0 0 6px;text-align:center;font-size:26px;color:#23262F;font-family:Fraunces,Georgia,serif;font-weight:800;letter-spacing:-.4px;text-transform:none}
+  .auth-card .lead{text-align:center;color:#5B6472;margin:0 0 22px;font-size:14.5px}
+  .auth-card label{color:#5B6472}
+  .auth-card input{background:#F6F7F9;border:1px solid rgba(35,38,47,.12);color:#23262F;border-radius:12px}
+  .auth-card input:focus{border-color:#B6FF2E;box-shadow:0 0 0 3px rgba(182,255,46,.25)}
+  .auth-card .btn.primary{background:#B6FF2E;color:#23262F;border-radius:12px;font-weight:800;box-shadow:0 10px 30px rgba(182,255,46,.3);transition:transform .18s,box-shadow .18s}
+  .auth-card .btn.primary:hover{background:#9FE01A;filter:none;transform:translateY(-2px)}
+  .auth-card .muted{color:#5B6472}
+  .auth-card a{color:#6BA30F;font-weight:700}
+  .auth-card .errorlist{color:#D94A42}
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-pop">
+  <div class="auth-card">
+    <a class="brand" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="140" height="42"></a>
+    <h2>Create your account</h2>
+    <p class="lead">Free to join. Unlock the bot or buy signals when ready.</p>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <label for="id_username">Username</label>{{ form.username }}{{ form.username.errors }}
+      <label for="id_email">E-mail</label>{{ form.email }}{{ form.email.errors }}
+      <label for="id_password1">Password</label>{{ form.password1 }}{{ form.password1.errors }}
+      <label for="id_password2">Repeat password</label>{{ form.password2 }}{{ form.password2.errors }}
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Create account</button>
+    </form>
+    <p class="muted" style="margin:18px 0 0;text-align:center">Already registered? <a href="{% url 'login' %}">Log in</a></p>
+  </div>
+</div>
+{% endblock %}

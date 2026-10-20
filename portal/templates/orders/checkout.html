@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Checkout · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>Checkout</h1>
+<p class="lead">{{ title }} — <b class="mono">${{ amount }}</b></p>
+{% if already_has_bot %}<div class="flash success">You already own the bot package. <a href="{% url 'download_bot' %}">Download it here</a>.</div>{% endif %}
+<div class="grid g2" style="grid-template-columns:1.2fr 1fr">
+  <div class="card">
+    <h2>1 · Pay ${{ amount }}</h2>
+    {% if stripe_enabled %}
+      <div style="padding:14px 16px;border:1px solid rgba(45,212,191,.4);border-radius:12px;background:rgba(45,212,191,.06);margin-bottom:14px">
+        <b>Pay by card</b> <span class="muted">— Visa, Mastercard, Amex and more via Stripe. Delivered instantly.</span>
+        <form method="post" action="{% url 'stripe_checkout' product %}" style="margin-top:10px">{% csrf_token %}<input type="hidden" name="count" value="{{ count }}"><button class="btn primary" type="submit">Pay ${{ amount }} by card</button></form>
+        <p class="muted" style="margin:8px 0 0;font-size:12.5px">You are taken to Stripe's secure page; card details never reach our server.</p>
+      </div>
+      {% if options %}<p class="muted" style="margin:0 0 6px">Or pay manually and tell us below:</p>{% endif %}
+    {% endif %}
+    {% if options %}
+      {% for code, name, detail in options %}
+        <div style="padding:12px 0;border-bottom:1px solid var(--line)"><b>{{ name }}</b><br>
+          {% if detail|slice:":4" == "http" %}<a class="btn ghost small" href="{{ detail }}" target="_blank" rel="noopener" style="margin-top:6px">Open {{ name }} payment page</a>{% else %}<span class="mono" style="font-size:14px;color:var(--text)">{{ detail }}</span>{% endif %}
+        </div>
+      {% endfor %}
+      <p class="muted" style="margin-top:12px">Send exactly ${{ amount }} (or the equivalent) and keep the transaction id.</p>
+    {% elif not stripe_enabled %}
+      <p class="muted">Payment methods are not configured yet. Ask in <a href="{% url 'chat_room' %}">live chat</a> how to pay, then enter the reference below.</p>
+    {% endif %}
+  </div>
+  <div class="card">
+    <h2>2 · Tell us you paid</h2>
+    <form method="post">
+      {% csrf_token %}
+      {% if product == "signals" %}
+        <label>How many signals? (${{ PRICE_SIGNAL }} each)</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">{% for n in presets %}<a class="btn {% if n == count %}primary{% else %}ghost{% endif %} small" href="?count={{ n }}">{{ n }} = ${% widthratio n 1 PRICE_SIGNAL %}</a>{% endfor %}</div>
+        <input name="count" type="number" min="1" max="{{ max_count }}" value="{{ count }}" onchange="location.href='?count='+this.value">
+        <p class="muted" style="margin:6px 0 0">Total: <b class="mono" style="color:var(--text)">${{ amount }}</b> for {{ count }} signal{{ count|pluralize }}. Each signal you receive uses 1 credit.</p>
+      {% endif %}
+      <label>Paid with</label>
+      <select name="method">{% for code, name, detail in options %}<option value="{{ code }}">{{ name }}</option>{% endfor %}<option value="other">Other</option></select>
+      <label>Transaction id or sender name</label>
+      <input name="reference" placeholder="e.g. TXN 8841…, or your bank account name" required minlength="3">
+      <label>Note (optional)</label>
+      <input name="note" placeholder="Anything we should know">
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:18px">Submit order</button>
+    </form>
+    <p class="muted" style="margin-top:12px">Your order shows as <i>pending</i> on your dashboard until we confirm the payment — usually within a few hours, always within 24. {% if product == "bot" %}The download unlocks automatically on confirmation.{% else %}Credits are added automatically on confirmation.{% endif %}</p>
+  </div>
+</div>
+{% endblock %}

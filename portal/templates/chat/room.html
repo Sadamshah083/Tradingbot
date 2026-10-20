@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Live chat · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>Live chat <span class="muted" style="font-size:14px;font-weight:500"><span class="dot"></span>connected</span></h1>
+<p class="lead">Ask about a signal, your credits or your setup. Messages are delivered instantly; replies arrive here and are marked in the menu.</p>
+{% csrf_token %}
+{% url 'chat_poll' as poll_url %}{% url 'chat_send' as send_url %}
+{% include "chat/_widget.html" with me_is_admin=False poll_url=poll_url send_url=send_url %}
+{% endblock %}

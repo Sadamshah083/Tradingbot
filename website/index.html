@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AxeAlgo — VWAP Reversal trading bot for Gold</title>
+<meta name="description" content="Rule-based VWAP reversal strategy for gold with stop and target on every signal, a webhook bot for TradingView, and honest backtests. $20 one-time.">
+<style>
+  :root{--bg:#0f1420;--card:#171d2b;--line:#252c3d;--text:#e6e9f0;--muted:#98a2b8;--teal:#26a69a;--red:#ef5350;--amber:#ff9800;--blue:#42a5f5}
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
+  body{margin:0;font-family:"Segoe UI",Inter,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+  header{position:sticky;top:0;background:rgba(15,20,32,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);z-index:10}
+  nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .logo{font-weight:800;letter-spacing:.5px;font-size:18px} .logo span{color:var(--teal)}
+  nav ul{display:flex;gap:22px;list-style:none;margin:0;padding:0} nav ul a{color:var(--muted);font-size:14px} nav ul a:hover{color:var(--text);text-decoration:none}
+  .btn{display:inline-block;padding:12px 22px;border-radius:8px;font-weight:700;border:1px solid transparent}
+  .btn.primary{background:var(--teal);color:#06110f} .btn.primary:hover{filter:brightness(1.1);text-decoration:none}
+  .btn.ghost{border-color:var(--line);color:var(--text)} .btn.ghost:hover{border-color:var(--muted);text-decoration:none}
+  .hero{padding:80px 0 50px;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
+  .hero h1{font-size:44px;line-height:1.12;margin:0 0 18px} .hero h1 em{color:var(--teal);font-style:normal}
+  .hero p.lead{font-size:18px;color:var(--muted);margin:0 0 26px}
+  .badge{display:inline-block;font-size:12px;padding:4px 10px;border-radius:999px;background:#1c2536;color:var(--muted);border:1px solid var(--line);margin-bottom:16px}
+  .term{background:#0b0f18;border:1px solid var(--line);border-radius:10px;padding:16px;font-family:Consolas,monospace;font-size:13px;color:#b7c0d3;white-space:pre-wrap}
+  .term .g{color:var(--teal)} .term .r{color:var(--red)} .term .a{color:var(--amber)}
+  section{padding:56px 0;border-top:1px solid var(--line)} h2{font-size:28px;margin:0 0 8px} .sub{color:var(--muted);margin:0 0 28px}
+  .grid{display:grid;gap:18px} .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)} .g4{grid-template-columns:repeat(4,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px}
+  .card h3{margin:0 0 8px;font-size:17px} .card p{margin:0;color:var(--muted);font-size:15px}
+  .step{font-size:12px;color:var(--teal);font-weight:700;letter-spacing:1px;margin-bottom:6px}
+  .stat{font-size:34px;font-weight:800;margin:4px 0} .stat.small{font-size:22px}
+  .note{font-size:13px;color:var(--muted)} .warn{color:var(--amber)} .bad{color:var(--red)} .good{color:var(--teal)}
+  .price{font-size:40px;font-weight:800} .price small{font-size:14px;color:var(--muted);font-weight:400}
+  .plan ul{padding-left:18px;margin:14px 0 20px;color:var(--muted);font-size:15px} .plan li{margin:6px 0}
+  .plan.featured{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal) inset}
+  details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:10px} summary{cursor:pointer;font-weight:600} details p{color:var(--muted);margin:10px 0 0}
+  .disclaimer{background:#1a1520;border:1px solid #3a2a2a;border-radius:12px;padding:20px;font-size:14px;color:#d7c9c9}
+  footer{padding:30px 0;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+  @media(max-width:860px){.hero{grid-template-columns:1fr;padding-top:50px}.hero h1{font-size:34px}.g3,.g2,.g4{grid-template-columns:1fr}nav ul{display:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><nav>
+  <div class="logo">Axe<span>Algo</span></div>
+  <ul><li><a href="#how">How it works</a></li><li><a href="#results">Results</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#faq">FAQ</a></li><li><a id="nav-login" href="#">Log in</a></li></ul>
+  <a class="btn primary" id="nav-buy" href="#pricing">Get the bot — $<span class="price-bot">20</span></a>
+</nav></div></header>
+
+<main class="wrap">
+  <section class="hero" style="border-top:0">
+    <div>
+      <div class="badge">Gold · 1-hour chart · rule-based · non-repainting</div>
+      <h1>A gold trading bot that shows its <em>real</em> numbers.</h1>
+      <p class="lead">VWAP Reversal fades price back to value after it stretches beyond the 2.5-SD band. Every signal comes with its stop and target already calculated, is confirmed on bar close, and can be traded by hand, sent to Telegram, or executed automatically through your own broker account.</p>
+      <a class="btn primary" href="#pricing">Get the bot — $<span class="price-bot">20</span> one-time</a>
+      <a class="btn ghost" href="#results" style="margin-left:8px">See the backtests</a>
+      <p class="note" style="margin-top:16px">No strategy wins every trade. This one won about 8 of 10 in testing and lost the other 2. Read the results and the risk notice before buying.</p>
+    </div>
+    <div class="term"><span class="g">SIGNAL BUY XAUUSD 60</span>
+price 4285.5 | SL <span class="r">4271.2</span> | TP2 <span class="g">4299.8</span> | qty 3
+<span class="a">Bot is in MANUAL mode</span> - trade it yourself if you agree.
+
+<span class="g">BOT OPENED BUY XAU_USD</span>  (AUTO mode)
+stop and target placed at broker
+<span class="g">EXIT TP2</span>  +0.9 R</div>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="sub">Three parts, all yours to run. Nobody else touches your money or your broker keys.</p>
+    <div class="grid g3">
+      <div class="card"><div class="step">1 · TRADINGVIEW</div><h3>The strategy</h3><p>A Pine Script v6 strategy you paste into TradingView. Anchored VWAP with standard-deviation bands; a bar that opens outside the band and closes back inside is the signal. Stop = signal bar ± ATR buffer, target = VWAP + 1 SD. Levels are printed on the chart at signal time and never repaint.</p></div>
+      <div class="card"><div class="step">2 · WEBHOOK BOT</div><h3>The bridge</h3><p>A small server (Python, Docker-ready) that receives TradingView's alert, checks a passphrase, journals every signal and, in AUTO mode, places the order with stop and target at OANDA (gold) or Binance futures (BTC). MANUAL mode only notifies you on Telegram. Switch modes from a web panel.</p></div>
+      <div class="card"><div class="step">3 · YOUR BROKER</div><h3>The execution</h3><p>Orders go straight from your server to your broker account with the stop-loss and take-profit attached, so they keep protecting the trade even if your server or TradingView goes offline. Paper mode is the default; you switch to live when you decide.</p></div>
+    </div>
+  </section>
+
+  <section id="results">
+    <h2>Results, including the bad ones</h2>
+    <p class="sub">Backtests on public data with realistic costs, run with an independent open-source Pine engine. Every trade's exit was verified against the strategy's own stop and target levels.</p>
+    <div class="grid g4">
+      <div class="card"><p>Gold 1h · May 2024 – Sep 2026</p><div class="stat good">79.7%</div><p>winning trades (79 trades)</p></div>
+      <div class="card"><p>Profit factor</p><div class="stat">2.54</div><p>full period · <b>1.36–1.68</b> on unseen data</p></div>
+      <div class="card"><p>Max drawdown</p><div class="stat">3.7%</div><p>1% of equity risked per trade</p></div>
+      <div class="card"><p>Longest losing streak</p><div class="stat">2</div><p>trades in a row</p></div>
+    </div>
+    <div class="grid g2" style="margin-top:18px">
+      <div class="card"><h3>Where it does <span class="good">not</span> work</h3><p>Bitcoin on 5m–1h charts lost money after exchange fees in every setting tested. Gold on 5m/15m had too few signals in the available data to be trusted. For Bitcoin, the included EMA toolkit on the daily chart (36% win rate, profit factor 1.76 over 15 years) is the right tool.</p></div>
+      <div class="card"><h3>How to read this honestly</h3><p>79 trades is a modest sample. Numbers on data the settings never saw (out-of-sample) are lower than the headline and are the ones to expect. Live trading adds spread, slippage and human error. Run it in paper mode for weeks before risking money, and never without the stop.</p></div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <h2>Pricing</h2>
+    <p class="sub">One-time price for the software. Signals are optional and delivered through a private Telegram channel.</p>
+    <div class="grid g2">
+      <div class="card plan featured">
+        <h3>The bot — full package</h3>
+        <div class="price">$<span class="price-bot">20</span> <small>one-time</small></div>
+        <ul>
+          <li>VWAP Reversal strategy + P/SL Toolkit (Pine Script v6 source)</li>
+          <li>Webhook bot: MANUAL / AUTO modes, control panel, Telegram, OANDA and Binance adapters, Docker files</li>
+          <li>Research toolkit: 26 years of gold and 15 years of BTC data with backtest and walk-forward scripts</li>
+          <li>Step-by-step setup guides for TradingView, server and broker</li>
+          <li>Runs on your server, with your broker account and keys</li>
+        </ul>
+        <a class="btn primary" id="buy-bot" href="#">Buy the bot — $<span class="price-bot">20</span></a>
+        <p class="note" style="margin-top:10px">Delivered as a download link within 24 hours of payment. Requires a paid TradingView plan (Essential or higher) for webhook alerts.</p>
+      </div>
+      <div class="card plan">
+        <h3>Signals — pay per signal</h3>
+        <div class="price">$<span class="price-signal">1</span> <small>per signal · sold as packs of <span class="pack-size">20</span> for $<span class="pack-price">20</span></small></div>
+        <ul>
+          <li>Every gold 1h signal with entry, stop and target, posted to a private Telegram channel at bar close</li>
+          <li>Exit notices (target hit, stop hit, session reset)</li>
+          <li>Same signals the bot trades — nothing hidden, nothing delayed</li>
+          <li>Typical volume: about 3 signals per month on gold 1h</li>
+        </ul>
+        <a class="btn ghost" id="buy-signals" href="#">Buy a signal pack — $<span class="pack-price">20</span></a>
+        <p class="note" style="margin-top:10px">Signals are information, not advice. You decide whether to trade them and with what size.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <h2>Questions people ask</h2>
+    <details><summary>Is it 100% accurate?</summary><p>No, and nothing is. In testing the gold 1h strategy won about 8 of 10 trades and lost 2. A losing streak of several trades will happen. The stop-loss on every trade is what keeps a losing streak survivable; the win rate is not what makes it profitable — the ratio between average win and average loss is.</p></details>
+    <details><summary>Does the bot trade my account for me?</summary><p>Only if you switch it to AUTO mode, on your own server, with your own broker API keys. We never hold your funds or your keys. In MANUAL mode it just sends you the signal.</p></details>
+    <details><summary>What do I need?</summary><p>A TradingView account on the Essential plan or higher (webhook alerts) with two-factor authentication enabled; a broker account (OANDA for gold, Binance futures for BTC), demo first; and either a $4–7/month VPS or a PC that stays on. Setup takes about an hour with the guide.</p></details>
+    <details><summary>Which markets and timeframes?</summary><p>Gold (XAUUSD) on the 1-hour chart is the tested configuration. The 4-hour chart works with fewer signals. Bitcoin intraday is not supported; use the daily EMA toolkit for BTC.</p></details>
+    <details><summary>Can I change the settings?</summary><p>Yes — every parameter is an input with a tooltip, and the research toolkit lets you test any change on the historical data before using it.</p></details>
+    <details><summary>Refunds</summary><p>Software: 14 days if it fails to run as documented on your setup. Signal packs: unused signals in a pack are refundable on request.</p></details>
+  </section>
+
+  <section>
+    <div class="disclaimer"><b>Risk notice.</b> Trading gold and cryptocurrencies involves substantial risk of loss and is not suitable for everyone. This website sells software and information, not financial advice, and we are not a registered investment adviser or portfolio manager in any jurisdiction. Backtested and simulated results have inherent limitations and are not indicative of future results. You are solely responsible for your trading decisions, your broker account and your compliance with local regulations. Never trade with money you cannot afford to lose.</div>
+  </section>
+</main>
+
+<footer><div class="wrap">© <span id="year"></span> AxeAlgo · <a href="mailto:hello@example.com">hello@example.com</a> · <a href="#faq">Terms &amp; refunds</a></div></footer>
+
+<script>
+  // ── Edit prices and payment links here ─────────────────────────────────────
+  const PRICE_BOT = 20;          // one-time price of the bot package, USD
+  const PRICE_SIGNAL = 1;        // price per signal, USD
+  const PACK_SIZE = 20;          // signals per pack
+  // Address of the customer portal (Django app in ../portal). Buying and logging in happen there.
+  const PORTAL_URL = "http://127.0.0.1:8001";   // e.g. https://app.yourdomain.com in production
+  // ───────────────────────────────────────────────────────────────────────────
+  document.querySelectorAll('.price-bot').forEach(e => e.textContent = PRICE_BOT);
+  document.querySelectorAll('.price-signal').forEach(e => e.textContent = PRICE_SIGNAL);
+  document.querySelectorAll('.pack-size').forEach(e => e.textContent = PACK_SIZE);
+  document.querySelectorAll('.pack-price').forEach(e => e.textContent = PRICE_SIGNAL * PACK_SIZE);
+  document.getElementById('buy-bot').href = PORTAL_URL + "/accounts/register/?next=/orders/checkout/bot/";
+  document.getElementById('buy-signals').href = PORTAL_URL + "/accounts/register/?next=/orders/checkout/signals/";
+  document.getElementById('nav-login').href = PORTAL_URL + "/accounts/login/";
+  document.getElementById('nav-buy').href = PORTAL_URL + "/accounts/register/?next=/orders/checkout/bot/";
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "axealgo-research",
+  "private": true,
+  "type": "module",
+  "description": "Offline backtesting / walk-forward toolkit for the AxeAlgo Pine strategies (uses the open-source piner Pine v6 engine).",
+  "scripts": {
+    "fetch": "node fetch_data.mjs",
+    "backtest": "node backtest.mjs",
+    "walkforward": "node walkforward.mjs"
+  },
+  "dependencies": {
+    "@heyphat/piner": "^0.13.0"
+  }
+}
+

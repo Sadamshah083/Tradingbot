@@ -1,0 +1,287 @@
+//@version=5
+strategy("Professional Multi-Timeframe Risk Managed Strategy", overlay=true, pyramiding=0, initial_capital=10000, commission_type=strategy.commission.percent, commission_value=0.06, calc_on_every_tick=false, default_qty_type=strategy.percent_of_equity, default_qty_value=1.0, max_labels_count=50)
+
+// =========================================================
+// 1) ACCOUNT & RISK SETTINGS
+// =========================================================
+accountAssets = input.float(10000.0, "Total Account Assets", minval=100.0, step=100.0, group="Account & Risk")
+riskPercent = input.float(1.0, "Risk Per Trade %", minval=0.25, maxval=2.0, step=0.25, group="Account & Risk")
+allowNewEntries = input.bool(false, "Allow New Entries", group="Account & Risk")
+maxTradesPerDay = input.int(3, "Maximum Trades Per Day", minval=1, maxval=10, group="Trade Protection")
+dailyLossLimitPct = input.float(2.0, "Maximum Daily Loss %", minval=0.5, maxval=10.0, step=0.5, group="Trade Protection")
+cooldownBars = input.int(8, "Cooldown Bars After Trade", minval=0, maxval=50, group="Trade Protection")
+contractSize = input.float(100000.0, "Contract Size / Unit Value", minval=0.01, step=100.0, group="Account & Risk")
+pointValue = input.float(1.0, "Point / Pip / Tick Value", minval=0.0001, step=0.01, group="Account & Risk")
+showTable = input.bool(true, "Show Dashboard", group="Dashboard")
+
+// =========================================================
+// 2) TIMEFRAME PRESET
+// =========================================================
+currentTfPreset = input.string("Auto", "Timeframe Preset", options=["Auto", "1m", "5m", "15m"], group="Timeframe")
+
+// Auto preset selection
+is1m = timeframe.isintraday and timeframe.multiplier == 1
+is5m = timeframe.isintraday and timeframe.multiplier == 5
+is15m = timeframe.isintraday and timeframe.multiplier == 15
+
+autoPreset = is1m ? "1m" : is5m ? "5m" : is15m ? "15m" : "15m"
+selectedPreset = currentTfPreset == "Auto" ? autoPreset : currentTfPreset
+
+// =========================================================
+// 3) TREND / MOMENTUM / STRUCTURE SETTINGS
+// =========================================================
+emaFastLen = selectedPreset == "1m" ? 12 : selectedPreset == "5m" ? 20 : 20
+emaSlowLen = selectedPreset == "1m" ? 26 : selectedPreset == "5m" ? 50 : 50
+emaTrendLen = selectedPreset == "1m" ? 50 : selectedPreset == "5m" ? 100 : 100
+rsiLen = selectedPreset == "1m" ? 14 : 14
+rsiBull = selectedPreset == "1m" ? 58 : 55
+rsiBear = selectedPreset == "1m" ? 42 : 45
+macdFast = selectedPreset == "1m" ? 12 : 12
+macdSlow = selectedPreset == "1m" ? 26 : 26
+macdSignal = selectedPreset == "1m" ? 9 : 9
+atrLen = selectedPreset == "1m" ? 14 : 14
+atrMult = selectedPreset == "1m" ? 1.5 : 1.8
+swingLookback = selectedPreset == "1m" ? 20 : 30
+minRR = input.float(1.5, "Minimum Reward/Risk", minval=1.0, maxval=5.0, step=0.1, group="Trend & Structure")
+minConfluence = input.int(4, "Minimum Confluence Score", minval=3, maxval=6, group="Trend & Structure")
+lookbackLong = input.int(40, "Bullish Structure Lookback", minval=10, maxval=100, group="Trend & Structure")
+lookbackShort = input.int(40, "Bearish Structure Lookback", minval=10, maxval=100, group="Trend & Structure")
+
+// =========================================================
+// 4) HTF CONFIRMATION
+// =========================================================
+htfRes = selectedPreset == "1m" ? "5" : selectedPreset == "5m" ? "15" : "60"
+htfClose = request.security(syminfo.tickerid, htfRes, close, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+htfOpen = request.security(syminfo.tickerid, htfRes, open, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+htfHigh = request.security(syminfo.tickerid, htfRes, high, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+htfLow = request.security(syminfo.tickerid, htfRes, low, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+htfEmaFast = ta.ema(htfClose, emaFastLen)
+htfEmaSlow = ta.ema(htfClose, emaSlowLen)
+htfTrend = ta.ema(htfClose, emaTrendLen)
+
+htfBullish = htfClose > htfEmaFast and htfEmaFast > htfEmaSlow and htfEmaSlow > htfTrend
+htfBearish = htfClose < htfEmaFast and htfEmaFast < htfEmaSlow and htfEmaSlow < htfTrend
+
+// =========================================================
+// 5) MAIN INDICATORS
+// =========================================================
+emaFast = ta.ema(close, emaFastLen)
+emaSlow = ta.ema(close, emaSlowLen)
+emaTrend = ta.ema(close, emaTrendLen)
+atrValue = ta.atr(atrLen)
+rsi = ta.rsi(close, rsiLen)
+macd = ta.macd(close, macdFast, macdSlow, macdSignal)
+macdLine = macd
+macdSignalLine = ta.macd(close, macdFast, macdSlow, macdSignal)[1]
+
+bullTrend = close > emaFast and emaFast > emaSlow and emaSlow > emaTrend
+bearTrend = close < emaFast and emaFast < emaSlow and emaSlow < emaTrend
+
+bullMomentum = rsi > rsiBull and macdLine > macdSignalLine
+bearMomentum = rsi < rsiBear and macdLine < macdSignalLine
+
+recentSwingHigh = ta.highest(high, swingLookback)
+recentSwingLow = ta.lowest(low, swingLookback)
+trendPullbackLong = close > recentSwingLow and close > emaSlow
+trendPullbackShort = close < recentSwingHigh and close < emaSlow
+
+// =========================================================
+// 6) SESSION FILTER
+// =========================================================
+tradingSession = input.session("0930-1600", "Trading Session", group="Session")
+inSession = not na(time(timeframe.period, tradingSession))
+useSessionFilter = input.bool(true, "Use Session Filter", group="Session")
+
+// =========================================================
+// 7) STOP / TP LOGIC
+// =========================================================
+stopBuffer = atrValue * atrMult
+longStop = math.min(ta.lowest(low, lookbackLong), recentSwingLow) - stopBuffer
+shortStop = math.max(ta.highest(high, lookbackShort), recentSwingHigh) + stopBuffer
+
+longStop = na(longStop) ? low - atrValue * 1.2 : longStop
+shortStop = na(shortStop) ? high + atrValue * 1.2 : shortStop
+
+longRisk = abs(close - longStop)
+shortRisk = abs(shortStop - close)
+
+longTP1 = close + longRisk * minRR
+longTP2 = close + longRisk * minRR * 2
+longTP3 = close + longRisk * minRR * 3
+
+shortTP1 = close - shortRisk * minRR
+shortTP2 = close - shortRisk * minRR * 2
+shortTP3 = close - shortRisk * minRR * 3
+
+// =========================================================
+// 8) POSITION SIZE
+// =========================================================
+riskAmount = accountAssets * (riskPercent / 100.0)
+longRiskPerUnit = math.abs(close - longStop) * pointValue
+shortRiskPerUnit = math.abs(shortStop - close) * pointValue
+
+longUnits = longRiskPerUnit > 0 ? riskAmount / longRiskPerUnit : 0.0
+shortUnits = shortRiskPerUnit > 0 ? riskAmount / shortRiskPerUnit : 0.0
+
+longQty = longUnits / (contractSize > 0 ? contractSize : 1.0)
+shortQty = shortUnits / (contractSize > 0 ? contractSize : 1.0)
+
+longLot = longQty
+shortLot = shortQty
+
+// =========================================================
+// 9) CONFLUENCE SCORE
+// =========================================================
+longScore = 0
+shortScore = 0
+
+if bullTrend
+    longScore += 1
+if htfBullish
+    longScore += 1
+if bullMomentum
+    longScore += 1
+if trendPullbackLong
+    longScore += 1
+if longRisk > 0 and (longTP1 - close) / longRisk >= minRR
+    longScore += 1
+if close > recentSwingLow
+    longScore += 1
+
+if bearTrend
+    shortScore += 1
+if htfBearish
+    shortScore += 1
+if bearMomentum
+    shortScore += 1
+if trendPullbackShort
+    shortScore += 1
+if shortRisk > 0 and (close - shortTP1) / shortRisk >= minRR
+    shortScore += 1
+if close < recentSwingHigh
+    shortScore += 1
+
+longReady = longScore >= minConfluence and (useSessionFilter ? inSession : true) and allowNewEntries and strategy.position_size == 0 and bullTrend and htfBullish and bullMomentum and close > emaSlow
+shortReady = shortScore >= minConfluence and (useSessionFilter ? inSession : true) and allowNewEntries and strategy.position_size == 0 and bearTrend and htfBearish and bearMomentum and close < emaSlow
+
+// =========================================================
+// 10) TRADE PROTECTION
+// =========================================================
+newDay = ta.change(time("D")) != 0
+var float dayStartNet = 0.0
+var int todayTrades = 0
+var int lastTradeBar = 0
+var bool dailyLossClosed = false
+tradeCooldown = bar_index - lastTradeBar < cooldownBars
+tradeAllowed = allowNewEntries and not tradeCooldown and not dailyLossClosed and todayTrades < maxTradesPerDay
+
+if newDay
+    dayStartNet := strategy.netprofit
+    todayTrades := 0
+    dailyLossClosed := false
+
+currentDailyLoss = strategy.netprofit - dayStartNet
+if currentDailyLoss <= - (accountAssets * (dailyLossLimitPct / 100.0))
+    dailyLossClosed := true
+
+// =========================================================
+// 11) ENTRY / EXIT LOGIC
+// =========================================================
+if longReady and tradeAllowed and strategy.position_size == 0
+    strategy.entry("Long", strategy.long, qty=math.max(1.0, longQty))
+    lastTradeBar := bar_index
+    todayTrades += 1
+
+if shortReady and tradeAllowed and strategy.position_size == 0
+    strategy.entry("Short", strategy.short, qty=math.max(1.0, shortQty))
+    lastTradeBar := bar_index
+    todayTrades += 1
+
+if strategy.position_size > 0
+    strategy.exit("Long Exit", from_entry="Long", limit=longTP2, stop=longStop)
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", from_entry="Short", limit=shortTP2, stop=shortStop)
+
+// =========================================================
+// 12) VISUALS
+// =========================================================
+plot(emaFast, "Fast EMA", color=color.teal, linewidth=2)
+plot(emaSlow, "Slow EMA", color=color.orange, linewidth=2)
+plot(emaTrend, "Trend EMA", color=color.purple, linewidth=2)
+plot(htfEmaFast, "HTF Fast EMA", color=color.new(color.aqua, 0), linewidth=1)
+plot(htfEmaSlow, "HTF Slow EMA", color=color.new(color.maroon, 0), linewidth=1)
+
+plotshape(longReady and allowNewEntries, title="Long Ready", style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(shortReady and allowNewEntries, title="Short Ready", style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)
+
+plot(longStop, "Long Stop", color=color.new(color.red, 0), linewidth=1, display=display.none)
+plot(shortStop, "Short Stop", color=color.new(color.red, 0), linewidth=1, display=display.none)
+plot(longTP1, "TP1", color=color.new(color.lime, 0), linewidth=1, display=display.none)
+plot(shortTP1, "TP1 Short", color=color.new(color.lime, 0), linewidth=1, display=display.none)
+
+// =========================================================
+// 13) DASHBOARD TABLE
+// =========================================================
+var table infoTable = table.new(position.top_right, 2, 15, border_width=1, bgcolor=color.new(color.black, 90), border_color=color.gray)
+
+if barstate.islast and showTable
+    table.cell(infoTable, 0, 0, "Status", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 0, strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : (longReady ? "LONG READY" : shortReady ? "SHORT READY" : "WAIT"), text_color=color.white, bgcolor=strategy.position_size > 0 ? color.green : strategy.position_size < 0 ? color.red : color.orange)
+
+    table.cell(infoTable, 0, 1, "TF", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 1, timeframe.period, text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 2, "Assets", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 2, str.tostring(accountAssets, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 3, "Risk %", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 3, str.tostring(riskPercent, format.mintick) + "%", text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 4, "Risk Amt", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 4, str.tostring(riskAmount, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 5, "Entry", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 5, str.tostring(close, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 6, "SL", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 6, str.tostring(strategy.position_size > 0 ? longStop : strategy.position_size < 0 ? shortStop : close, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 7, "TP1", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 7, str.tostring(strategy.position_size > 0 ? longTP1 : strategy.position_size < 0 ? shortTP1 : close, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 8, "RR", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 8, str.tostring(minRR, format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 9, "Confluence", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 9, str.tostring(math.max(longScore, shortScore), format.mintick) + "/6", text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 10, "Lot / Qty", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 10, str.tostring(math.max(longQty, shortQty), format.mintick), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 11, "Today", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 11, str.tostring(todayTrades) + "/" + str.tostring(maxTradesPerDay), text_color=color.white, bgcolor=color.new(color.blue, 0))
+
+    table.cell(infoTable, 0, 12, "Net", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 12, str.tostring(strategy.netprofit, format.mintick), text_color=color.white, bgcolor=strategy.netprofit >= 0 ? color.green : color.red)
+
+    table.cell(infoTable, 0, 13, "HTF Trend", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 13, htfBullish ? "Bullish" : htfBearish ? "Bearish" : "Neutral", text_color=color.white, bgcolor=htfBullish ? color.green : htfBearish ? color.red : color.gray)
+
+    table.cell(infoTable, 0, 14, "Setup", text_color=color.white, bgcolor=color.gray)
+    table.cell(infoTable, 1, 14, longReady ? "LONG READY" : shortReady ? "SHORT READY" : "WAIT", text_color=color.white, bgcolor=longReady ? color.green : shortReady ? color.red : color.orange)
+
+// =========================================================
+// 14) ALERTS
+// =========================================================
+alertcondition(longReady, title="Long Ready", message="Long setup ready — check trend, entry and position size before execution.")
+alertcondition(shortReady, title="Short Ready", message="Short setup ready — check trend, entry and position size before execution.")
+alertcondition(strategy.position_size > 0, title="Long Active", message="Long trade active.")
+alertcondition(strategy.position_size < 0, title="Short Active", message="Short trade active.")
+
+// =========================================================
+// 15) FINAL NOTES
+// =========================================================
+// This script is designed for educational/backtesting use, not guaranteed-profit trading.
+// The strategy waits for strong confluence and risk parameters before entering. It is intentionally patient.
+// Always validate with Strategy Tester and paper trading before using live funds.

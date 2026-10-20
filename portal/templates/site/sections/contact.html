@@ -1,0 +1,29 @@
+<section class="s rv" id="contact">
+  <div class="kicker">Contact</div>
+  <h2>Have a question about Sambot?</h2>
+  <p class="sub">Tell us what you are trying to understand and we will help with the platform, setup or documentation.</p>
+  <div class="plans-mid" style="max-width:720px">
+    <div class="panel mid-card" style="padding:32px">
+      <h3 style="margin:0 0 12px;font-size:20px;color:#fff">We can assist with</h3>
+      <ul class="check-list">
+        <li>account access;</li>
+        <li>TradingView connection;</li>
+        <li>webhook setup;</li>
+        <li>paper mode;</li>
+        <li>dashboard functionality;</li>
+        <li>supported Binance integration;</li>
+        <li>supported MT5 integration;</li>
+        <li>platform settings;</li>
+        <li>backtest information; and</li>
+        <li>billing.</li>
+      </ul>
+      {% if SUPPORT_EMAIL %}
+      <a class="btn primary" href="mailto:{{ SUPPORT_EMAIL }}" style="margin-top:20px">Contact Sambot Support</a>
+      <p class="muted" style="margin:14px 0 0">{{ SUPPORT_EMAIL }}</p>
+      {% else %}
+      <a class="btn primary" href="{% url 'register' %}" data-modal="register" style="margin-top:20px">Create an account to open live chat</a>
+      {% endif %}
+      <p class="fine" style="margin-top:18px;max-width:none">For questions involving personal investment decisions, consider speaking with an appropriately qualified financial professional.</p>
+    </div>
+  </div>
+</section>

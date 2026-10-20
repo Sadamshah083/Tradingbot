@@ -1,0 +1,40 @@
+<section class="s rv" id="faq" aria-labelledby="faq-title">
+  <div class="kicker">FAQ</div>
+  <h2 id="faq-title">Sambot Frequently Asked Questions</h2>
+  <p class="sub">Answers about Sambot, TradingView automation, paper trading, backtesting, Binance, MetaTrader 5, risk controls and pricing.</p>
+  <div class="faq-mid">
+    <article class="panel faq-card"><h3>What is Sambot?</h3><p>Sambot is trading-automation software that connects supported TradingView signals with a configurable workflow including validation, account controls, paper trading and supported execution integrations.</p></article>
+    <article class="panel faq-card"><h3>Does Sambot guarantee profits?</h3><p>No. Trading results cannot be guaranteed. Historical backtests and simulations do not predict future results.</p></article>
+    <article class="panel faq-card"><h3>Can I test Sambot without trading live?</h3><p>Yes. Paper mode is designed for testing the signal and automation workflow using simulated execution.</p></article>
+    <article class="panel faq-card"><h3>Does Sambot hold my money?</h3><p>No. Sambot is software. Funds remain with the account provider you choose to connect.</p></article>
+    <article class="panel faq-card"><h3>What is a TradingView webhook?</h3><p>A webhook allows a TradingView alert to send information to an external application when an alert triggers. Sambot uses a webhook as part of its supported TradingView automation workflow.</p></article>
+    <article class="panel faq-card"><h3>Does Sambot support Binance?</h3><p>Sambot currently supports an integration workflow for Binance Futures. Availability and functionality should always be checked against the current product documentation.</p></article>
+    <article class="panel faq-card"><h3>Does Sambot support MetaTrader 5?</h3><p>Sambot supports an MT5 workflow through its bridge architecture.</p></article>
+    <article class="panel faq-card"><h3>Can Sambot trade gold?</h3><p>Sambot currently includes supported research and automation workflows for gold/XAUUSD.</p></article>
+    <article class="panel faq-card"><h3>Can Sambot automate Bitcoin?</h3><p>Sambot currently includes supported Bitcoin-oriented automation workflows.</p></article>
+    <article class="panel faq-card"><h3>What risk controls are available?</h3><p>Depending on the current product version, supported controls can include position risk, daily loss limits, active-position limits, exposure controls, losing-streak limits, stop loss, take profit, break-even, trailing stops and an emergency stop.</p></article>
+    <article class="panel faq-card"><h3>Are backtests live results?</h3><p>No. A backtest is a historical simulation based on historical data and defined assumptions.</p></article>
+    <article class="panel faq-card"><h3>Why are losing trades shown?</h3><p>Because a strategy cannot be evaluated responsibly using winning trades alone.</p></article>
+    <article class="panel faq-card"><h3>How much does Sambot cost?</h3><p>Refer to the current <a href="{% url 'site_pricing' %}">Pricing</a> page for the latest software-access and signal pricing.</p></article>
+    <article class="panel faq-card"><h3>Is Sambot financial advice?</h3><p>No. Sambot provides software, research tools and informational functionality. It does not provide personalised financial advice.</p></article>
+  </div>
+</section>
+{% if faq_schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"What is Sambot?","acceptedAnswer":{"@type":"Answer","text":"Sambot is trading-automation software that connects supported TradingView signals with a configurable workflow including validation, account controls, paper trading and supported execution integrations."}},
+    {"@type":"Question","name":"Does Sambot guarantee profits?","acceptedAnswer":{"@type":"Answer","text":"No. Trading results cannot be guaranteed. Historical backtests and simulations do not predict future results."}},
+    {"@type":"Question","name":"Can I test Sambot without trading live?","acceptedAnswer":{"@type":"Answer","text":"Yes. Paper mode is designed for testing the signal and automation workflow using simulated execution."}},
+    {"@type":"Question","name":"Does Sambot hold my money?","acceptedAnswer":{"@type":"Answer","text":"No. Sambot is software. Funds remain with the account provider you choose to connect."}},
+    {"@type":"Question","name":"What is a TradingView webhook?","acceptedAnswer":{"@type":"Answer","text":"A webhook allows a TradingView alert to send information to an external application when an alert triggers."}},
+    {"@type":"Question","name":"Does Sambot support Binance?","acceptedAnswer":{"@type":"Answer","text":"Sambot currently supports an integration workflow for Binance Futures."}},
+    {"@type":"Question","name":"Does Sambot support MetaTrader 5?","acceptedAnswer":{"@type":"Answer","text":"Sambot supports an MT5 workflow through its bridge architecture."}},
+    {"@type":"Question","name":"Are backtests live results?","acceptedAnswer":{"@type":"Answer","text":"No. A backtest is a historical simulation based on historical data and defined assumptions."}},
+    {"@type":"Question","name":"Is Sambot financial advice?","acceptedAnswer":{"@type":"Answer","text":"No. Sambot provides software, research tools and informational functionality. It does not provide personalised financial advice."}}
+  ]
+}
+</script>
+{% endif %}

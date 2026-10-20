@@ -1,0 +1,11 @@
+# Plain HTTP on port 80 (TradingView accepts http:// webhooks on port 80).
+# For HTTPS with your own domain use:  docker compose -f docker-compose.yml -f docker-compose.https.yml up -d
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+    volumes:
+      - ./logs:/app/logs

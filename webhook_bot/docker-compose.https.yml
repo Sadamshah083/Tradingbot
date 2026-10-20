@@ -1,0 +1,22 @@
+# Override: Caddy terminates HTTPS (automatic Let's Encrypt certificate) and proxies to the bot.
+# Requires a domain name whose A record points at the server. Edit Caddyfile first.
+services:
+  bot:
+    ports: !reset []
+    expose:
+      - "80"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - bot
+volumes:
+  caddy_data:
+  caddy_config:

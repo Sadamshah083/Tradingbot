@@ -1,0 +1,49 @@
+{% extends "staff/base.html" %}
+{% block title %}Bot trades · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Bot trades{% endblock %}
+{% block page_lead %}Turn automatic trading on or off, and see every order the bot placed.{% endblock %}
+{% block staff %}
+<div class="card">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+    <div>
+      {% if not bot.online %}<div class="stat small bad">Bot offline</div><div class="muted">{{ bot.error }} - start it with <code>webhook_bot\run_local.ps1</code>.</div>
+      {% else %}
+      <div class="stat small {% if bot.auto %}good{% else %}warn{% endif %}">{% if bot.auto %}Bot is ON - auto trading{% else %}Bot is OFF - manual mode{% endif %}</div>
+      <div class="kv" style="margin-top:10px">
+        <div>Broker</div><div>{{ bot.broker }} · {% if bot.live %}<span class="bad">LIVE money</span>{% else %}paper{% endif %}</div>
+        <div>Acts on</div><div>"{{ bot.act_on }}" events from TradingView</div>
+        <div>Alerts</div><div>{{ bot.alerts_24h }} in the last 24h · {{ bot.alerts_received }} total</div>
+        <div>Telegram</div><div>{% if bot.telegram %}connected{% else %}not configured{% endif %}</div>
+        <div>Uptime</div><div>{{ bot.uptime_minutes }} min</div>
+      </div>{% endif %}
+    </div>
+    {% if bot.online %}
+    <form method="post" action="{% url 'staff_bot_mode' %}" style="display:flex;align-items:center;gap:14px">{% csrf_token %}<input type="hidden" name="next" value="{% url 'staff_bot' %}">
+      <input type="hidden" name="auto" value="{% if bot.auto %}0{% else %}1{% endif %}">
+      <span class="muted" style="font-size:13px">OFF</span><label class="switch"><input type="checkbox" {% if bot.auto %}checked{% endif %} onchange="this.form.submit()"><span></span></label><span class="muted" style="font-size:13px">ON</span>
+    </form>{% endif %}
+  </div>
+  <p class="muted" style="margin:14px 0 0">To switch between paper and LIVE money, edit <code>LIVE=</code> and <code>BROKER=</code> in <code>webhook_bot\.env</code> and restart the bot. That is deliberately not a button.</p>
+</div>
+
+<div class="grid g3" style="margin-top:16px">
+  <div class="card"><h2>Opened</h2><div class="stat">{{ opened }}</div><div class="muted">positions the bot opened</div></div>
+  <div class="card"><h2>Closed by exit</h2><div class="stat">{{ closed }}</div><div class="muted">close-all orders after an exit alert</div></div>
+  <div class="card"><h2>Alerts logged</h2><div class="stat">{{ alerts|length }}</div><div class="muted">latest TradingView webhooks</div></div>
+</div>
+
+<div class="card" style="margin-top:16px"><h2>Bot trades</h2>
+  {% if jerror %}<p class="muted">{{ jerror }}</p>{% endif %}
+  <table><thead><tr><th>When</th><th>Action</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Stop</th><th>Target</th><th>Money</th><th>Broker result</th></tr></thead><tbody>
+  {% for t in trades %}<tr><td class="muted" style="white-space:nowrap">{{ t.when|date:"M d, H:i" }}</td><td>{{ t.action }}{% if t.reason %} <span class="muted">({{ t.reason }})</span>{% endif %}</td><td>{{ t.symbol }}</td><td>{% if t.side %}<span class="pill {{ t.side }}">{{ t.side|upper }}</span>{% endif %}</td><td class="mono">{{ t.qty|default_if_none:"" }}</td><td class="mono bad">{{ t.sl|default_if_none:"" }}</td><td class="mono good">{{ t.tp|default_if_none:"" }}</td><td>{% if t.live %}<span class="pill sell">LIVE</span>{% else %}<span class="pill">paper</span>{% endif %}</td><td class="code">{{ t.result|truncatechars:90 }}</td></tr>
+  {% empty %}<tr><td colspan="9" class="empty">No bot trades yet. Trades appear here once the bot is ON and TradingView sends a signal.</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+
+<div class="card" style="margin-top:16px"><h2>Alerts received from TradingView</h2>
+  <table><thead><tr><th>When</th><th>Event</th><th>Symbol</th><th>TF</th><th>Price</th><th>SL</th><th>TP1</th><th>TP2</th><th>Qty</th><th>Bot mode then</th></tr></thead><tbody>
+  {% for a in alerts %}<tr><td class="muted" style="white-space:nowrap">{{ a.when|date:"M d, H:i" }}</td><td>{% if a.side %}<span class="pill {{ a.side }}">{{ a.event }} {{ a.side }}</span>{% else %}<span class="pill exit">{{ a.event }} {{ a.reason|default:"" }}</span>{% endif %}</td><td>{{ a.symbol }}</td><td class="muted">{{ a.tf }}</td><td class="mono">{{ a.price|default_if_none:"" }}</td><td class="mono bad">{{ a.sl|default_if_none:"" }}</td><td class="mono">{{ a.tp1|default_if_none:"" }}</td><td class="mono good">{{ a.tp2|default_if_none:"" }}</td><td class="mono">{{ a.qty|default_if_none:"" }}</td><td class="muted">{{ a.mode }}</td></tr>
+  {% empty %}<tr><td colspan="10" class="empty">No alerts yet.</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

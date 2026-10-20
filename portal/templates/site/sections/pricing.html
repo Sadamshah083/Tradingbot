@@ -1,0 +1,43 @@
+<section class="s rv" id="pricing" aria-labelledby="pr-title">
+  <div class="kicker">Pricing</div>
+  <h2 id="pr-title">Simple pricing for Sambot access</h2>
+  <p class="sub">You do not need to begin with live automation. Create an account, understand the platform and test the workflow in paper mode first.</p>
+  <div class="plans-mid">
+    <div class="panel plan featured mid-card">
+      <div class="kicker">Sambot Access</div>
+      <div class="price">${{ PRICE_BOT }} <small>/ {{ BOT_ACCESS_DAYS }} days</small></div>
+      <ul>
+        <li>Sambot dashboard</li>
+        <li>Paper trading</li>
+        <li>Supported automation engine</li>
+        <li>TradingView webhook</li>
+        <li>Strategy research</li>
+        <li>Historical backtest information</li>
+        <li>Configurable risk controls</li>
+        <li>Supported Binance connectivity</li>
+        <li>Supported MT5 workflow</li>
+        <li>Activity history</li>
+        <li>Setup documentation</li>
+        <li>Support</li>
+      </ul>
+      <a class="btn primary" href="{% url 'register' %}?next={% url 'checkout' 'bot' %}">Create Account — ${{ PRICE_BOT }}</a>
+      <p class="muted" style="margin:12px 0 0;font-size:12.5px;line-height:1.5">Access ends after the paid period unless renewed according to the current terms.</p>
+    </div>
+    <div class="panel plan mid-card">
+      <div class="kicker">Optional Signals</div>
+      <div class="price">${{ PRICE_SIGNAL }} <small>per delivered signal</small></div>
+      <ul>
+        <li>Instrument</li>
+        <li>Timeframe</li>
+        <li>Timestamp</li>
+        <li>Entry information</li>
+        <li>Stop information</li>
+        <li>Target information</li>
+      </ul>
+      <a class="btn ghost" href="{% url 'register' %}?next={% url 'checkout' 'signals' %}">Buy signals — ${{ PRICE_SIGNAL }} each</a>
+      <p class="muted" style="margin:12px 0 0;font-size:12.5px;line-height:1.5">Signals are informational and are not personalised investment recommendations.</p>
+    </div>
+  </div>
+  <div class="pay" style="justify-content:center;margin-top:22px">Pay with <span>Visa</span><span>Mastercard</span><span>Amex</span> via Stripe, or bank transfer / USDT.</div>
+  <p class="fine" style="margin-left:auto;margin-right:auto;text-align:center">Trading and leveraged products involve substantial risk of loss. Historical and simulated results do not guarantee future performance.</p>
+</section>

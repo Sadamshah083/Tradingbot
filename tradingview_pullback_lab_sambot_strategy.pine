@@ -1,0 +1,96 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════════
+//  Trend Pullback Lab [Sambot]
+// ───────────────────────────────────────────────────────────────────────────────
+//  Long-only trend-filtered RSI pullback. Two presets:
+//    Gold (XAUUSD daily)  — close > SMA200, RSI(2) < 15, exit RSI>60 / 7 bars / trend break
+//    BTC  (BTCUSD daily)  — close > SMA200 AND close > close[30], RSI(2) < 10,
+//                           exit RSI>65 / 10 bars / trend break
+//
+//  Protective stop: 2 × ATR(14) below entry (limits intended exit; does not guarantee fill).
+//
+//  IMPORTANT
+//    - Use the exact instrument you will trade. Do not generate signals on GLD and
+//      execute on XAUUSD (or the reverse). GLD is a US gold ETF with different hours
+//      and costs than spot / futures gold.
+//    - Signals use COMPLETED bars only (non-repainting). Entry at next bar open.
+//    - These are proposed test settings — not a verified 80% win-rate strategy.
+//
+//  Alert: one alert on "Order fills and alert() function calls",
+//         message {{strategy.order.alert_message}}, webhook to your Sambot URL.
+// ═══════════════════════════════════════════════════════════════════════════════
+strategy("Trend Pullback Lab [Sambot]", shorttitle = "Pullback Lab", overlay = true,
+     initial_capital = 10000,
+     default_qty_type = strategy.percent_of_equity, default_qty_value = 10,
+     commission_type = strategy.commission.percent, commission_value = 0.05,
+     slippage = 2,
+     pyramiding = 0,
+     calc_on_every_tick = false,
+     process_orders_on_close = false,
+     max_labels_count = 200)
+
+string GRP = "Instrument preset"
+string preset = input.string("Gold XAUUSD", "Preset", options = ["Gold XAUUSD", "BTC USD"], group = GRP,
+     tooltip = "Gold = XAUUSD daily rules. BTC = BTCUSD spot daily rules. Match the chart symbol to the preset.")
+
+string GRP_R = "Rules (override)"
+int    rsiLen   = input.int(2, "RSI length", minval = 2, group = GRP_R)
+float  rsiBuyG  = input.float(15, "Gold RSI entry <", group = GRP_R)
+float  rsiExG   = input.float(60, "Gold RSI exit >", group = GRP_R)
+int    maxBarsG = input.int(7, "Gold max bars", group = GRP_R)
+float  rsiBuyB  = input.float(10, "BTC RSI entry <", group = GRP_R)
+float  rsiExB   = input.float(65, "BTC RSI exit >", group = GRP_R)
+int    maxBarsB = input.int(10, "BTC max bars", group = GRP_R)
+int    smaLen   = input.int(200, "Trend SMA", group = GRP_R)
+int    momLook  = input.int(30, "BTC momentum lookback", group = GRP_R)
+int    atrLen   = input.int(14, "ATR length", group = GRP_R)
+float  atrMult  = input.float(2.0, "Stop ATR ×", step = 0.1, group = GRP_R)
+
+string GRP_A = "Alerts"
+string secret = input.string("", "Webhook secret", group = GRP_A)
+string botSym = input.string("", "Symbol override (blank = chart)", group = GRP_A)
+
+bool isBtc = preset == "BTC USD"
+float rsiEntry = isBtc ? rsiBuyB : rsiBuyG
+float rsiExit  = isBtc ? rsiExB  : rsiExG
+int   maxBars  = isBtc ? maxBarsB : maxBarsG
+
+float r = ta.rsi(close, rsiLen)
+float s = ta.sma(close, smaLen)
+float a = ta.atr(atrLen)
+
+bool trend = close > s
+if isBtc
+    trend := trend and close > close[momLook]
+
+bool setup = trend and r < rsiEntry and strategy.position_size == 0
+bool exitRsi = strategy.position_size > 0 and r > rsiExit
+bool exitTrend = strategy.position_size > 0 and close < s
+
+var float stopPx = na
+var int barsIn = 0
+
+if setup
+    stopPx := close - atrMult * a   // stop level from signal bar; entry next open
+    barsIn := 0
+
+string sym = botSym == "" ? syminfo.ticker : botSym
+string side = "buy"
+
+if setup
+    strategy.entry("Long", strategy.long, alert_message = '{"event":"entry","side":"buy","symbol":"' + sym + '","secret":"' + secret + '","strategy":"pullback_lab","tf":"' + timeframe.period + '"}')
+    alert('{"event":"signal","side":"buy","symbol":"' + sym + '","secret":"' + secret + '","strategy":"pullback_lab","rsi":' + str.tostring(r, "#.##") + ',"sma200":' + str.tostring(s, "#.##") + '}', alert.freq_once_per_bar_close)
+
+if strategy.position_size > 0
+    barsIn += 1
+    float liveStop = strategy.position_avg_price - atrMult * a
+    if not na(stopPx)
+        liveStop := math.min(liveStop, stopPx)
+    strategy.exit("XR", from_entry = "Long", stop = liveStop, alert_message = '{"event":"exit","side":"sell","symbol":"' + sym + '","secret":"' + secret + '","strategy":"pullback_lab","why":"stop"}')
+
+if exitRsi or exitTrend or (strategy.position_size > 0 and barsIn >= maxBars)
+    strategy.close("Long", comment = exitRsi ? "rsi" : exitTrend ? "trend" : "time",
+         alert_message = '{"event":"exit","side":"sell","symbol":"' + sym + '","secret":"' + secret + '","strategy":"pullback_lab"}')
+
+plot(s, "SMA 200", color = color.new(color.teal, 0))
+plotshape(setup, title = "Pullback buy", style = shape.triangleup, location = location.belowbar, color = color.new(#B6FF2E, 0), size = size.small)

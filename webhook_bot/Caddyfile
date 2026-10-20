@@ -1,0 +1,4 @@
+# Replace with your domain (DNS A record -> server IP). Caddy obtains the TLS certificate automatically.
+bot.example.com {
+    reverse_proxy bot:80
+}

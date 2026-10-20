@@ -1,0 +1,7 @@
+{
+  "VWAP Anchor": ["Day", "Week"],
+  "Band Multiplier (0 = Auto)": [1.5, 2.0, 2.5, 3.0],
+  "Signal Type": ["Open outside, close inside", "Wick outside, close inside"],
+  "TP2 Target": ["Opposite Band", "VWAP + 1 SD", "R Multiple"],
+  "Max Position (x equity)": [3]
+}

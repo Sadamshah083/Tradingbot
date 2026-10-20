@@ -1,0 +1,10 @@
+<section class="s rv" id="security" aria-labelledby="sec-title">
+    <div class="kicker">Security &amp; risk</div><h2 id="sec-title">What protects you</h2>
+    <div class="risk">
+      <div class="panel"><b>ENCRYPTED KEYS</b>Broker credentials are encrypted at rest and only decrypted by the trading engine.</div>
+      <div class="panel"><b>NO WITHDRAWALS</b>Use API keys with trading permission only; the bot never needs withdrawal rights.</div>
+      <div class="panel"><b>SIGNED WEBHOOKS</b>Every TradingView alert must carry a secret; Stripe webhooks are signature-verified.</div>
+      <div class="panel"><b>AUDIT TRAIL</b>Settings changes, kill switches, orders and rejections are logged per account.</div>
+    </div>
+    <p class="fine" style="max-width:none;margin-top:18px">Trading involves substantial risk of loss. Software, connections, exchanges and brokers all fail sometimes; automated orders can fill at unexpected prices. Keep a stop at the broker, monitor any live system, and never trade money you cannot afford to lose. See the <a href="{% url 'site_disclaimer' %}">disclaimer</a> and <a href="{% url 'legal' 'risk' %}">risk disclosure</a>.</p>
+  </section>

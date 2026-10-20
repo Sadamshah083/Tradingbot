@@ -1,0 +1,57 @@
+{% extends "staff/base.html" %}
+{% block title %}{% if p %}Edit post{% else %}New post{% endif %} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{% if p %}Edit: {{ p.title }}{% else %}New blog post{% endif %}{% endblock %}
+{% block page_lead %}Write the body in HTML (headings, paragraphs, images, tables, embeds all work). The preview on the right shows how it will look on the site.{% endblock %}
+{% block staff %}
+<form method="post" id="postform">{% csrf_token %}
+<div class="grid g2" style="grid-template-columns:1.1fr .9fr;align-items:start">
+  <div>
+    <div class="card">
+      <label>Title</label><input name="title" value="{{ p.title|default:'' }}" required maxlength="160">
+      <div class="row"><div><label>URL slug (blank = from title)</label><input name="slug" value="{{ p.slug|default:'' }}" placeholder="my-article"></div><div><label>Category</label><input name="category" list="cats" value="{{ p.category.name|default:'' }}" placeholder="e.g. Risk management"><datalist id="cats">{% for c in categories %}<option value="{{ c.name }}">{% endfor %}</datalist></div></div>
+      <label>Excerpt (listing + social preview, up to 300 characters)</label><textarea name="excerpt" rows="2" maxlength="300">{{ p.excerpt|default:'' }}</textarea>
+      <label>Body (HTML)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <button type="button" class="btn ghost small" data-wrap="h2">H2</button><button type="button" class="btn ghost small" data-wrap="h3">H3</button><button type="button" class="btn ghost small" data-wrap="p">Paragraph</button><button type="button" class="btn ghost small" data-wrap="strong">Bold</button><button type="button" class="btn ghost small" data-wrap="em">Italic</button><button type="button" class="btn ghost small" data-snippet="<ul>&#10;  <li>Item</li>&#10;</ul>">List</button><button type="button" class="btn ghost small" data-wrap="blockquote">Quote</button><button type="button" class="btn ghost small" data-snippet="<pre><code>code here</code></pre>">Code</button><button type="button" class="btn ghost small" data-snippet="<a href=&quot;https://&quot;>link text</a>">Link</button><button type="button" class="btn ghost small" data-snippet="<img src=&quot;https://&quot; alt=&quot;description&quot;>">Image</button><button type="button" class="btn ghost small" data-snippet="<table>&#10;  <tr><th>Header</th><th>Header</th></tr>&#10;  <tr><td>Cell</td><td>Cell</td></tr>&#10;</table>">Table</button>
+      </div>
+      <textarea name="body_html" id="body" rows="22" class="mono" style="font-weight:500;font-size:13.5px;line-height:1.5" required>{{ p.body_html|default:'' }}</textarea>
+      <div class="row"><div><label>Featured image URL</label><input name="featured_image" value="{{ p.featured_image|default:'' }}" placeholder="https://..."></div><div><label>Image alt text</label><input name="featured_image_alt" value="{{ p.featured_image_alt|default:'' }}"></div></div>
+      <div class="row"><div><label>Tags (comma-separated)</label><input name="tags" value="{{ p.tags|default:'' }}" placeholder="backtesting, gold, risk"></div><div><label>Author name</label><input name="author_name" value="{{ p.author_name|default:'' }}" placeholder="{{ SITE_NAME }}"></div></div>
+      <label>Publication date (optional, e.g. 2026-09-30 09:00)</label><input name="published_at" value="{{ p.published_at|date:'Y-m-d H:i'|default:'' }}" placeholder="leave blank = when published">
+    </div>
+    <div class="card" style="margin-top:16px"><h2>SEO &amp; social</h2>
+      <div class="row"><div><label>SEO title (≤70)</label><input name="seo_title" value="{{ p.seo_title|default:'' }}" maxlength="70"></div><div><label>Canonical URL</label><input name="canonical_url" value="{{ p.canonical_url|default:'' }}" placeholder="only if republished from elsewhere"></div></div>
+      <label>Meta description (≤160)</label><textarea name="meta_description" rows="2" maxlength="160">{{ p.meta_description|default:'' }}</textarea>
+      <div class="row"><div><label>Open Graph title</label><input name="og_title" value="{{ p.og_title|default:'' }}" maxlength="95"></div><div><label>Open Graph image URL</label><input name="og_image" value="{{ p.og_image|default:'' }}"></div></div>
+      <label>Open Graph description</label><textarea name="og_description" rows="2" maxlength="200">{{ p.og_description|default:'' }}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center">
+      <button class="btn ghost" name="action" value="save">Save draft</button>
+      <button class="btn primary" name="action" value="publish">{% if p.published %}Save &amp; keep published{% else %}Publish{% endif %}</button>
+      {% if p.published %}<button class="btn ghost" name="action" value="unpublish">Unpublish</button>{% endif %}
+      {% if p %}<a class="btn ghost" href="{{ p.get_absolute_url }}" target="_blank">View on site</a>{% endif %}
+      <span class="muted">{% if p %}Status: {% if p.published %}<span class="good">published</span>{% else %}<span class="warn">draft</span>{% endif %} · {{ p.views }} views{% endif %}</span>
+    </div>
+  </div>
+  <div class="card" style="position:sticky;top:20px"><h2>Live preview</h2>
+    <h3 id="pv-title" style="font-size:24px;margin:0 0 10px">{{ p.title|default:'Post title' }}</h3>
+    <div id="preview" class="prose" style="font-size:15px;line-height:1.65;color:#d5dbe6;max-height:70vh;overflow:auto"></div>
+  </div>
+</div>
+</form>
+<style>
+  .prose h2{font-size:22px;margin:24px 0 8px;text-transform:none;color:var(--text);letter-spacing:-.3px} .prose h3{font-size:18px;margin:18px 0 8px} .prose p{margin:0 0 12px} .prose img{max-width:100%;border-radius:8px} .prose pre{background:#0b1220;border:1px solid var(--line);border-radius:8px;padding:12px;overflow:auto;font-size:13px}
+  .prose table{width:100%;border-collapse:collapse;margin:0 0 14px} .prose th,.prose td{border:1px solid var(--line);padding:6px 10px} .prose blockquote{border-left:3px solid var(--teal);margin:14px 0;padding:4px 14px;color:var(--muted)} .prose ul,.prose ol{padding-left:22px}
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+  const body = document.getElementById('body'), pv = document.getElementById('preview'), title = document.querySelector('[name=title]');
+  const render = () => { pv.innerHTML = body.value || '<p class="muted">Start typing HTML on the left…</p>'; document.getElementById('pv-title').textContent = title.value || 'Post title'; };
+  body.addEventListener('input', render); title.addEventListener('input', render); render();
+  function insert(before, after) { const s = body.selectionStart, e = body.selectionEnd, sel = body.value.slice(s, e); body.setRangeText(before + (sel || '') + after, s, e, 'end'); body.focus(); render(); }
+  document.querySelectorAll('[data-wrap]').forEach(b => b.addEventListener('click', () => insert('<' + b.dataset.wrap + '>', '</' + b.dataset.wrap + '>')));
+  document.querySelectorAll('[data-snippet]').forEach(b => b.addEventListener('click', () => insert(b.dataset.snippet + '\n', '')));
+  body.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); insert('  ', ''); } });
+</script>
+{% endblock %}

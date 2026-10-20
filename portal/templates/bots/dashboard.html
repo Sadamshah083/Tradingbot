@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}My bot · {{ SITE_NAME }}{% endblock %}
+{% block head %}
+<style>
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .state{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:12px;border:1px solid var(--line);background:#111a2f;font-weight:700}
+  .state i{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block} .state.on i{background:var(--teal);box-shadow:0 0 0 4px rgba(45,212,191,.18)} .state.kill i{background:var(--red)}
+  .switch{position:relative;display:inline-block;width:56px;height:30px;flex:none} .switch input{opacity:0;width:0;height:0} .switch span{position:absolute;inset:0;background:#33405e;border-radius:999px;cursor:pointer;transition:.2s} .switch span:before{content:"";position:absolute;width:24px;height:24px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s} .switch input:checked+span{background:var(--teal2)} .switch input:checked+span:before{transform:translateX(26px)}
+  .row{display:flex;gap:12px;flex-wrap:wrap} .row>div{flex:1;min-width:150px} .row label{margin-top:10px}
+  .chk{display:flex;gap:14px;flex-wrap:wrap;margin-top:6px} .chk label{display:inline-flex;align-items:center;gap:6px;margin:0;font-weight:500;color:var(--text)} .chk input{width:auto}
+  .steps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px} .step{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#0f1729;font-size:13.5px} .step b{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:4px} .step i{width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;font-style:normal;font-size:12px;border:1px solid var(--line);color:var(--muted)} .step.done i{background:var(--teal);color:#062421;border-color:transparent} .step span{color:var(--muted)}
+  .live{border-color:rgba(248,113,113,.5);background:rgba(248,113,113,.06);padding:12px 14px;border-radius:10px;margin-top:12px;font-size:14px}
+  code.url{display:block;padding:10px 12px;background:#0e1526;border:1px solid var(--line);border-radius:8px;word-break:break-all;font-size:13px}
+  pre{background:#0e1526;border:1px solid var(--line);border-radius:8px;padding:12px;font-size:12.5px;overflow:auto;margin:8px 0 0}
+  .lock{padding:40px;text-align:center}
+  ol.guide{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.7} ol.guide b{color:var(--text)}
+  .tablewrap{overflow-x:auto}
+  @media(max-width:1000px){.steps{grid-template-columns:1fr 1fr}} @media(max-width:600px){.steps{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+{% if not has_access %}
+<div class="card lock"><h1>Bot access</h1>
+  <p class="lead">The automated bot (Binance direct, Exness through the MT5 bridge, or paper mode), your risk controls, trailing stop, the invite-only TradingView strategy and your personal webhook are unlocked by the <b>${{ PRICE_BOT }} package</b>. Each payment gives <b>{{ access_days }} days</b> of access; pay again to extend.</p>
+  {% if profile.bot_access_until %}<p class="bad">Your access expired on {{ profile.bot_access_until|date:"M d, Y" }}. The bot is paused and your webhook is disabled until you renew.</p>{% endif %}
+  <a class="btn primary" href="{% url 'checkout' 'bot' %}">{% if profile.bot_access_until %}Renew{% else %}Get{% endif %} {{ access_days }} days - ${{ PRICE_BOT }}</a> <a class="btn ghost" href="{% url 'dashboard' %}">Back to dashboard</a>
+  <p class="muted" style="margin-top:16px">Card payments unlock instantly; bank / USDT payments unlock after we confirm them (usually within a few hours).</p></div>
+{% else %}
+<div class="hdr">
+  <div><h1 style="margin:0">My bot</h1><p class="lead" style="margin:4px 0 0">{{ bot.strategy }} · {{ bot.get_broker_display }} · {% if bot.mode == 'live' %}<b class="bad">LIVE MONEY</b>{% else %}paper (simulated){% endif %} · access until <b>{{ profile.bot_access_until|date:"M d, Y" }}</b> ({{ profile.bot_days_left }} days) · <a href="{% url 'checkout' 'bot' %}">extend</a></p></div>
+  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span class="state {% if bot.kill_switch %}kill{% elif bot.active %}on{% endif %}"><i></i>{% if bot.kill_switch %}EMERGENCY STOP{% elif bot.active %}Bot ON{% else %}Bot OFF{% endif %}</span>
+    {% if bot.kill_switch %}<form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="clear_kill"><button class="btn ghost">Clear emergency stop</button></form>
+    {% else %}<form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="toggle"><label class="switch" title="Bot on / off"><input type="checkbox" {% if bot.enabled %}checked{% endif %} onchange="this.form.submit()"><span></span></label></form>
+      <form method="post" action="{% url 'bot_update' %}" onsubmit="return confirm('Stop all new orders immediately?')">{% csrf_token %}<input type="hidden" name="action" value="kill"><button class="btn danger">Emergency stop</button></form>{% endif %}
+  </div>
+</div>
+
+<div class="card"><h2>Setup checklist</h2>
+  <div class="steps">{% for title, done, note in steps %}<div class="step {% if done %}done{% endif %}"><b><i>{% if done %}✓{% else %}{{ forloop.counter }}{% endif %}</i>{{ title }}</b><span>{{ note }}</span></div>{% endfor %}</div>
+  <p class="muted" style="margin:12px 0 0;font-size:13px">How it works once everything is ticked: the strategy on your TradingView chart (or our platform signals) fires → our server checks your risk rules → the order is placed on your broker with stop and target → the stop trails while the trade runs → everything is listed below. The bot runs on our server 24/7; nothing needs to stay open on your computer, except the MT5 bridge if you use Exness.</p>
+</div>
+
+<div class="grid g4" style="margin-top:16px">
+  <div class="card"><h2>Today's P/L</h2><div class="stat {% if stats.pnl_today > 0 %}good{% elif stats.pnl_today < 0 %}bad{% endif %} mono">{{ stats.pnl_today|floatformat:2 }}</div><div class="muted">{{ stats.trades_today }} trade{{ stats.trades_today|pluralize }} today · limit {{ bot.daily_trade_limit }}</div></div>
+  <div class="card"><h2>Open positions</h2><div class="stat mono">{{ stats.open_trades }}</div><div class="muted">max {{ bot.max_open_trades }} · {{ stats.consecutive_losses }} loss{{ stats.consecutive_losses|pluralize:"es" }} in a row (stop at {{ bot.max_consecutive_losses }})</div></div>
+  <div class="card"><h2>Win rate</h2><div class="stat mono">{% if stats.win_rate is not None %}{{ stats.win_rate }}%{% else %}—{% endif %}</div><div class="muted">{{ stats.closed }} closed · PF {{ stats.profit_factor|default_if_none:"—" }} · total {{ stats.pnl_total|floatformat:2 }}</div></div>
+  <div class="card"><h2>Markets now</h2>
+    {% for k, m in markets.items %}<div style="display:flex;justify-content:space-between;font-size:14px;padding:3px 0"><b>{{ k }}</b><span class="{% if m.open %}good{% else %}bad{% endif %}">{% if m.open %}OPEN{% else %}CLOSED{% endif %}</span></div>{% endfor %}
+    <div class="muted" style="font-size:12px">Gold pauses 21-22 UTC daily and over the weekend; BTC is 24/7. The bot only opens trades while a market is open.</div></div>
+</div>
+
+<div class="grid g2" style="margin-top:16px;align-items:start">
+  <div>
+    <div class="card"><h2>Step 2 · TradingView strategy access</h2>
+      <p class="muted" style="margin:0 0 8px">The strategy is an <b>invite-only script</b> on TradingView: you use it on your chart, the source code stays private. Tell us your TradingView username and we add you.</p>
+      <form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="tradingview">
+        <label>Your TradingView username</label><div style="display:flex;gap:8px"><input name="tradingview_username" value="{{ profile.tradingview_username }}" placeholder="e.g. goldtrader_pk" required><button class="btn primary small">Save</button></div></form>
+      {% if profile.tradingview_username %}<p style="margin:10px 0 0">{% if profile.tv_access_granted %}<span class="pill buy">access granted</span> <span class="muted">Open TradingView → Indicators → <b>Invite-only scripts</b> → {{ SITE_NAME }} strategy → add to chart.</span>{% else %}<span class="pill exit">waiting for us</span> <span class="muted">We add "{{ profile.tradingview_username }}" and confirm in chat, usually within a few hours.</span>{% endif %}</p>{% endif %}
+      <ol class="guide">
+        <li>Open the chart you want (e.g. <b>XAUUSD 1h</b> or <b>BTCUSDT 1h</b>) on a paid TradingView plan (webhooks need Essential or higher).</li>
+        <li>Add the invite-only strategy, open its settings → <b>Alerts</b> → paste your webhook secret <span class="mono">{{ bot.webhook_token }}</span> into "Webhook Passphrase".</li>
+        <li>Press <b>Alt+A</b> → condition "Order fills and alert() function calls" → message <span class="mono">{% templatetag openvariable %}strategy.order.alert_message{% templatetag closevariable %}</span> → Notifications → Webhook URL below → Create.</li>
+        <li>Turn the bot ON here. Every signal from your chart is now checked and executed with your risk settings.</li>
+      </ol>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">Prefer not to run TradingView yourself? Leave "Trade platform signals" ticked below and your bot trades the platform's gold 1h signals automatically.</p>
+    </div>
+
+    <div class="card" style="margin-top:16px"><h2>Your webhook</h2>
+      <code class="url">{{ webhook_url }}</code>
+      <p class="muted" style="margin:8px 0 0">Expires with your bot access. Alert message if you use your own indicator instead of ours:</p>
+      <pre>{{ example_json }}</pre>
+      <form method="post" action="{% url 'bot_update' %}" style="margin-top:10px">{% csrf_token %}<input type="hidden" name="action" value="rotate_token"><button class="btn ghost small">Generate new secret</button></form>
+    </div>
+
+    <div class="card" style="margin-top:16px"><h2>Step 3 · Connect a broker</h2>
+      <p class="muted" style="margin:0 0 10px">Every broker below works with the bot. Keys are encrypted at rest and used only by the trading engine on our server. Never give a key withdrawal permission.</p>
+      {% with c=conns.binance %}
+      <details {% if bot.broker == 'binance' %}open{% endif %}><summary style="cursor:pointer;font-weight:700">Binance Futures (USDT-M) {% if c %}<span class="pill {% if c.status == 'ok' %}buy{% elif c.status == 'error' %}sell{% else %}exit{% endif %}" style="margin-left:6px">{{ c.status }}</span>{% endif %}</summary>
+        <ol class="guide"><li>Binance → Profile → <b>API Management</b> → Create API → "System generated".</li><li>Enable <b>Futures</b> trading permission only. Do <b>not</b> enable withdrawals. Restrict to our server IP <span class="mono">169.58.250.40</span> (recommended).</li><li>Paste key and secret here. Start with <b>Testnet</b> (testnet.binancefuture.com keys) to see orders without money.</li><li>Choose "Binance" as broker in the settings, keep paper mode until you are ready.</li></ol>
+        {% if c %}<p class="muted" style="margin:8px 0">Key {{ c.api_key_masked }} · balance {{ c.balance|default_if_none:"—" }} USDT · checked {{ c.last_checked|naturaltime|default:"never" }}{% if c.last_error %}<br><span class="bad">{{ c.last_error }}</span>{% endif %}</p>{% endif %}
+        <form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="broker"><input type="hidden" name="broker" value="binance">
+          <label>API key</label><input name="api_key" autocomplete="off" placeholder="{% if c %}leave blank to keep{% else %}Binance API key{% endif %}">
+          <label>API secret</label><input name="api_secret" type="password" autocomplete="new-password" placeholder="{% if c %}leave blank to keep{% else %}Binance API secret{% endif %}">
+          <div class="chk" style="margin-top:8px"><label><input type="checkbox" name="testnet" checked> Testnet (demo) - untick for the real account</label></div>
+          <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary small">Save Binance</button>{% if c %}<button class="btn danger small" name="action" value="disconnect">Disconnect</button>{% endif %}</div>
+        </form></details>
+      {% endwith %}
+      {% with c=conns.exness %}
+      <details style="margin-top:10px" {% if bot.broker == 'exness' %}open{% endif %}><summary style="cursor:pointer;font-weight:700">Exness (MT5 — live trading) {% if c %}<span class="pill {% if c.status == 'ok' %}buy{% elif c.status == 'error' %}sell{% else %}exit{% endif %}" style="margin-left:6px">{{ c.status }}</span>{% endif %}</summary>
+        <p class="muted" style="margin:8px 0">After you unlock the bot, connect Exness through <b>MetaTrader 5</b>. A small <b>MT5 bridge</b> runs next to your MT5 terminal (Windows PC or Windows VPS) and receives orders from our server. Your MT5 password never leaves your machine. Native MT4 bridge is not used — log into the same Exness account in MT5.</p>
+        <ol class="guide"><li><a href="{% url 'download_bot' %}">Download the package</a> → folder <b>mt5_bridge</b>. Install MetaTrader 5 from Exness and Python 3.11.</li><li>Run <span class="mono">pip install -r requirements.txt</span>, copy <b>config.example.json</b> to <b>config.json</b>, fill your MT5 login, password, server (e.g. Exness-MT5Real) and invent a long <b>token</b>.</li><li>Run <span class="mono">python bridge.py</span>. Make port 5055 reachable from the internet (VPS public IP, router port-forward, or a free tunnel like Cloudflare Tunnel) - the guide in the folder shows each option.</li><li>Paste the bridge URL and the same token here, choose "Exness" as broker.</li></ol>
+        <form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="broker"><input type="hidden" name="broker" value="exness">
+          <div class="row"><div><label>MT5 login (for display)</label><input name="mt5_login" placeholder="12345678" autocomplete="off"></div><div><label>MT5 server</label><input name="mt5_server" placeholder="Exness-MT5Real" autocomplete="off"></div></div>
+          <label>Bridge URL</label><input name="bridge_url" placeholder="http://your-windows-pc-or-vps:5055">
+          <label>Bridge token (same as in config.json)</label><input name="bridge_token" type="password" autocomplete="new-password" placeholder="{% if c %}leave blank to keep{% endif %}">
+          <div style="display:flex;gap:8px;margin-top:12px"><button class="btn primary small">Save Exness</button>{% if c %}<button class="btn danger small" name="action" value="disconnect">Disconnect</button>{% endif %}</div>
+        </form></details>
+      {% endwith %}
+      <p class="muted" style="margin:12px 0 0;font-size:12.5px">Other brokers: any MetaTrader 5 broker works through the same bridge (IC Markets, XM, Pepperstone…); OANDA and other API brokers can be added on request.</p>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'bot_update' %}" class="card">{% csrf_token %}<input type="hidden" name="action" value="settings">
+    <h2>Step 4 · Bot configuration</h2>
+    <div class="row">
+      <div><label>Trading mode</label><select name="mode">{% for k, v in MODES %}<option value="{{ k }}" {% if bot.mode == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+      <div><label>Broker</label><select name="broker">{% for k, v in BROKERS %}<option value="{{ k }}" {% if bot.broker == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+    </div>
+    <label>Markets</label><div class="chk">{% for k, m in MARKETS.items %}<label><input type="checkbox" name="markets" value="{{ k }}" {% if k in bot.market_list %}checked{% endif %}> {{ k }} <span class="muted">({{ m.label }})</span></label>{% endfor %}</div>
+    <label>Timeframes accepted</label><div class="chk">{% for k, v in TIMEFRAMES %}<label><input type="checkbox" name="timeframes" value="{{ k }}" {% if k in bot.timeframe_list %}checked{% endif %}> {{ v }}</label>{% endfor %}</div>
+    <p class="muted" style="font-size:12.5px;margin:6px 0 0">Signals on other markets or timeframes are ignored. Our verified backtest is gold 1h; other combinations are for your own paper testing.</p>
+    <h2 style="margin-top:22px">Risk management</h2>
+    <div class="row">
+      <div><label>Risk per trade (%)</label><input name="risk_pct" type="number" step="0.1" min="0.1" max="5" value="{{ bot.risk_pct }}"></div>
+      <div><label>Max daily loss (%)</label><input name="max_daily_loss_pct" type="number" step="0.5" min="0.5" max="50" value="{{ bot.max_daily_loss_pct }}"></div>
+      <div><label>Max open trades</label><input name="max_open_trades" type="number" min="1" max="10" value="{{ bot.max_open_trades }}"></div>
+    </div>
+    <div class="row">
+      <div><label>Max position size (units, 0 = none)</label><input name="max_position_size" type="number" step="any" min="0" value="{{ bot.max_position_size }}"></div>
+      <div><label>Max exposure (% of equity)</label><input name="max_exposure_pct" type="number" step="1" min="1" max="500" value="{{ bot.max_exposure_pct }}"></div>
+      <div><label>Stop after N losses in a row</label><input name="max_consecutive_losses" type="number" min="1" max="20" value="{{ bot.max_consecutive_losses }}"></div>
+    </div>
+    <div class="row">
+      <div><label>Max trades per day</label><input name="daily_trade_limit" type="number" min="1" max="50" value="{{ bot.daily_trade_limit }}"></div>
+      <div><label>Leverage (Binance)</label><input name="leverage" type="number" min="1" max="20" value="{{ bot.leverage }}"></div>
+      <div><label>Paper capital ($)</label><input name="paper_capital" type="number" step="100" min="100" value="{{ bot.paper_capital }}"></div>
+    </div>
+    <h2 style="margin-top:22px">Stop loss &amp; take profit</h2>
+    <div class="row">
+      <div><label>Stop loss</label><select name="sl_mode"><option value="signal" {% if bot.sl_mode == 'signal' %}selected{% endif %}>Use the signal's stop</option><option value="pct" {% if bot.sl_mode == 'pct' %}selected{% endif %}>Fixed % from entry</option></select></div>
+      <div><label>Fixed stop (%)</label><input name="sl_pct" type="number" step="0.05" min="0.05" max="10" value="{{ bot.sl_pct }}"></div>
+      <div><label>Take profit</label><select name="tp_mode"><option value="signal" {% if bot.tp_mode == 'signal' %}selected{% endif %}>Use the signal's target</option><option value="rr" {% if bot.tp_mode == 'rr' %}selected{% endif %}>Risk/reward multiple</option></select></div>
+      <div><label>Risk/reward</label><input name="rr" type="number" step="0.1" min="0.5" max="10" value="{{ bot.rr }}"></div>
+    </div>
+    <div class="row">
+      <div><label>Break-even after (R)</label><input name="breakeven_at_r" type="number" step="0.1" min="0" value="{{ bot.breakeven_at_r }}"></div>
+      <div><label>Trailing stop distance (%)</label><input name="trailing_pct" type="number" step="0.05" min="0.05" max="10" value="{{ bot.trailing_pct }}"></div>
+    </div>
+    <div class="chk" style="margin-top:12px">
+      <label><input type="checkbox" name="trailing_enabled" {% if bot.trailing_enabled %}checked{% endif %}> Trail the stop</label>
+      <label><input type="checkbox" name="respect_market_hours" {% if bot.respect_market_hours %}checked{% endif %}> Respect market hours</label>
+      <label><input type="checkbox" name="accept_platform_signals" {% if bot.accept_platform_signals %}checked{% endif %}> Trade platform signals</label>
+      <label><input type="checkbox" name="accept_own_signals" {% if bot.accept_own_signals %}checked{% endif %}> Trade my own webhook signals</label>
+    </div>
+    <label>Telegram chat id for bot notifications (optional)</label><input name="telegram_chat_id" value="{{ bot.telegram_chat_id }}" placeholder="123456789">
+    <div class="live"><label style="margin:0;display:flex;gap:8px;align-items:flex-start;color:var(--text)"><input type="checkbox" name="confirm_live" style="width:auto;margin-top:3px"> <span><b>Live trading confirmation.</b> I understand that in LIVE mode the bot sends real orders to my broker account, that losses are possible and mine, and that {{ SITE_NAME }} does not hold my funds. Required only when selecting Live mode.</span></label></div>
+    <button class="btn primary" style="margin-top:16px">Save settings</button>
+  </form>
+</div>
+
+<div class="card" style="margin-top:16px"><h2>Trades &amp; decisions</h2><div class="tablewrap">
+  <table><thead><tr><th>When</th><th>Signal</th><th>Mode</th><th>Qty</th><th>Entry</th><th>Stop</th><th>Target</th><th>Status</th><th>P/L</th><th>Note</th></tr></thead><tbody>
+  {% for e in executions %}<tr><td class="muted" style="white-space:nowrap">{{ e.opened_at|date:"M d, H:i" }}</td><td><span class="pill {{ e.side }}">{{ e.side|upper }}</span> {{ e.symbol }} <span class="muted">{{ e.timeframe }}</span></td><td>{% if e.mode == 'live' %}<span class="pill sell">LIVE</span>{% else %}<span class="pill">paper</span>{% endif %} <span class="muted">{{ e.broker }}</span></td><td class="mono">{{ e.qty|floatformat:-4 }}</td><td class="mono">{{ e.entry|default_if_none:"—" }}</td><td class="mono bad">{{ e.sl|default_if_none:"—" }}</td><td class="mono good">{{ e.tp|default_if_none:"—" }}</td>
+    <td>{% if e.status == 'open' %}<span class="pill buy">open</span>{% elif e.status == 'closed' %}<span class="pill">closed</span>{% elif e.status == 'rejected' %}<span class="pill exit">rejected</span>{% else %}<span class="pill sell">error</span>{% endif %}</td><td class="mono {% if e.pnl and e.pnl > 0 %}good{% elif e.pnl and e.pnl < 0 %}bad{% endif %}">{{ e.pnl|default_if_none:"—" }}</td><td class="muted" style="font-size:12.5px">{{ e.reason }}</td></tr>
+  {% empty %}<tr><td colspan="10" class="empty">Nothing yet. Turn the bot ON; the next signal on your selected markets will show here as opened or rejected (with the reason).</td></tr>{% endfor %}
+  </tbody></table></div></div>
+
+<div class="card" style="margin-top:16px"><h2>Activity log</h2>
+  {% for ev in events %}<div style="display:flex;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px"><span class="muted" style="white-space:nowrap">{{ ev.created|date:"M d, H:i" }}</span><span class="pill" style="font-size:11px">{{ ev.kind }}</span><span>{{ ev.text }}</span></div>{% empty %}<p class="muted">No activity yet.</p>{% endfor %}</div>
+{% endif %}
+{% endblock %}

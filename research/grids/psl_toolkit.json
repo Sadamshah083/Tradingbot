@@ -1,0 +1,7 @@
+{
+  "Fast EMA Length": [9, 12, 20],
+  "Slow EMA Length": [21, 26, 50],
+  "TP Distance (ATR x)": [1.0, 3.0, 6.0],
+  "SL Distance (ATR x)": [1.5, 3.0],
+  "Enable Trend EMA Filter": [false, true]
+}

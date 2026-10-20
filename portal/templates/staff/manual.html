@@ -1,0 +1,38 @@
+{% extends "staff/base.html" %}
+{% block title %}Manual trader · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Manual trader{% endblock %}
+{% block page_lead %}Place your own trade through the bot with a stop and a target. In PAPER mode it is only journaled; in LIVE mode it goes to the broker.{% endblock %}
+{% block staff %}
+<div class="grid g2" style="grid-template-columns:1fr 1.4fr">
+  <div class="card">
+    <h2>New trade</h2>
+    {% if not bot.online %}<div class="flash error">The bot is offline ({{ bot.error }}). Start it with <code>webhook_bot\run_local.ps1</code> and reload.</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      <div class="row">
+        <div><label>Side</label><select name="side"><option value="buy">BUY</option><option value="sell">SELL</option></select></div>
+        <div><label>Symbol</label><input name="symbol" placeholder="XAUUSD" required></div>
+        <div><label>Quantity</label><input name="qty" type="number" step="any" min="0" placeholder="0.10" required></div>
+      </div>
+      <div class="row">
+        <div><label>Stop loss</label><input name="sl" type="number" step="any" required></div>
+        <div><label>Take profit</label><input name="tp" type="number" step="any" required></div>
+      </div>
+      <label>Note</label><input name="note" placeholder="why you take this trade">
+      <button class="btn primary" style="margin-top:14px" {% if not bot.online %}disabled{% endif %}>Place trade {% if bot.live %}(LIVE){% else %}(paper){% endif %}</button>
+    </form>
+    <div class="kv" style="margin-top:18px">
+      <div>Broker</div><div>{{ bot.broker|default:"-" }}</div>
+      <div>Money</div><div>{% if bot.live %}<span class="bad">LIVE - real orders</span>{% else %}Paper - nothing is sent to a broker{% endif %}</div>
+      <div>Bot mode</div><div>{% if bot.auto %}ON (auto){% else %}OFF (manual){% endif %}</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Your manual trades</h2>
+    {% if jerror %}<p class="muted">{{ jerror }}</p>{% endif %}
+    <table><thead><tr><th>When</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Stop</th><th>Target</th><th>Note</th><th>Result</th></tr></thead><tbody>
+    {% for t in trades %}<tr><td class="muted" style="white-space:nowrap">{{ t.when|date:"M d, H:i" }}</td><td><span class="pill {{ t.side }}">{{ t.side|upper }}</span></td><td>{{ t.symbol }}</td><td class="mono">{{ t.qty }}</td><td class="mono bad">{{ t.sl }}</td><td class="mono good">{{ t.tp }}</td><td class="muted">{{ t.note }}</td><td class="code">{{ t.result|truncatechars:80 }}{% if not t.live %} <span class="muted">(paper)</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="8" class="empty">No manual trades yet.</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,608 @@
+{% extends "site/base.html" %}
+{% load static %}
+{% block site_class %}home{% endblock %}
+{% block title %}Automated Trading Software for TradingView | Sambot{% endblock %}
+{% block seo %}
+<meta name="description" content="Automate TradingView alerts with paper trading, configurable risk controls, backtesting and supported Binance Futures and MT5 execution. Explore Sambot.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="{{ SITE_NAME }}"><meta property="og:url" content="{{ canonical }}">
+<meta property="og:title" content="Automated Trading Software for TradingView | Sambot"><meta property="og:description" content="Automate TradingView alerts with paper trading, configurable risk controls, backtesting and supported Binance Futures and MT5 execution."><meta property="og:image" content="{{ SITE_URL }}/static/img/logo.jpg"><meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/","logo":"{{ SITE_URL }}/static/img/logo.jpg"{% if SUPPORT_EMAIL %},"email":"{{ SUPPORT_EMAIL }}"{% endif %}},{"@type":"WebSite","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/"},{"@type":"SoftwareApplication","name":"{{ SITE_NAME }}","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trading automation software that connects TradingView alerts with paper trading, risk controls and supported execution environments.","offers":[{"@type":"Offer","price":"{{ PRICE_BOT }}","priceCurrency":"USD","name":"Sambot Access"},{"@type":"Offer","price":"{{ PRICE_SIGNAL }}","priceCurrency":"USD","name":"Signal"}]}]}</script>
+{% endblock %}
+{% block page_head %}
+<style>
+  .home .hero-band{position:relative;padding:36px 0 72px;overflow:hidden}
+  .home .hero-band:before{content:"";position:absolute;inset:-20% -10% auto 40%;width:70%;height:110%;background:
+    radial-gradient(ellipse at 60% 35%,rgba(182,255,46,.32),transparent 52%),
+    radial-gradient(ellipse at 90% 10%,rgba(182,255,46,.14),transparent 48%);pointer-events:none}
+  .home .hero{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+  .home .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--accent2);font-size:12px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;margin:0 0 14px}
+  .home .eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.22)}
+  .home .hero h1{font-size:clamp(36px,5vw,56px);margin:0 0 16px;letter-spacing:-1.8px;line-height:1.05;color:var(--graphite);max-width:560px;font-family:Manrope,ui-sans-serif,sans-serif;font-weight:800}
+  .home .hero h1 .hi{color:var(--accent2)}
+  .home .hero .lead{font-size:16.5px;line-height:1.65;color:var(--muted);margin:0 0 26px;max-width:480px}
+  .home .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .home .cta .btn{border-radius:999px;padding:14px 22px;font-size:14.5px}
+  .home .cta .btn.demo{background:#fff;border:1px solid var(--line);color:var(--graphite);box-shadow:0 8px 24px rgba(35,38,47,.06)}
+  .home .cta .btn.demo:hover{border-color:rgba(182,255,46,.7);background:rgba(182,255,46,.1);text-decoration:none}
+  .home .cta .btn svg{width:15px;height:15px}
+  .home .trust{display:flex;flex-wrap:wrap;gap:18px 22px;margin-top:28px;padding-top:22px;border-top:1px solid var(--line);max-width:520px}
+  .home .trust span{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--graphite)}
+  .home .trust i{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(182,255,46,.18);color:var(--accent2);flex:none}
+  .home .trust i svg{width:14px;height:14px}
+
+  .home .stage{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center;animation:rise .9s .1s cubic-bezier(.22,1,.36,1) both}
+  .home .mock{position:relative;width:100%;max-width:520px}
+  .home .mock-shell{border-radius:22px;overflow:hidden;border:1px solid rgba(35,38,47,.14);background:#23262F;box-shadow:0 32px 80px rgba(35,38,47,.22),0 0 0 1px rgba(182,255,46,.18);padding:18px}
+  .home .mock-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;color:#9AA3B2}
+  .home .mock-top b{color:#fff;font-size:13px}
+  .home .live{display:inline-flex;align-items:center;gap:6px;color:var(--spark);font-weight:700;font-size:11px}
+  .home .live i{width:7px;height:7px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.2);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(182,255,46,.4)}70%{box-shadow:0 0 0 7px transparent}}
+  .home .mock-eq{height:120px;margin:4px 0 14px}
+  .home .mock-eq svg{width:100%;height:100%;display:block}
+  .home .mstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+  .home .mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px}
+  .home .mcard .lab{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9AA3B2;margin-bottom:4px}
+  .home .mcard .val{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
+  .home .mcard .val.up{color:var(--spark)}
+  .home .mock-tbl{width:100%;font-size:11px;border-collapse:collapse}
+  .home .mock-tbl th{color:#9AA3B2;font-weight:600;text-align:left;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .home .mock-tbl td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.85)}
+  .home .pill{display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(182,255,46,.15);color:var(--spark);font-size:10px;font-weight:700}
+  .home .float-card{position:absolute;top:28px;right:-18px;width:168px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 18px 40px rgba(35,38,47,.14);z-index:3;animation:floaty 3.8s ease-in-out infinite}
+  .home .float-card .fc-live{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--graphite);margin-bottom:10px}
+  .home .float-card .fc-live i{width:8px;height:8px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.25)}
+  .home .float-card ul{list-style:none;margin:0;padding:0}
+  .home .float-card li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:5px 0}
+  .home .float-card li:before{content:"";width:14px;height:14px;border-radius:50%;background:rgba(182,255,46,.25);border:1.5px solid var(--spark);flex:none;box-shadow:inset 0 0 0 2px #fff}
+
+  .home section.s{padding:88px 0;border-top:1px solid var(--line);text-align:center}
+  .home section.s.alt{background:linear-gradient(180deg,#F7F8FA 0%,#FFFFFF 100%)}
+  .home .feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:left;margin-top:8px}
+  .home .feat-card{padding:24px 22px;border-radius:18px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s,border-color .25s}
+  .home .feat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow2);border-color:rgba(182,255,46,.45)}
+  .home .feat-card .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(182,255,46,.18);color:var(--accent2);margin-bottom:14px}
+  .home .feat-card .ic svg{width:20px;height:20px}
+  .home .feat-card h3{margin:0 0 8px;font-size:17px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
+  .home .feat-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
+
+  .home .how-split{display:grid;grid-template-columns:280px 1fr;gap:36px;align-items:start;text-align:left;margin-top:8px}
+  .home .how-split .kicker,.home .how-split h2,.home .how-split .sub{text-align:left;margin-left:0;margin-right:0}
+  .home .how-split .sub{max-width:260px;margin-bottom:20px}
+  .home .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .home .step{padding:22px 18px;border-radius:16px;background:#fff;border:1px solid var(--line);position:relative}
+  .home .step .n{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1px;margin-bottom:10px}
+  .home .step .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2);margin-bottom:12px}
+  .home .step .ic svg{width:18px;height:18px}
+  .home .step h3{margin:0 0 6px;font-size:15px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
+  .home .step p{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
+
+  .home .mk-split{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center;text-align:left}
+  .home .mk-split .kicker,.home .mk-split h2,.home .mk-split .sub{text-align:left;margin-left:0}
+  .home .mk-icons{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:8px}
+  .home .mk-icon{text-align:center;padding:16px 8px;border-radius:14px;border:1px solid var(--line);background:#fff}
+  .home .mk-icon .ic{width:40px;height:40px;margin:0 auto 8px;border-radius:12px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2)}
+  .home .mk-icon .ic svg{width:18px;height:18px}
+  .home .mk-icon b{display:block;font-size:12.5px;color:var(--graphite)}
+  .home .globe-wrap{position:relative;min-height:320px;display:grid;place-items:center}
+  .home .globe{width:260px;height:260px;border-radius:50%;background:
+    radial-gradient(circle at 35% 30%,rgba(182,255,46,.25),transparent 40%),
+    radial-gradient(circle at 70% 70%,rgba(35,38,47,.08),transparent 45%),
+    #F1F3F6;border:1px solid var(--line);box-shadow:inset 0 0 40px rgba(182,255,46,.12),0 20px 50px rgba(35,38,47,.08);position:relative;overflow:hidden}
+  .home .globe:before,.home .globe:after{content:"";position:absolute;border:1px dashed rgba(35,38,47,.15);border-radius:50%}
+  .home .globe:before{inset:18%;} .home .globe:after{inset:36%}
+  .home .tick{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--graphite);box-shadow:0 10px 28px rgba(35,38,47,.1);white-space:nowrap}
+  .home .tick small{display:block;font-weight:600;font-size:11px;margin-top:2px}
+  .home .tick.up small{color:var(--accent2)} .home .tick.dn small{color:var(--red)}
+  .home .tick.t1{top:18%;left:8%} .home .tick.t2{top:42%;right:0} .home .tick.t3{bottom:16%;left:18%}
+
+  .home .risk-split{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;text-align:left}
+  .home .risk-split .kicker,.home .risk-split h2,.home .risk-split .sub{text-align:left;margin-left:0}
+  .home .risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .home .risk-card{padding:16px;border-radius:14px;border:1px solid var(--line);background:#fff}
+  .home .risk-card .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2);margin-bottom:10px}
+  .home .risk-card .ic svg{width:16px;height:16px}
+  .home .risk-card h3{margin:0 0 4px;font-size:14.5px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
+  .home .risk-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
+  .home .risk-ui{background:#23262F;border-radius:20px;padding:22px;border:1px solid rgba(255,255,255,.08);box-shadow:0 28px 60px rgba(35,38,47,.18)}
+  .home .risk-ui h3{margin:0 0 16px;color:#fff;font-size:15px;font-family:Manrope,sans-serif}
+  .home .risk-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.8);font-size:13.5px}
+  .home .risk-row:last-child{border-bottom:0}
+  .home .tog{width:40px;height:22px;border-radius:999px;background:rgba(182,255,46,.35);position:relative;flex:none}
+  .home .tog:after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--spark)}
+  .home .risk-inp{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:#fff;font-size:12.5px;font-family:"JetBrains Mono",monospace}
+
+  .home .perf-split{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;text-align:left}
+  .home .perf-panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+  .home .perf-panel .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .home .perf-panel .ph b{color:var(--graphite);font-size:15px}
+  .home .perf-panel .ph span{font-size:12px;color:var(--muted)}
+  .home .perf-eq{height:160px;margin:8px 0 16px}
+  .home .perf-eq svg{width:100%;height:100%;display:block}
+  .home .perf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .home .perf-stats div{padding:12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
+  .home .perf-stats .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
+  .home .perf-stats .v{font-size:18px;font-weight:800;color:var(--graphite)}
+  .home .perf-copy .kicker,.home .perf-copy h2,.home .perf-copy .sub{text-align:left;margin-left:0}
+  .home .check{list-style:none;margin:0 0 22px;padding:0}
+  .home .check li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:14.5px;color:var(--graphite);font-weight:600}
+  .home .check li:before{content:"✓";width:22px;height:22px;border-radius:50%;background:rgba(182,255,46,.22);color:var(--accent2);display:grid;place-items:center;font-size:12px;flex:none;margin-top:1px}
+
+  .home .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:28px auto 0;text-align:left}
+  .home .plan{padding:28px 26px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
+  .home .plan.featured{border-color:transparent;background:var(--graphite);color:#fff;box-shadow:0 24px 60px rgba(35,38,47,.25)}
+  .home .plan .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent2);margin-bottom:8px}
+  .home .plan.featured .tag{color:var(--spark)}
+  .home .plan h3{margin:0;font-size:22px;font-family:Manrope,sans-serif;font-weight:800;color:var(--graphite)}
+  .home .plan.featured h3{color:#fff}
+  .home .plan .price{font-size:42px;font-weight:800;letter-spacing:-1.5px;margin:12px 0 4px;color:var(--graphite)}
+  .home .plan.featured .price{color:#fff}
+  .home .plan .price small{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:0}
+  .home .plan.featured .price small{color:rgba(255,255,255,.55)}
+  .home .plan ul{list-style:none;padding:0;margin:18px 0 24px}
+  .home .plan li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;font-size:14.5px;color:var(--muted)}
+  .home .plan.featured li{border-bottom-color:rgba(255,255,255,.1);color:rgba(255,255,255,.72)}
+  .home .plan li:before{content:"✓";color:var(--accent2);font-weight:800}
+  .home .plan.featured li:before{color:var(--spark)}
+  .home .plan .btn{width:100%}
+  .home .plan.featured .btn.primary{background:var(--spark);color:var(--graphite)}
+  .home .pay{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:22px;color:var(--muted);font-size:13px}
+  .home .pay span{padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
+
+  .home .faq-acc{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:980px;margin:28px auto 0;text-align:left}
+  .home .faq-item{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
+  .home .faq-item button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:none;border:0;font:inherit;font-weight:700;font-size:14.5px;color:var(--graphite);cursor:pointer;text-align:left}
+  .home .faq-item button .plus{width:28px;height:28px;border-radius:50%;background:rgba(182,255,46,.2);color:var(--accent2);display:grid;place-items:center;font-size:18px;line-height:1;flex:none;transition:transform .2s}
+  .home .faq-item.open button .plus{transform:rotate(45deg);background:var(--spark);color:var(--graphite)}
+  .home .faq-item .ans{display:none;padding:0 18px 16px;color:var(--muted);font-size:14px;line-height:1.6}
+  .home .faq-item.open .ans{display:block}
+
+  .home .final-cta{position:relative;margin:0;padding:72px 0;background:var(--graphite);overflow:hidden;border-top:0}
+  .home .final-cta:before{content:"";position:absolute;right:-10%;top:-40%;width:55%;height:180%;background:radial-gradient(ellipse,rgba(182,255,46,.28),transparent 60%);pointer-events:none}
+  .home .final-inner{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
+  .home .final-inner h2{color:#fff;text-align:left;margin:0 0 12px;font-size:clamp(28px,3.5vw,40px);font-family:Manrope,sans-serif}
+  .home .final-inner .sub{text-align:left;color:rgba(255,255,255,.65);margin:0 0 24px;max-width:440px}
+  .home .final-inner .cta{justify-content:flex-start}
+  .home .final-inner .btn.ghost{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
+  .home .final-inner .btn.ghost:hover{border-color:var(--spark);background:rgba(182,255,46,.12);color:#fff}
+  .home .final-mock{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;box-shadow:0 24px 50px rgba(0,0,0,.25)}
+  .home .final-mock .bar{height:10px;width:40%;background:rgba(182,255,46,.35);border-radius:6px;margin-bottom:12px}
+  .home .final-mock .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .home .final-mock .cell{height:64px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06)}
+  .home .fine{color:var(--muted);font-size:12.5px;margin-top:16px;line-height:1.55;max-width:560px}
+
+  @media(max-width:1000px){
+    .home .feat-grid{grid-template-columns:1fr 1fr}
+    .home .how-split,.home .mk-split,.home .risk-split,.home .perf-split,.home .final-inner{grid-template-columns:1fr}
+    .home .how-split .kicker,.home .how-split h2,.home .how-split .sub,
+    .home .mk-split .kicker,.home .mk-split h2,.home .mk-split .sub,
+    .home .risk-split .kicker,.home .risk-split h2,.home .risk-split .sub,
+    .home .perf-copy .kicker,.home .perf-copy h2,.home .perf-copy .sub,
+    .home .final-inner h2,.home .final-inner .sub{text-align:center;margin-left:auto;margin-right:auto}
+    .home .how-split .cta,.home .final-inner .cta,.home .perf-copy .cta{justify-content:center}
+    .home .steps{grid-template-columns:1fr 1fr}
+    .home .mk-icons{grid-template-columns:repeat(3,1fr)}
+  }
+  @media(max-width:920px){
+    .home .hero{grid-template-columns:1fr;gap:40px;text-align:center}
+    .home .hero h1,.home .hero .lead{margin-left:auto;margin-right:auto}
+    .home .cta,.home .trust{justify-content:center;margin-left:auto;margin-right:auto}
+    .home .eyebrow{justify-content:center}
+    .home .float-card{right:8px;top:12px}
+  }
+  @media(max-width:720px){
+    .home .feat-grid,.home .steps,.home .plans,.home .faq-acc,.home .risk-grid,.home .perf-stats{grid-template-columns:1fr}
+    .home .mk-icons{grid-template-columns:1fr 1fr}
+    .home .mstats{grid-template-columns:1fr 1fr}
+    .home .mstats .mcard:last-child{grid-column:1/-1}
+  }
+  @media(max-width:560px){
+    .home .hero h1{font-size:32px}
+    .home .cta .btn{width:100%}
+    .home .float-card{display:none}
+  }
+</style>
+{% endblock %}
+{% block site %}
+<main id="top">
+<div class="hero-band"><div class="wrap">
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy" style="animation:rise .8s cubic-bezier(.22,1,.36,1) both">
+      <p class="eyebrow">Automate your trading</p>
+      <h1 id="hero-title">Trading automation you can test <span class="hi">before you trust</span></h1>
+      <p class="lead">SamBot helps you automate trading on supported markets with clear rules, paper testing and simple pricing — so you can review the workflow before going live.</p>
+      <div class="cta">
+        <a class="btn primary" href="{% url 'register' %}" data-modal="register">Start Free Trial</a>
+        <a class="btn demo" href="{% url 'site_performance' %}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Watch Demo</a>
+      </div>
+      <div class="trust">
+        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></i> No credit card required</span>
+        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg></i> Secure and verified trading</span>
+        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></i> Supported global markets</span>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="mock" role="img" aria-label="SamBot dashboard preview">
+        <div class="float-card">
+          <div class="fc-live"><i></i> Auto Trading Active</div>
+          <ul>
+            <li>Set Your Rules</li>
+            <li>Backtest</li>
+            <li>Go Live</li>
+          </ul>
+        </div>
+        <div class="mock-shell">
+          <div class="mock-top"><b>Live Performance</b><span class="live"><i></i> Running</span></div>
+          <div class="mock-eq"><svg id="hero-eq" viewBox="0 0 420 120" preserveAspectRatio="none"></svg></div>
+          <div class="mstats">
+            <div class="mcard"><div class="lab">Total Profit</div><div class="val up" id="hero-net">+$1,148</div></div>
+            <div class="mcard"><div class="lab">Win Rate</div><div class="val" id="h-wr">—</div></div>
+            <div class="mcard"><div class="lab">Trades</div><div class="val" id="h-tr">—</div></div>
+          </div>
+          <div class="mcard">
+            <div class="lab">Recent Trades</div>
+            <table class="mock-tbl"><thead><tr><th>Symbol</th><th>Side</th><th>P/L</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div></div>
+
+<section class="s rv" id="features" aria-labelledby="feat-title">
+  <div class="wrap">
+    <div class="kicker">Features</div>
+    <h2 id="feat-title">Why traders choose SamBot</h2>
+    <p class="sub">A clean workflow from TradingView alerts to paper testing, risk controls and supported execution.</p>
+    <div class="feat-grid">
+      <article class="feat-card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+        <h3>Easy to use</h3>
+        <p>Connect a webhook, set your rules and review every signal in a simple dashboard.</p>
+      </article>
+      <article class="feat-card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+        <h3>Multiple markets</h3>
+        <p>Focused support for gold, bitcoin and connected Binance / MT5 workflows.</p>
+      </article>
+      <article class="feat-card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg></div>
+        <h3>Secure and verified</h3>
+        <p>Your funds stay with your broker. SamBot is software — not a place that holds capital.</p>
+      </article>
+      <article class="feat-card">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19V8"/></svg></div>
+        <h3>Transparent performance</h3>
+        <p>Inspect backtests, trade lists and paper activity instead of trusting screenshots.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="s alt rv" id="how" aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="how-split">
+      <div>
+        <div class="kicker">How it works</div>
+        <h2 id="how-title">Automated trading made simple</h2>
+        <p class="sub">Four clear steps from strategy rules to live automation — with paper mode in between.</p>
+        <a class="btn primary" href="{% url 'site_how' %}">See How It Works</a>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <div class="n">01</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+          <h3>Create your strategy</h3>
+          <p>Set entry, exit and risk rules in TradingView or Strategy Lab.</p>
+        </article>
+        <article class="step">
+          <div class="n">02</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6M11 8v6"/></svg></div>
+          <h3>Test with backtesting</h3>
+          <p>Validate assumptions on historical data before you trust live alerts.</p>
+        </article>
+        <article class="step">
+          <div class="n">03</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L10.7 5.2"/><path d="M14 11a5 5 0 0 0-7.07 0L4.8 13.12a5 5 0 0 0 7.07 7.07L13.3 18.8"/></svg></div>
+          <h3>Verify and connect</h3>
+          <p>Paper-test the webhook, then connect Binance or MT5 when ready.</p>
+        </article>
+        <article class="step">
+          <div class="n">04</div>
+          <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
+          <h3>Go live</h3>
+          <p>Run automation with your limits on — and a full activity log.</p>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s rv" id="markets" aria-labelledby="mk-title">
+  <div class="wrap">
+    <div class="mk-split">
+      <div>
+        <div class="kicker">Supported markets</div>
+        <h2 id="mk-title">Trade the markets you care about</h2>
+        <p class="sub">SamBot focuses on a clear set of markets and connections — gold, bitcoin, Binance Futures and MetaTrader 5.</p>
+        <div class="mk-icons">
+          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg></div><b>Forex</b></div>
+          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19V8"/></svg></div><b>Indices</b></div>
+          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 10h6M9 14h6"/></svg></div><b>Gold</b></div>
+          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><b>Crypto</b></div>
+          <div class="mk-icon"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg></div><b>Stocks</b></div>
+        </div>
+        <div class="cta" style="margin-top:20px"><a class="btn ghost" href="{% url 'site_gold' %}">Gold / XAUUSD</a><a class="btn ghost" href="{% url 'site_bitcoin' %}">Bitcoin</a></div>
+      </div>
+      <div class="globe-wrap" aria-hidden="true">
+        <div class="globe"></div>
+        <div class="tick t1 up">XAU/USD <small id="tick-xau">+0.45%</small></div>
+        <div class="tick t2 up">BTC/USD <small id="tick-btc">—</small></div>
+        <div class="tick t3 dn">EUR/USD <small>-0.12%</small></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt rv" id="risk" aria-labelledby="risk-title">
+  <div class="wrap">
+    <div class="risk-split">
+      <div>
+        <div class="kicker">Risk management</div>
+        <h2 id="risk-title">Set your trading limits</h2>
+        <p class="sub">Keep control with built-in risk options — so your rules run with the automation, not after the alert.</p>
+        <div class="risk-grid">
+          <article class="risk-card">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
+            <h3>Daily profit target</h3>
+            <p>Pause new activity after a configured daily goal.</p>
+          </article>
+          <article class="risk-card">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 4.3 1.8 19a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg></div>
+            <h3>Daily loss limit</h3>
+            <p>Block new trades when the daily loss threshold is hit.</p>
+          </article>
+          <article class="risk-card">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
+            <h3>Max open trades</h3>
+            <p>Cap how many positions can run at once.</p>
+          </article>
+          <article class="risk-card">
+            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
+            <h3>Trailing stop</h3>
+            <p>Move protection as price moves in your favour.</p>
+          </article>
+        </div>
+      </div>
+      <div class="risk-ui" aria-hidden="true">
+        <h3>Risk controls</h3>
+        <div class="risk-row"><span>Daily profit target</span><span class="tog"></span></div>
+        <div class="risk-row"><span>Daily loss limit</span><span class="risk-inp">2.0%</span></div>
+        <div class="risk-row"><span>Max open trades</span><span class="risk-inp">3</span></div>
+        <div class="risk-row"><span>Trailing stop</span><span class="tog"></span></div>
+        <div class="risk-row"><span>Emergency stop</span><span class="tog"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s rv" id="performance" aria-labelledby="perf-title">
+  <div class="wrap">
+    <div class="perf-split">
+      <div class="perf-panel">
+        <div class="ph"><b>Performance Overview</b><span>Backtest sample · not a promise</span></div>
+        <div class="perf-eq"><svg id="perf-eq" viewBox="0 0 560 160" preserveAspectRatio="none"></svg></div>
+        <div class="perf-stats">
+          <div><div class="k">Total Profit</div><div class="v" id="p-net">—</div></div>
+          <div><div class="k">Win Rate</div><div class="v" id="p-wr">—</div></div>
+          <div><div class="k">Total Trades</div><div class="v" id="p-tr">—</div></div>
+        </div>
+      </div>
+      <div class="perf-copy">
+        <div class="kicker">Performance</div>
+        <h2 id="perf-title">Performance you can review</h2>
+        <p class="sub">Inspect the equity curve, trade list and costs — then confirm behaviour in paper mode.</p>
+        <ul class="check">
+          <li>Real-time paper activity tracking</li>
+          <li>Detailed trade history &amp; rejections</li>
+          <li>Transparent backtest methodology</li>
+          <li>Track gold &amp; bitcoin strategies</li>
+        </ul>
+        <div class="cta"><a class="btn primary" href="{% url 'site_performance' %}">View Live Demo</a><a class="btn ghost" href="{% url 'site_strategy-lab' %}">Strategy Lab</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="s alt rv" id="pricing" aria-labelledby="pr-title">
+  <div class="wrap">
+    <div class="kicker">Pricing</div>
+    <h2 id="pr-title">Simple pricing for real traders</h2>
+    <p class="sub">Start with an account, test in paper mode, then unlock automation when you are ready.</p>
+    <div class="plans">
+      <div class="plan">
+        <div class="tag">Professional</div>
+        <h3>SamBot Access</h3>
+        <div class="price">${{ PRICE_BOT }} <small>/ {{ BOT_ACCESS_DAYS }} days</small></div>
+        <ul>
+          <li>Dashboard &amp; paper trading</li>
+          <li>TradingView webhook</li>
+          <li>Risk controls &amp; activity log</li>
+          <li>Supported Binance &amp; MT5 workflows</li>
+          <li>Strategy research &amp; backtests</li>
+          <li>Standard support</li>
+        </ul>
+        <a class="btn primary" href="{% url 'register' %}?next={% url 'checkout' 'bot' %}">Get Started — ${{ PRICE_BOT }}</a>
+      </div>
+      <div class="plan featured">
+        <div class="tag">Signals</div>
+        <h3>Signal Credits</h3>
+        <div class="price">${{ PRICE_SIGNAL }} <small>per signal</small></div>
+        <ul>
+          <li>Delivered trade signals</li>
+          <li>Instrument, timeframe &amp; levels</li>
+          <li>Entry, stop &amp; target info</li>
+          <li>Pay only for what you use</li>
+          <li>Works with your SamBot account</li>
+        </ul>
+        <a class="btn primary" href="{% url 'register' %}?next={% url 'checkout' 'signals' %}">Buy Signal Credits</a>
+      </div>
+    </div>
+    <div class="pay">Pay with <span>Visa</span><span>Mastercard</span><span>Amex</span> via Stripe, or bank transfer / USDT.</div>
+    <p class="fine" style="margin:16px auto 0;text-align:center">Trading involves substantial risk of loss. Historical results do not guarantee future performance. Account creation is free — paid access unlocks automation.</p>
+  </div>
+</section>
+
+<section class="s rv" id="faq" aria-labelledby="faq-title">
+  <div class="wrap">
+    <div class="kicker">FAQ</div>
+    <h2 id="faq-title">Frequently asked questions</h2>
+    <p class="sub">Quick answers about SamBot, markets, testing and pricing.</p>
+    <div class="faq-acc" id="faq-acc">
+      <div class="faq-item open">
+        <button type="button" aria-expanded="true">Is SamBot a broker? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">No. SamBot is trading-automation software. Your funds stay with the broker or exchange you connect.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">Which markets are supported? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">Primary focus is gold/XAUUSD and bitcoin, with supported Binance Futures and MetaTrader 5 workflows.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">Can I test without going live? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">Yes. Paper mode simulates execution so you can verify alerts, sizing and risk rules first.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">Does SamBot guarantee profits? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">No. Trading results cannot be guaranteed. Backtests and simulations do not predict future performance.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">How does TradingView connect? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">Each account gets a webhook URL. TradingView alerts post to that endpoint when your strategy conditions fire.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">What does pricing include? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">${{ PRICE_BOT }} unlocks SamBot access for {{ BOT_ACCESS_DAYS }} days. Signals are optional at ${{ PRICE_SIGNAL }} each.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">Are backtests live results? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">No. A backtest is a historical simulation under stated assumptions, costs and data.</div>
+      </div>
+      <div class="faq-item">
+        <button type="button" aria-expanded="false">Is this financial advice? <span class="plus" aria-hidden="true">+</span></button>
+        <div class="ans">No. SamBot provides software and informational tools only — not personalised investment advice.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="final-cta rv" aria-labelledby="cta-title">
+  <div class="wrap">
+    <div class="final-inner">
+      <div>
+        <h2 id="cta-title">Start trading smarter with SamBot today</h2>
+        <p class="sub">Create your account, review the platform and begin in paper mode. Study the log. Examine the backtests. Then decide.</p>
+        <div class="cta">
+          <a class="btn primary" href="{% url 'register' %}" data-modal="register">Start Free Trial</a>
+          <a class="btn ghost" href="{% url 'site_how' %}">Watch Demo</a>
+        </div>
+      </div>
+      <div class="final-mock" aria-hidden="true">
+        <div class="bar"></div>
+        <div class="grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+{% endblock %}
+{% block page_scripts %}
+<script>
+  const fmt = (n, d = 2) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
+  const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n), 0);
+
+  document.querySelectorAll('#faq-acc .faq-item button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.parentElement;
+      const open = item.classList.contains('open');
+      document.querySelectorAll('#faq-acc .faq-item').forEach(i => { i.classList.remove('open'); i.querySelector('button').setAttribute('aria-expanded', 'false'); });
+      if (!open) { item.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+    });
+  });
+
+  function drawEq(svg, pts, W, H) {
+    if (!svg || !pts || pts.length < 2) return;
+    const P = {l: 4, r: 4, t: 10, b: 8};
+    const ys = pts.map(p => p[1]);
+    let lo = Math.min(0, ...ys), hi = Math.max(0, ...ys); if (hi === lo) hi = lo + 1;
+    const pad = (hi - lo) * .08; lo -= pad; hi += pad;
+    const x = i => P.l + (W - P.l - P.r) * i / Math.max(1, pts.length - 1);
+    const y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / (hi - lo));
+    const line = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
+    const area = line + ` L${x(pts.length - 1).toFixed(1)} ${H - P.b} L${x(0).toFixed(1)} ${H - P.b} Z`;
+    const gid = 'g' + Math.random().toString(36).slice(2, 7);
+    const len = Math.max(800, pts.length * 8);
+    svg.innerHTML = `<defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B6FF2E" stop-opacity=".4"/><stop offset="1" stop-color="#B6FF2E" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${gid})"/><path d="${line}" fill="none" stroke="#B6FF2E" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="${len}" stroke-dashoffset="${len}"><animate attributeName="stroke-dashoffset" from="${len}" to="0" dur="1.5s" fill="freeze"/></path><circle cx="${x(pts.length - 1).toFixed(1)}" cy="${y(pts[pts.length - 1][1]).toFixed(1)}" r="4" fill="#C8FF66"/>`;
+  }
+
+  fetch("{% static 'data/backtests.json' %}").then(r => r.json()).then(j => {
+    const g = (j.sets || []).find(s => s.key === 'gold_1h') || (j.sets || [])[0];
+    if (!g) return;
+    const pts = [[g.start, 0]].concat(g.equity || []);
+    drawEq(document.getElementById('hero-eq'), pts, 420, 120);
+    drawEq(document.getElementById('perf-eq'), pts, 560, 160);
+    const netEl = document.getElementById('hero-net');
+    if (netEl) netEl.textContent = money(g.net);
+    const wr = document.getElementById('h-wr'); if (wr) wr.textContent = fmt(g.win_rate, 1) + '%';
+    const tr = document.getElementById('h-tr'); if (tr) tr.textContent = g.trades.toLocaleString();
+    const pNet = document.getElementById('p-net'); if (pNet) pNet.textContent = money(g.net);
+    const pWr = document.getElementById('p-wr'); if (pWr) pWr.textContent = fmt(g.win_rate, 1) + '%';
+    const pTr = document.getElementById('p-tr'); if (pTr) pTr.textContent = g.trades.toLocaleString();
+    const rows = document.getElementById('dash-rows');
+    if (rows && g.trades_list) {
+      rows.innerHTML = g.trades_list.slice(-4).reverse().map(t =>
+        `<tr><td>${g.market}</td><td>${t.side}</td><td class="mono ${t.profit >= 0 ? 'g' : 'r'}">${t.profit >= 0 ? '+' : ''}${fmt(t.profit)}</td><td><span class="pill">closed</span></td></tr>`
+      ).join('');
+    }
+  }).catch(() => {});
+
+  async function refreshTicks() {
+    try {
+      const [btc, xau] = await Promise.all([
+        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT').then(r => r.json()),
+        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(r => r.json()),
+      ]);
+      const bEl = document.getElementById('tick-btc');
+      const xEl = document.getElementById('tick-xau');
+      if (bEl && btc.priceChangePercent) {
+        const p = Number(btc.priceChangePercent);
+        bEl.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+        bEl.parentElement.classList.toggle('up', p >= 0);
+        bEl.parentElement.classList.toggle('dn', p < 0);
+      }
+      if (xEl && xau.priceChangePercent) {
+        const p = Number(xau.priceChangePercent);
+        xEl.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
+        xEl.parentElement.classList.toggle('up', p >= 0);
+        xEl.parentElement.classList.toggle('dn', p < 0);
+      }
+    } catch (_) {}
+  }
+  refreshTicks();
+  setInterval(refreshTicks, 30000);
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type":"Question","name":"Is SamBot a broker?","acceptedAnswer":{"@type":"Answer","text":"No. SamBot is trading-automation software. Your funds stay with the broker or exchange you connect."}},
+    {"@type":"Question","name":"Which markets are supported?","acceptedAnswer":{"@type":"Answer","text":"Primary focus is gold/XAUUSD and bitcoin, with supported Binance Futures and MetaTrader 5 workflows."}},
+    {"@type":"Question","name":"Can I test without going live?","acceptedAnswer":{"@type":"Answer","text":"Yes. Paper mode simulates execution so you can verify alerts, sizing and risk rules first."}},
+    {"@type":"Question","name":"Does SamBot guarantee profits?","acceptedAnswer":{"@type":"Answer","text":"No. Trading results cannot be guaranteed. Backtests and simulations do not predict future performance."}},
+    {"@type":"Question","name":"How does TradingView connect?","acceptedAnswer":{"@type":"Answer","text":"Each account gets a webhook URL. TradingView alerts post to that endpoint when your strategy conditions fire."}},
+    {"@type":"Question","name":"Are backtests live results?","acceptedAnswer":{"@type":"Answer","text":"No. A backtest is a historical simulation under stated assumptions, costs and data."}},
+    {"@type":"Question","name":"Is this financial advice?","acceptedAnswer":{"@type":"Answer","text":"No. SamBot provides software and informational tools only — not personalised investment advice."}}
+  ]
+}
+</script>
+{% endblock %}

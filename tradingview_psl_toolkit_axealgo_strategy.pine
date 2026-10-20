@@ -1,0 +1,615 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════════
+//  P/SL Toolkit [AxeAlgo]
+// ───────────────────────────────────────────────────────────────────────────────
+//  A fast/slow EMA crossover strategy built around a modular take-profit /
+//  stop-loss engine. The crossover is deliberately simple - it only exists to
+//  give the exit engine something to trade. The point of the script is the
+//  exit engine itself, written as small, self-contained, STATELESS functions
+//  that can be copy-pasted into any other strategy without bringing anything
+//  else from this file along.
+//
+//  TOOLKIT INDEX  (every function: values in -> values out, no global state)
+//    tpslPoints()     Points (tick) based TP/SL around an entry price
+//    tpslPercent()    Percentage based TP/SL around an entry price
+//    tpslAtr()        ATR-multiple based TP/SL around an entry price
+//    tpslPivot()      Pivot (market-structure) SL + risk:reward derived TP
+//    lastPivots()     Last CONFIRMED swing high / swing low (call on every bar)
+//    priceDistance()  Turns a Points / Percentage / ATR input into a price distance
+//    trailingStop()   Ratcheting trailing stop behind the best price since entry
+//    breakEvenStop()  One-shot break-even stop once a trigger distance is reached
+//    combineStops()   Keeps the more protective of two stop levels
+//    timeExit()       True once a trade has been open for N bars
+//    trendFilter()    ADX gate for new entries
+//    trendDirectionFilter()  Trade-with-the-trend gate (price above/below a slow EMA)
+//    riskReward()     Reward / risk ratio of an entry / TP / SL set
+//
+//  EXECUTION MODEL
+//    process_orders_on_close = true: entries, reversals and market closes fill
+//    at the close of the signal bar, so the signal bar's `close` IS the entry
+//    price that every TP/SL level is derived from. Exit orders are submitted on
+//    the same bar and are live from the next bar onward. Pine functions cannot
+//    write to global variables, which is why all trade STATE lives in the main
+//    body below while the toolkit functions stay pure.
+//
+//  DEFAULT STRATEGY PROPERTIES  (edit before trusting any backtest)
+//    initial_capital = 10,000 | 10% of equity per trade | commission = 0
+//    slippage = 0 | margin_long / margin_short = 0 (no margin-call simulation)
+//
+//  Nothing in this script is financial advice. Backtests are not predictive.
+// ═══════════════════════════════════════════════════════════════════════════════
+strategy("P/SL Toolkit [AxeAlgo]", shorttitle = "P/SL Toolkit", overlay = true,
+     initial_capital = 10000,
+     default_qty_type = strategy.percent_of_equity, default_qty_value = 10,
+     commission_type = strategy.commission.percent, commission_value = 0,
+     slippage = 0,
+     pyramiding = 0,
+     margin_long = 0, margin_short = 0,
+     calc_on_every_tick = false,
+     process_orders_on_close = true,
+     max_boxes_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INPUTS
+// ═══════════════════════════════════════════════════════════════════════════════
+string GRP_EMA   = "EMA Crossover"
+string GRP_TPSL  = "Take Profit / Stop Loss"
+string GRP_TRAIL = "Trailing Stop"
+string GRP_BE    = "Break-Even Stop"
+string GRP_TIME  = "Time-Based Exit"
+string GRP_ADX   = "Trend Filters"
+string GRP_UI    = "Display"
+
+// ── EMA crossover ─────────────────────────────────────────────────────────────
+int   fastLenInput = input.int(9, "Fast EMA Length", minval = 1, group = GRP_EMA,
+     tooltip = "Length of the fast EMA. A Golden Cross (fast crossing ABOVE slow) opens a long and closes any open short. A Death Cross (fast crossing BELOW slow) opens a short and closes any open long.")
+int   slowLenInput = input.int(21, "Slow EMA Length", minval = 1, group = GRP_EMA,
+     tooltip = "Length of the slow EMA. Must be longer than the fast EMA for the crossover to make sense.")
+float srcInput     = input.source(close, "Source", group = GRP_EMA,
+     tooltip = "Price source both EMAs are calculated from. Applies to the entry signals only; TP/SL levels are always derived from the actual entry price.")
+
+// ── Take profit / stop loss ───────────────────────────────────────────────────
+string tpslModeInput = input.string("ATR", "TP/SL Mode", options = ["Points", "Percentage", "ATR", "Pivot"], group = GRP_TPSL,
+     tooltip = "How the take-profit and stop-loss distances are calculated for every trade:\n" +
+               "Points - fixed number of ticks from entry (ticks x syminfo.mintick).\n" +
+               "Percentage - fixed % of the entry price.\n" +
+               "ATR - multiple of the ATR value at the entry bar.\n" +
+               "Pivot - stop at the last CONFIRMED swing low (long) / swing high (short); TP = stop distance x risk:reward multiple.")
+bool  useTpInput     = input.bool(true, "Use Take Profit", group = GRP_TPSL,
+     tooltip = "Attach a take-profit to every trade, calculated with the selected TP/SL Mode.")
+bool  useSlInput     = input.bool(true, "Use Stop Loss", group = GRP_TPSL,
+     tooltip = "Attach a static stop-loss to every trade, calculated with the selected TP/SL Mode. The trailing stop and break-even stop work independently of this toggle and are combined with it when enabled.")
+float tpPointsInput  = input.float(200, "TP Distance (Points)", minval = 0, step = 1, group = GRP_TPSL,
+     tooltip = "Points mode only. Take-profit distance in ticks; converted to price with the symbol's minimum tick.")
+float slPointsInput  = input.float(100, "SL Distance (Points)", minval = 0, step = 1, group = GRP_TPSL,
+     tooltip = "Points mode only. Stop-loss distance in ticks; converted to price with the symbol's minimum tick.")
+float tpPctInput     = input.float(2.0, "TP Distance (%)", minval = 0, step = 0.1, group = GRP_TPSL,
+     tooltip = "Percentage mode only. Take-profit distance as a percentage of the entry price.")
+float slPctInput     = input.float(1.0, "SL Distance (%)", minval = 0, step = 0.1, group = GRP_TPSL,
+     tooltip = "Percentage mode only. Stop-loss distance as a percentage of the entry price.")
+float tpAtrMultInput = input.float(3.0, "TP Distance (ATR x)", minval = 0, step = 0.1, group = GRP_TPSL,
+     tooltip = "ATR mode only. Take-profit = entry +/- ATR (at the entry bar) x this multiple.")
+float slAtrMultInput = input.float(1.5, "SL Distance (ATR x)", minval = 0, step = 0.1, group = GRP_TPSL,
+     tooltip = "ATR mode only. Stop-loss = entry -/+ ATR (at the entry bar) x this multiple.")
+int   atrLenInput    = input.int(14, "ATR Length", minval = 1, group = GRP_TPSL,
+     tooltip = "ATR period shared by: ATR mode TP/SL, the ATR trailing-stop distance and the ATR break-even trigger distance.")
+int   pivotLeftInput  = input.int(5, "Pivot Left Bars", minval = 1, group = GRP_TPSL,
+     tooltip = "Pivot mode only. Bars to the LEFT that must be lower (pivot high) / higher (pivot low) for a swing point to count.")
+int   pivotRightInput = input.int(5, "Pivot Right Bars", minval = 1, group = GRP_TPSL,
+     tooltip = "Pivot mode only. Bars to the RIGHT needed to confirm a swing point. A pivot is only known this many bars after it forms, so the stop used at entry is always at least this many bars old - this delay is inherent to the mode.")
+float pivotRrInput    = input.float(2.0, "Pivot Risk : Reward", minval = 0.1, step = 0.1, group = GRP_TPSL,
+     tooltip = "Pivot mode only. Take-profit distance = stop-loss distance x this multiple (2.0 = 1:2 risk:reward).")
+
+// ── Trailing stop ─────────────────────────────────────────────────────────────
+bool   useTrailInput     = input.bool(false, "Enable Trailing Stop", group = GRP_TRAIL,
+     tooltip = "Recalculates a stop every bar that sits a fixed distance behind the best price reached since entry. It can only tighten in the trade's favour, never loosen. When the static SL and/or break-even stop are also active, the most protective level is the one used.")
+string trailTypeInput    = input.string("ATR", "Trailing Distance Type", options = ["Points", "Percentage", "ATR"], group = GRP_TRAIL,
+     tooltip = "Selects which one of the three trailing distance inputs below is used.")
+float  trailPointsInput  = input.float(150, "Trailing Distance (Points)", minval = 0, step = 1, group = GRP_TRAIL,
+     tooltip = "Points type only. Trailing distance in ticks behind the best price reached.")
+float  trailPctInput     = input.float(1.5, "Trailing Distance (%)", minval = 0, step = 0.1, group = GRP_TRAIL,
+     tooltip = "Percentage type only. Trailing distance as a percentage of the best price reached since entry.")
+float  trailAtrMultInput = input.float(2.0, "Trailing Distance (ATR x)", minval = 0, step = 0.1, group = GRP_TRAIL,
+     tooltip = "ATR type only. Trailing distance = current ATR x this multiple, re-evaluated every bar (the ratchet still prevents the stop from loosening when ATR expands).")
+
+// ── Break-even stop ───────────────────────────────────────────────────────────
+bool   useBeInput     = input.bool(false, "Enable Break-Even Stop", group = GRP_BE,
+     tooltip = "The stop sits still until price has moved in the trade's favour by the trigger distance, then jumps ONCE to the entry price (plus the optional offset) and never goes back. Combined with the static SL and trailing stop: the most protective level is used.")
+string beTypeInput    = input.string("ATR", "Trigger Distance Type", options = ["Points", "Percentage", "ATR"], group = GRP_BE,
+     tooltip = "Selects which one of the three trigger distance inputs below is used.")
+float  bePointsInput  = input.float(100, "Trigger Distance (Points)", minval = 0, step = 1, group = GRP_BE,
+     tooltip = "Points type only. Favourable move (in ticks, measured from entry to the best price reached) required before the stop moves to break-even.")
+float  bePctInput     = input.float(1.0, "Trigger Distance (%)", minval = 0, step = 0.1, group = GRP_BE,
+     tooltip = "Percentage type only. Favourable move as a percentage of the entry price required before the stop moves to break-even.")
+float  beAtrMultInput = input.float(1.0, "Trigger Distance (ATR x)", minval = 0, step = 0.1, group = GRP_BE,
+     tooltip = "ATR type only. Favourable move = ATR (at the entry bar) x this multiple, required before the stop moves to break-even.")
+float  beOffsetInput  = input.float(0, "Break-Even Offset (Points)", minval = 0, step = 1, group = GRP_BE,
+     tooltip = "Ticks added on the profitable side of the entry once break-even triggers (long: entry + offset, short: entry - offset). 0 places the stop exactly at entry; a small positive value covers commission.")
+
+// ── Time-based exit ───────────────────────────────────────────────────────────
+bool useTimeExitInput = input.bool(false, "Enable Time-Based Exit", group = GRP_TIME,
+     tooltip = "Force-close any trade that is still open after the number of bars below, instead of waiting indefinitely for TP or SL.")
+int  maxBarsInput     = input.int(50, "Max Bars In Trade", minval = 1, group = GRP_TIME,
+     tooltip = "Time-based exit only. Number of bars after the entry bar at which an open trade is closed at market.")
+
+// ── Trend filters (ADX strength + EMA direction) ──────────────────────────────
+bool  useAdxInput       = input.bool(false, "Enable ADX Trend Filter", group = GRP_ADX,
+     tooltip = "Withholds NEW entries (and the buy/sell alerts) while ADX is below the threshold, i.e. while the market is not trending. Exits are never gated: an open trade still closes on an opposite crossover.")
+bool  useTrendEmaInput  = input.bool(false, "Enable Trend EMA Filter", group = GRP_ADX,
+     tooltip = "Trade with the larger trend only: longs are allowed only while price closes ABOVE the Trend EMA, shorts only while it closes BELOW. Like the ADX filter it gates new entries and alerts only; an open trade still closes on an opposite crossover.")
+int   trendEmaLenInput  = input.int(200, "Trend EMA Length", minval = 1, group = GRP_ADX,
+     tooltip = "Trend EMA filter only. Length of the slow EMA that defines the larger trend (200 is the classic choice).")
+string trendTfInput     = input.timeframe("", "Trend EMA Timeframe", group = GRP_ADX,
+     tooltip = "Trend EMA filter only. Timeframe the Trend EMA is calculated on. Leave empty to use the chart timeframe, or pick a HIGHER one (e.g. D on a 1H/4H chart) to trade intraday entries only in the direction of the daily trend. Higher-timeframe values come from the last CONFIRMED bar of that timeframe, so they never repaint. A timeframe lower than the chart is ignored (chart timeframe is used).")
+int   adxDiLenInput     = input.int(14, "DI Length", minval = 1, group = GRP_ADX,
+     tooltip = "ADX filter only. Length of the +DI / -DI directional movement calculation.")
+int   adxSmoothInput    = input.int(14, "ADX Smoothing", minval = 1, group = GRP_ADX,
+     tooltip = "ADX filter only. Smoothing period applied to the DX line to obtain ADX.")
+float adxThresholdInput = input.float(20, "ADX Threshold", minval = 0, step = 1, group = GRP_ADX,
+     tooltip = "ADX filter only. New entries are allowed only while ADX >= this value. 20-25 are common 'trending' thresholds.")
+
+// ── Display ───────────────────────────────────────────────────────────────────
+bool   showZonesInput = input.bool(true, "Show TP / SL Zones", group = GRP_UI,
+     tooltip = "Draws the take-profit and stop-loss as shaded boxes from the entry price to the current bar. The SL zone switches to the break-even colour once the break-even stop has triggered.")
+color  tpColorInput   = input.color(#26a69a, "TP Zone Color", group = GRP_UI,
+     tooltip = "Fill / border colour of the take-profit zone.")
+color  slColorInput   = input.color(#ef5350, "SL Zone Color", group = GRP_UI,
+     tooltip = "Fill / border colour of the stop-loss zone while the trade can still lose money.")
+color  beColorInput   = input.color(#42a5f5, "SL Zone Color (Break-Even Active)", group = GRP_UI,
+     tooltip = "Fill / border colour of the stop-loss zone once the break-even stop has triggered and the trade is risk-free.")
+bool   showTableInput = input.bool(true, "Show Status Table", group = GRP_UI,
+     tooltip = "Shows a compact table with trend direction, position, entry, TP, SL, risk:reward and the ADX reading.")
+string tablePosInput  = input.string("Top Right", "Table Position", group = GRP_UI,
+     options = ["Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right", "Bottom Left", "Bottom Center", "Bottom Right"],
+     tooltip = "Where the status table is anchored on the chart.")
+bool   showEmasInput  = input.bool(true, "Plot EMAs", group = GRP_UI,
+     tooltip = "Plot the fast and slow EMAs on the chart.")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  TOOLKIT - self-contained exit functions. Copy any one of them as-is.
+//  None of them read or write script-level variables; built-ins such as
+//  syminfo.mintick and bar_index are the only outside references.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+//@function Points (tick) based take-profit / stop-loss. Distances are constant in
+//          price terms and converted from ticks with the symbol's minimum tick, so
+//          the same input behaves sensibly across instruments with different scales.
+//@param entry     Entry price the levels are measured from.
+//@param isLong    true for a long trade, false for a short trade.
+//@param tpPoints  Take-profit distance in ticks (0 or na -> tp returns entry / na).
+//@param slPoints  Stop-loss distance in ticks.
+//@returns [takeProfit, stopLoss] price levels.
+tpslPoints(float entry, bool isLong, float tpPoints, float slPoints) =>
+    float tpDist = tpPoints * syminfo.mintick
+    float slDist = slPoints * syminfo.mintick
+    float tp = isLong ? entry + tpDist : entry - tpDist
+    float sl = isLong ? entry - slDist : entry + slDist
+    [tp, sl]
+
+//@function Percentage based take-profit / stop-loss. Distances scale with the entry
+//          price, so they stay comparable across symbols trading at very different levels.
+//@param entry   Entry price the levels are measured from.
+//@param isLong  true for a long trade, false for a short trade.
+//@param tpPct   Take-profit distance as a percentage of entry (2.0 = 2%).
+//@param slPct   Stop-loss distance as a percentage of entry.
+//@returns [takeProfit, stopLoss] price levels.
+tpslPercent(float entry, bool isLong, float tpPct, float slPct) =>
+    float tpDist = entry * tpPct / 100.0
+    float slDist = entry * slPct / 100.0
+    float tp = isLong ? entry + tpDist : entry - tpDist
+    float sl = isLong ? entry - slDist : entry + slDist
+    [tp, sl]
+
+//@function ATR based take-profit / stop-loss. Pass in the ATR value you want the
+//          levels anchored to (normally the ATR of the entry bar) so exits widen in
+//          volatile conditions and tighten in quiet ones.
+//@param entry     Entry price the levels are measured from.
+//@param isLong    true for a long trade, false for a short trade.
+//@param atrValue  ATR value in price units (e.g. ta.atr(14) on the entry bar).
+//@param tpMult    Take-profit distance = atrValue x tpMult.
+//@param slMult    Stop-loss distance = atrValue x slMult.
+//@returns [takeProfit, stopLoss] price levels (na if atrValue is na).
+tpslAtr(float entry, bool isLong, float atrValue, float tpMult, float slMult) =>
+    float tpDist = atrValue * tpMult
+    float slDist = atrValue * slMult
+    float tp = isLong ? entry + tpDist : entry - tpDist
+    float sl = isLong ? entry - slDist : entry + slDist
+    [tp, sl]
+
+//@function Pivot (market structure) stop-loss with a risk:reward derived take-profit.
+//          The stop is the last confirmed swing low (long) or swing high (short) and
+//          the take-profit is `rrMultiple` times that stop distance on the other side
+//          of entry. If no pivot exists yet, or the pivot is on the wrong side of the
+//          entry (it would be hit immediately), both values are returned as na so the
+//          caller can treat the trade as having no structural stop.
+//          NOTE: a pivot is only confirmed `rightBars` after it forms (see lastPivots()),
+//          so the level is always at least that many bars old at entry time.
+//@param entry           Entry price the levels are measured from.
+//@param isLong          true for a long trade, false for a short trade.
+//@param lastPivotHigh   Most recent confirmed swing high (used as the short stop).
+//@param lastPivotLow    Most recent confirmed swing low (used as the long stop).
+//@param rrMultiple      Reward-to-risk multiple used to project the take-profit.
+//@returns [takeProfit, stopLoss] price levels, or [na, na] when structure is invalid.
+tpslPivot(float entry, bool isLong, float lastPivotHigh, float lastPivotLow, float rrMultiple) =>
+    float sl = isLong ? lastPivotLow : lastPivotHigh
+    float tp = na
+    bool structureValid = not na(sl) and (isLong ? sl < entry : sl > entry)
+    if structureValid
+        float risk = math.abs(entry - sl)
+        tp := isLong ? entry + risk * rrMultiple : entry - risk * rrMultiple
+    else
+        sl := na
+    [tp, sl]
+
+//@function Tracks the most recently CONFIRMED swing high and swing low. Uses ta.*()
+//          internally, so it MUST be called on every bar at global scope (never inside
+//          an `if`) to keep its history consistent.
+//@param leftBars   Bars to the left that must be lower/higher than the pivot bar.
+//@param rightBars  Bars to the right that must be lower/higher; the pivot is only
+//                  known once this many bars have closed after it.
+//@returns [lastPivotHigh, lastPivotLow]; na until the first pivot of that kind confirms.
+lastPivots(int leftBars, int rightBars) =>
+    float ph = ta.pivothigh(high, leftBars, rightBars)
+    float pl = ta.pivotlow(low, leftBars, rightBars)
+    float lastHigh = ta.valuewhen(not na(ph), ph, 0)
+    float lastLow  = ta.valuewhen(not na(pl), pl, 0)
+    [lastHigh, lastLow]
+
+//@function Converts a "Points" / "Percentage" / "ATR" style distance input into a
+//          distance in price units. Shared by the trailing stop and break-even stop.
+//@param distType  "Points", "Percentage" or "ATR".
+//@param refPrice  Reference price for the Percentage type (entry price, best price, ...).
+//@param points    Distance in ticks (Points type).
+//@param pct       Distance in percent of refPrice (Percentage type).
+//@param atrValue  ATR value in price units (ATR type).
+//@param atrMult   ATR multiple (ATR type).
+//@returns Distance in price units, or na for an unknown type.
+priceDistance(string distType, float refPrice, float points, float pct, float atrValue, float atrMult) =>
+    switch distType
+        "Points"     => points * syminfo.mintick
+        "Percentage" => refPrice * pct / 100.0
+        "ATR"        => atrValue * atrMult
+        => float(na)
+
+//@function Trailing-stop updater. Places the stop `dist` behind the best price
+//          reached since entry and ratchets it: the returned level is never worse
+//          than `prevStop`, so the stop can only tighten in the trade's favour.
+//          Track bestPrice yourself: highest high since entry for longs, lowest low
+//          for shorts (see the main body for a two-line example).
+//@param prevStop   Trailing stop from the previous bar (na on the entry bar).
+//@param isLong     true for a long trade, false for a short trade.
+//@param bestPrice  Best price reached since entry (highest high / lowest low).
+//@param dist       Trailing distance in price units (see priceDistance()).
+//@returns The updated trailing-stop level (na while dist or bestPrice are na).
+trailingStop(float prevStop, bool isLong, float bestPrice, float dist) =>
+    float candidate = isLong ? bestPrice - dist : bestPrice + dist
+    float result = prevStop
+    if not na(candidate)
+        result := na(prevStop) ? candidate : (isLong ? math.max(prevStop, candidate) : math.min(prevStop, candidate))
+    result
+
+//@function Break-even stop calculator. Returns na until the trade has moved favourably
+//          by `triggerDist`, then returns entry +/- `offsetDist` and keeps returning that
+//          same level for the rest of the trade (it never un-triggers or moves back).
+//@param prevBeStop   Break-even stop from the previous bar (na while not triggered).
+//@param entry        Entry price.
+//@param isLong       true for a long trade, false for a short trade.
+//@param bestPrice    Best price reached since entry (highest high / lowest low).
+//@param triggerDist  Favourable move required before triggering, in price units.
+//@param offsetDist   Extra distance on the profitable side of entry, in price units (0 = exactly entry).
+//@returns The break-even stop level, or na while it has not triggered yet.
+breakEvenStop(float prevBeStop, float entry, bool isLong, float bestPrice, float triggerDist, float offsetDist) =>
+    float result = prevBeStop
+    if na(prevBeStop) and not na(triggerDist) and not na(bestPrice)
+        float favorableMove = isLong ? bestPrice - entry : entry - bestPrice
+        if favorableMove >= triggerDist
+            result := isLong ? entry + nz(offsetDist) : entry - nz(offsetDist)
+    result
+
+//@function Two-stop combiner. Returns whichever of two stop levels is currently more
+//          protective (higher for longs, lower for shorts). na inputs are ignored, so
+//          it can be chained: combineStops(isLong, staticSl, combineStops(isLong, trail, be)).
+//@param isLong  true for a long trade, false for a short trade.
+//@param stopA   First stop level (may be na).
+//@param stopB   Second stop level (may be na).
+//@returns The more protective level, or na if both are na.
+combineStops(bool isLong, float stopA, float stopB) =>
+    float result = na
+    if na(stopA)
+        result := stopB
+    else if na(stopB)
+        result := stopA
+    else
+        result := isLong ? math.max(stopA, stopB) : math.min(stopA, stopB)
+    result
+
+//@function Time-based exit check.
+//@param entryBarIndex  bar_index of the bar the trade was opened on.
+//@param maxBars        Number of bars after entry at which the trade should be closed.
+//@returns true when the trade has been open for maxBars or more bars.
+timeExit(int entryBarIndex, int maxBars) =>
+    not na(entryBarIndex) and maxBars > 0 and bar_index - entryBarIndex >= maxBars
+
+//@function ADX trend-filter gate for new entries.
+//@param enabled    Master switch; when false the gate is always open.
+//@param adxValue   Current ADX reading (e.g. from ta.dmi()).
+//@param threshold  Minimum ADX required for the market to count as trending.
+//@returns true when a new entry is allowed.
+trendFilter(bool enabled, float adxValue, float threshold) =>
+    not enabled or (not na(adxValue) and adxValue >= threshold)
+
+//@function Trade-with-the-trend gate. Allows a long only while price is above a slow
+//          trend EMA and a short only while price is below it.
+//@param enabled   Master switch; when false the gate is always open.
+//@param isLong    true to test a long entry, false to test a short entry.
+//@param price     Current price (normally close).
+//@param trendEma  Slow EMA value defining the larger trend (e.g. ta.ema(close, 200)).
+//@returns true when the entry is in the direction of the larger trend.
+trendDirectionFilter(bool enabled, bool isLong, float price, float trendEma) =>
+    not enabled or (not na(trendEma) and (isLong ? price > trendEma : price < trendEma))
+
+//@function Reward-to-risk ratio of an entry / take-profit / stop-loss set.
+//@param entry   Entry price.
+//@param isLong  true for a long trade, false for a short trade.
+//@param tp      Take-profit level.
+//@param sl      Stop-loss level.
+//@returns reward / risk, or na when any level is missing or the risk is not positive
+//          (a stop at or beyond entry means the trade is already risk-free).
+riskReward(float entry, bool isLong, float tp, float sl) =>
+    float result = na
+    if not na(entry) and not na(tp) and not na(sl)
+        float risk   = isLong ? entry - sl : sl - entry
+        float reward = isLong ? tp - entry : entry - tp
+        if risk > 0
+            result := reward / risk
+    result
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INDICATORS  (global scope, every bar - required for consistent ta.*() history)
+// ═══════════════════════════════════════════════════════════════════════════════
+float emaFast       = ta.ema(srcInput, fastLenInput)
+float emaSlow       = ta.ema(srcInput, slowLenInput)
+float emaTrendChart = ta.ema(srcInput, trendEmaLenInput)
+// Higher-timeframe trend EMA: `[1]` + lookahead_on returns the last CONFIRMED higher-timeframe value,
+// which is the documented non-repainting way to read higher-timeframe data.
+float emaTrendHtf   = request.security(syminfo.tickerid, trendTfInput, emaTrendChart[1], lookahead = barmerge.lookahead_on)
+bool  useHtfTrend   = trendTfInput != "" and timeframe.in_seconds(trendTfInput) > timeframe.in_seconds(timeframe.period)
+float emaTrend      = useHtfTrend ? emaTrendHtf : emaTrendChart
+float atrNow        = ta.atr(atrLenInput)
+[diPlusNow, diMinusNow, adxNow] = ta.dmi(adxDiLenInput, adxSmoothInput)
+[pivotHighNow, pivotLowNow] = lastPivots(pivotLeftInput, pivotRightInput)
+
+bool goldenCross  = ta.crossover(emaFast, emaSlow)
+bool deathCross   = ta.crossunder(emaFast, emaSlow)
+bool trendOk      = trendFilter(useAdxInput, adxNow, adxThresholdInput)
+bool longAllowed  = trendOk and trendDirectionFilter(useTrendEmaInput, true, close, emaTrend)
+bool shortAllowed = trendOk and trendDirectionFilter(useTrendEmaInput, false, close, emaTrend)
+bool longSignal   = goldenCross and longAllowed
+bool shortSignal  = deathCross and shortAllowed
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  TRADE STATE  (the only mutable state in the script)
+// ═══════════════════════════════════════════════════════════════════════════════
+var int   tradeDir       = 0   // 1 = long, -1 = short, 0 = flat
+var float entryPrice     = na
+var int   entryBar       = na
+var float entryAtr       = na  // ATR frozen at entry: anchors ATR-mode TP/SL and the ATR break-even trigger
+var float tpPrice        = na  // static take-profit
+var float slPrice        = na  // static stop-loss
+var float trailLevel     = na  // trailing stop (na until it has a value)
+var float beLevel        = na  // break-even stop (na until triggered)
+var float bestSinceEntry = na  // highest high (long) / lowest low (short) since entry
+var box   tpBox          = na
+var box   slBox          = na
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SIGNAL RESOLUTION
+// ═══════════════════════════════════════════════════════════════════════════════
+// A trade we were tracking was closed by the broker emulator (TP / SL hit) on this bar.
+bool brokerClosed = tradeDir != 0 and strategy.position_size == 0 and bar_index > entryBar
+int  dirNow       = brokerClosed ? 0 : tradeDir
+
+bool openLong     = longSignal
+bool openShort    = shortSignal
+// Opposite crossover while a filter blocks the new entry: the open trade still closes.
+bool closeOnCross = (goldenCross and not longAllowed and dirNow == -1) or (deathCross and not shortAllowed and dirNow == 1)
+bool closeOnTime  = dirNow != 0 and not openLong and not openShort and not closeOnCross and useTimeExitInput and timeExit(entryBar, maxBarsInput)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ORDERS
+// ═══════════════════════════════════════════════════════════════════════════════
+// strategy.entry() in the opposite direction reverses the position on its own, which
+// gives "open a long and close any open short" in a single order.
+if openLong
+    strategy.entry("Long", strategy.long, comment = "Long")
+if openShort
+    strategy.entry("Short", strategy.short, comment = "Short")
+if closeOnCross or closeOnTime
+    strategy.close(dirNow == 1 ? "Long" : "Short", comment = closeOnTime ? "Time Exit" : "Opposite Cross")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STATE TRANSITIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+// 1) A trade ended (TP/SL, opposite cross without re-entry, or time exit): freeze its zones and clear state.
+if brokerClosed or closeOnCross or closeOnTime
+    if not na(tpBox)
+        box.set_right(tpBox, bar_index)
+    if not na(slBox)
+        box.set_right(slBox, bar_index)
+    tradeDir       := 0
+    entryPrice     := na
+    entryBar       := na
+    entryAtr       := na
+    tpPrice        := na
+    slPrice        := na
+    trailLevel     := na
+    beLevel        := na
+    bestSinceEntry := na
+    tpBox          := na
+    slBox          := na
+
+// 2) A new trade opens this bar (fresh entry or reversal). Fill price = this bar's close.
+if openLong or openShort
+    if not na(tpBox)
+        box.set_right(tpBox, bar_index)
+    if not na(slBox)
+        box.set_right(slBox, bar_index)
+    tradeDir       := openLong ? 1 : -1
+    entryPrice     := close
+    entryBar       := bar_index
+    entryAtr       := atrNow
+    bestSinceEntry := close
+    trailLevel     := na
+    beLevel        := na
+    tpBox          := na
+    slBox          := na
+    bool isLongEntry = tradeDir == 1
+    [tpRaw, slRaw] = switch tpslModeInput
+        "Points"     => tpslPoints(entryPrice, isLongEntry, tpPointsInput, slPointsInput)
+        "Percentage" => tpslPercent(entryPrice, isLongEntry, tpPctInput, slPctInput)
+        "ATR"        => tpslAtr(entryPrice, isLongEntry, entryAtr, tpAtrMultInput, slAtrMultInput)
+        "Pivot"      => tpslPivot(entryPrice, isLongEntry, pivotHighNow, pivotLowNow, pivotRrInput)
+        => [float(na), float(na)]
+    tpPrice := useTpInput ? tpRaw : na
+    slPrice := useSlInput ? slRaw : na
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  IN-TRADE MANAGEMENT  (runs on the entry bar too, so exits are live from the next bar)
+// ═══════════════════════════════════════════════════════════════════════════════
+float  effStopNow = na          // effective stop this bar: most protective of static SL / trail / break-even
+string stopTagNow = ""          // which of the three the effective stop currently is
+
+if tradeDir != 0
+    bool isLong = tradeDir == 1
+
+    // Best price since entry. The entry bar itself is excluded: the fill happened at its close.
+    if bar_index > entryBar
+        bestSinceEntry := isLong ? math.max(bestSinceEntry, high) : math.min(bestSinceEntry, low)
+
+    // Trailing stop: distance measured from the best price, current ATR for the ATR type.
+    if useTrailInput
+        float trailDist = priceDistance(trailTypeInput, bestSinceEntry, trailPointsInput, trailPctInput, atrNow, trailAtrMultInput)
+        trailLevel := trailingStop(trailLevel, isLong, bestSinceEntry, trailDist)
+
+    // Break-even stop: trigger measured from entry, entry-bar ATR for the ATR type.
+    if useBeInput
+        float beTriggerDist = priceDistance(beTypeInput, entryPrice, bePointsInput, bePctInput, entryAtr, beAtrMultInput)
+        beLevel := breakEvenStop(beLevel, entryPrice, isLong, bestSinceEntry, beTriggerDist, beOffsetInput * syminfo.mintick)
+
+    // Keep whichever stop is currently the most protective.
+    float dynamicStop = combineStops(isLong, trailLevel, beLevel)
+    effStopNow := combineStops(isLong, slPrice, dynamicStop)
+    stopTagNow := effStopNow == slPrice ? "SL" : effStopNow == beLevel ? "Break-Even" : "Trail"
+
+    // One exit order per trade; re-issuing it with the same id updates the live levels.
+    if not na(effStopNow) or not na(tpPrice)
+        strategy.exit(isLong ? "Exit Long" : "Exit Short", from_entry = isLong ? "Long" : "Short", stop = effStopNow, limit = tpPrice, comment_profit = "TP", comment_loss = stopTagNow)
+
+    // TP / SL zones: boxes from the entry price to the level, entry bar to the current bar.
+    if showZonesInput
+        if not na(tpPrice)
+            if na(tpBox)
+                tpBox := box.new(entryBar, math.max(entryPrice, tpPrice), bar_index, math.min(entryPrice, tpPrice), border_color = color.new(tpColorInput, 40), bgcolor = color.new(tpColorInput, 85))
+            else
+                box.set_right(tpBox, bar_index)
+        if not na(effStopNow)
+            color zoneColor  = na(beLevel) ? slColorInput : beColorInput   // recolour once break-even has triggered
+            float zoneTop    = math.max(entryPrice, effStopNow)
+            float zoneBottom = math.min(entryPrice, effStopNow)
+            if na(slBox)
+                slBox := box.new(entryBar, zoneTop, bar_index, zoneBottom, border_color = color.new(zoneColor, 40), bgcolor = color.new(zoneColor, 85))
+            else
+                box.set_right(slBox, bar_index)
+                box.set_top(slBox, zoneTop)
+                box.set_bottom(slBox, zoneBottom)
+                box.set_bgcolor(slBox, color.new(zoneColor, 85))
+                box.set_border_color(slBox, color.new(zoneColor, 40))
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STATUS TABLE
+// ═══════════════════════════════════════════════════════════════════════════════
+string tablePos = switch tablePosInput
+    "Top Left"      => position.top_left
+    "Top Center"    => position.top_center
+    "Top Right"     => position.top_right
+    "Middle Left"   => position.middle_left
+    "Middle Center" => position.middle_center
+    "Middle Right"  => position.middle_right
+    "Bottom Left"   => position.bottom_left
+    "Bottom Center" => position.bottom_center
+    => position.bottom_right
+
+var table statusTable = table.new(tablePos, 2, 8, border_width = 1, frame_color = color.new(color.gray, 60), border_color = color.new(color.gray, 75))
+
+color TBL_LABEL_BG = color.new(#1e222d, 0)
+color TBL_VALUE_BG = color.new(#2a2e39, 0)
+color TBL_TEXT     = color.new(color.white, 0)
+color TBL_BULL     = color.new(#26a69a, 0)
+color TBL_BEAR     = color.new(#ef5350, 0)
+color TBL_NEUTRAL  = color.new(color.gray, 0)
+
+if showTableInput and barstate.islast
+    bool   isLongNow  = tradeDir == 1
+    bool   trendUp    = emaFast > emaSlow
+    bool   trendDown  = emaFast < emaSlow
+    string trendText  = trendUp ? "Bullish" : trendDown ? "Bearish" : "Neutral"
+    color  trendBg    = trendUp ? TBL_BULL : trendDown ? TBL_BEAR : TBL_NEUTRAL
+    string posText    = tradeDir == 1 ? "Long" : tradeDir == -1 ? "Short" : "Flat"
+    color  posBg      = tradeDir == 1 ? TBL_BULL : tradeDir == -1 ? TBL_BEAR : TBL_VALUE_BG
+    string entryText  = na(entryPrice) ? "-" : str.tostring(entryPrice, format.mintick)
+    string tpText     = na(tpPrice)    ? "-" : str.tostring(tpPrice, format.mintick)
+    string slText     = na(effStopNow) ? "-" : str.tostring(effStopNow, format.mintick) + "  (" + stopTagNow + ")"
+    color  slBg       = na(effStopNow) ? TBL_VALUE_BG : na(beLevel) ? TBL_VALUE_BG : color.new(beColorInput, 40)
+    float  rr         = riskReward(entryPrice, isLongNow, tpPrice, effStopNow)
+    bool   riskFree   = tradeDir != 0 and not na(effStopNow) and (isLongNow ? effStopNow >= entryPrice : effStopNow <= entryPrice)
+    string rrText     = tradeDir == 0 ? "-" : riskFree ? "Risk-free" : na(rr) ? "-" : "1 : " + str.tostring(rr, "#.##")
+    string adxText    = na(adxNow) ? "-" : str.tostring(adxNow, "#.#") + (useAdxInput ? (trendOk ? "  (filter: pass)" : "  (filter: block)") : "  (filter off)")
+    color  adxBg      = not useAdxInput ? TBL_VALUE_BG : trendOk ? color.new(TBL_BULL, 40) : color.new(TBL_BEAR, 40)
+
+    table.cell(statusTable, 0, 0, "P/SL Toolkit",            text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 0, tpslModeInput + " mode",   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 1, "Trend",                   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 1, trendText,                 text_color = TBL_TEXT, bgcolor = trendBg,      text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 2, "Position",                text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 2, posText,                   text_color = TBL_TEXT, bgcolor = posBg,        text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 3, "Entry",                   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 3, entryText,                 text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 4, "Take Profit",             text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 4, tpText,                    text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 5, "Stop Loss",               text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 5, slText,                    text_color = TBL_TEXT, bgcolor = slBg,         text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 6, "Risk : Reward",           text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 6, rrText,                    text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 7, "ADX",                     text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left, text_size = size.small)
+    table.cell(statusTable, 1, 7, adxText,                   text_color = TBL_TEXT, bgcolor = adxBg,        text_halign = text.align_right, text_size = size.small)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PLOTS
+// ═══════════════════════════════════════════════════════════════════════════════
+plot(showEmasInput ? emaFast : na, "Fast EMA", color = color.new(#26a69a, 0), linewidth = 2)
+plot(showEmasInput ? emaSlow : na, "Slow EMA", color = color.new(#ef5350, 0), linewidth = 2)
+plot(showEmasInput and useTrendEmaInput ? emaTrend : na, "Trend EMA", color = color.new(color.gray, 30), linewidth = 1)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ALERTS  (gated by the same filters as the entries)
+//  alertcondition() has no effect inside strategies, so the signals are sent with
+//  alert(). Create one alert on the strategy with the condition
+//  "Any alert() function call" and it receives both the BUY and SELL messages.
+// ═══════════════════════════════════════════════════════════════════════════════
+string alertPrefix = "P/SL Toolkit [AxeAlgo] | " + syminfo.ticker + " " + timeframe.period + " | "
+if longSignal
+    alert(alertPrefix + "BUY - fast EMA crossed above slow EMA at " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+if shortSignal
+    alert(alertPrefix + "SELL - fast EMA crossed below slow EMA at " + str.tostring(close, format.mintick), alert.freq_once_per_bar_close)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  USING THE TOOLKIT IN YOUR OWN SCRIPT - minimal example
+// ───────────────────────────────────────────────────────────────────────────────
+//  // once, on the bar your entry fills (or on the signal bar with process_orders_on_close):
+//  [myTp, mySl] = tpslAtr(close, true, ta.atr(14), 3.0, 1.5)
+//  // then on every bar while in the trade:
+//  myBest := math.max(myBest, high)                                 // var float myBest
+//  myTrail := trailingStop(myTrail, true, myBest, ta.atr(14) * 2)   // var float myTrail
+//  myBe    := breakEvenStop(myBe, myEntry, true, myBest, ta.atr(14), 0)
+//  strategy.exit("x", "myEntry", stop = combineStops(true, mySl, combineStops(true, myTrail, myBe)), limit = myTp)
+// ═══════════════════════════════════════════════════════════════════════════════

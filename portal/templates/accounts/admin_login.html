@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Admin login · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="auth">
+  <div class="side">
+    <a class="brand" href="{% url 'landing' %}" style="margin-bottom:30px" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="140" height="42"></a>
+    <div class="muted" style="font-size:12px;font-weight:700;letter-spacing:1.4px;margin:-18px 0 24px">ADMIN</div>
+    <h1>Owner console.</h1>
+    <p>Customers, payments, live chat, active signals, the manual trader and the bot's ON/OFF switch. One account has access: the site owner.</p>
+    <div class="kpi"><div><b>1</b><span>administrator account</span></div><div><b>${{ PRICE_BOT }}</b><span>bot, 30 days</span></div><div><b>${{ PRICE_SIGNAL }}</b><span>per signal</span></div></div>
+  </div>
+  <div class="form">
+    <div class="card">
+      <h2>Administrator sign-in</h2>
+      <p class="muted" style="margin:0 0 8px">Use the owner e-mail and password.</p>
+      {% if form.non_field_errors %}<div class="flash error">{{ form.non_field_errors.0 }}</div>{% endif %}
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <label for="id_username">E-mail</label>{{ form.username }}
+        <label for="id_password">Password</label>{{ form.password }}
+        <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Open admin</button>
+      </form>
+      <p class="muted" style="margin:18px 0 0;text-align:center">Not the owner? <a href="{% url 'landing' %}#login">Customer login</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}

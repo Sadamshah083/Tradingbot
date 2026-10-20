@@ -1,0 +1,54 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Admin · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_lead %}Everything about your customers, signals and the bot in one place.{% endblock %}
+{% block staff %}
+<div class="grid g4">
+  <div class="card"><h2>Revenue</h2><div class="stat mono">${{ stats.revenue|floatformat:0 }}</div><div class="muted">bot ${{ stats.revenue_bot|floatformat:0 }} · signals ${{ stats.revenue_signals|floatformat:0 }}</div></div>
+  <div class="card"><h2>Customers</h2><div class="stat">{{ stats.customers }}</div><div class="muted">{{ stats.active }} active · {{ stats.bot_owners }} bought the bot (${{ PRICE_BOT }})</div></div>
+  <div class="card"><h2>Signals sold</h2><div class="stat">{{ stats.delivered_24h }}</div><div class="muted">delivered in 24h at ${{ PRICE_SIGNAL }} each · {{ stats.credits }} credits prepaid</div></div>
+  <div class="card"><h2>Needs you</h2><div class="stat {% if stats.pending or stats.unread %}warn{% endif %}">{{ stats.pending|add:stats.unread }}</div><div class="muted"><a href="{% url 'staff_orders' %}">{{ stats.pending }} payment{{ stats.pending|pluralize }}</a> · <a href="{% url 'chat_inbox' %}">{{ stats.unread }} chat{{ stats.unread|pluralize }}</a></div></div>
+</div>
+
+<div class="grid g2" style="margin-top:16px;grid-template-columns:1.2fr 1fr">
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:14px">
+      <div><h2 style="margin-bottom:4px">Trading bot</h2>
+        {% if not bot.online %}<div class="stat small bad">Offline</div><div class="muted">{{ bot.error }}</div>
+        {% else %}<div class="stat small {% if bot.auto %}good{% else %}warn{% endif %}">{% if bot.auto %}ON - auto trading{% else %}OFF - manual mode{% endif %}</div>
+        <div class="muted">{{ bot.broker }} · {% if bot.live %}<span class="bad">LIVE money</span>{% else %}paper (no real orders){% endif %} · {{ bot.alerts_24h }} alerts in 24h · up {{ bot.uptime_minutes }} min</div>{% endif %}
+      </div>
+      {% if bot.online %}
+      <form method="post" action="{% url 'staff_bot_mode' %}" id="botswitch">{% csrf_token %}<input type="hidden" name="next" value="{% url 'staff_home' %}"><input type="hidden" name="auto" value="{% if bot.auto %}0{% else %}1{% endif %}">
+        <label class="switch" title="Turn the bot on or off"><input type="checkbox" {% if bot.auto %}checked{% endif %} onchange="this.form.submit()"><span></span></label></form>
+      {% endif %}
+    </div>
+    <p class="muted" style="margin:12px 0 0">ON: every TradingView signal is sent to customers <b>and</b> traded automatically with its stop and target. OFF: customers still get the signals, you trade by hand from <a href="{% url 'staff_manual' %}">Manual trader</a>.</p>
+  </div>
+  <div class="card"><h2>Active signals</h2>
+    {% for s in active %}<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)"><span><span class="pill {{ s.side }}">{{ s.side|upper }}</span> <b>{{ s.symbol }}</b> <span class="muted">{{ s.timeframe }}</span></span><span class="mono muted" style="font-size:12px">{{ s.price }} · SL {{ s.sl }} · TP {{ s.tp2 }}</span></div>
+    {% empty %}<p class="muted" style="margin:0">No open signal right now.</p>{% endfor %}
+    <a class="btn ghost small" href="{% url 'staff_signals' %}" style="margin-top:12px">All signals</a>
+  </div>
+</div>
+
+<div class="grid g2" style="margin-top:16px">
+  <div class="card"><h2>Latest customers</h2>
+    <table><thead><tr><th>E-mail</th><th>Credits</th><th>Bot</th><th>Joined</th></tr></thead><tbody>
+    {% for u in recent_customers %}<tr><td><b>{{ u.email|default:u.username }}</b></td><td class="mono">{{ u.profile.credits }}</td><td>{% if u.profile.bot_access %}<span class="pill buy">paid</span>{% else %}<span class="muted">-</span>{% endif %}</td><td class="muted">{{ u.date_joined|naturaltime }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="empty">No customers yet - share <a href="{% url 'register' %}">the sign-up page</a>.</td></tr>{% endfor %}</tbody></table>
+    <a class="btn ghost small" href="{% url 'staff_customers' %}" style="margin-top:12px">All customers</a></div>
+  <div class="card"><h2>Latest orders</h2>
+    <table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+    {% for o in recent_orders %}<tr><td class="mono">{{ o.id }}</td><td>{{ o.user.email|default:o.user.username }}</td><td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td>{% if o.status == 'pending' %}<span class="pill exit">pending</span>{% elif o.status == 'paid' %}<span class="pill buy">paid</span>{% else %}<span class="pill sell">rejected</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="empty">No orders yet.</td></tr>{% endfor %}</tbody></table>
+    <a class="btn ghost small" href="{% url 'staff_orders' %}" style="margin-top:12px">All orders</a></div>
+</div>
+
+<div class="card" style="margin-top:16px"><h2>Latest bot trades</h2>
+  <table><thead><tr><th>When</th><th>Action</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Stop</th><th>Target</th><th>Result</th></tr></thead><tbody>
+  {% for t in recent_trades %}<tr><td class="muted">{{ t.when|date:"M d, H:i" }}</td><td>{{ t.action }}</td><td>{{ t.symbol }}</td><td>{% if t.side %}<span class="pill {{ t.side }}">{{ t.side|upper }}</span>{% endif %}</td><td class="mono">{{ t.qty|default_if_none:"" }}</td><td class="mono bad">{{ t.sl|default_if_none:"" }}</td><td class="mono good">{{ t.tp|default_if_none:"" }}</td><td class="code">{{ t.result|truncatechars:70 }}</td></tr>
+  {% empty %}<tr><td colspan="8" class="empty">The bot has not placed a trade yet{% if not bot.auto %} (it is OFF){% endif %}.</td></tr>{% endfor %}</tbody></table>
+  <a class="btn ghost small" href="{% url 'staff_bot' %}" style="margin-top:12px">All bot trades</a></div>
+{% endblock %}

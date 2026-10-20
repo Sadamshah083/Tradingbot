@@ -1,0 +1,31 @@
+﻿{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Orders · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Orders &amp; payments{% endblock %}
+{% block page_lead %}Bot = ${{ PRICE_BOT }} per 30 days. Signals = ${{ PRICE_SIGNAL }} each. Approve an order once the money arrived: credits or the bot download are granted automatically and the customer gets a chat message.{% endblock %}
+{% block staff %}
+<div class="grid g4">
+  <div class="card"><h2>Pending</h2><div class="stat {% if totals.pending %}warn{% endif %}">{{ totals.pending }}</div></div>
+  <div class="card"><h2>Paid</h2><div class="stat good">{{ totals.paid }}</div></div>
+  <div class="card"><h2>Rejected</h2><div class="stat">{{ totals.rejected }}</div></div>
+  <div class="card"><h2>Revenue</h2><div class="stat mono">${{ totals.revenue|floatformat:0 }}</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+  <div class="tabs"><a class="btn {% if status == 'pending' %}primary{% else %}ghost{% endif %} small" href="?status=pending">Pending</a> <a class="btn {% if status == 'paid' %}primary{% else %}ghost{% endif %} small" href="?status=paid">Paid</a> <a class="btn {% if status == 'rejected' %}primary{% else %}ghost{% endif %} small" href="?status=rejected">Rejected</a> <a class="btn {% if status == 'all' %}primary{% else %}ghost{% endif %} small" href="?status=all">All</a></div>
+  <table><thead><tr><th>#</th><th>When</th><th>Customer</th><th>Product</th><th>Amount</th><th>Paid with</th><th>Reference / note</th><th>Status</th><th></th></tr></thead><tbody>
+  {% for o in orders %}
+    <tr><td class="mono">{{ o.id }}</td><td class="muted">{{ o.created|naturaltime }}</td>
+      <td><b>{{ o.user.email|default:o.user.username }}</b><br><span class="muted">{{ o.user.username }} · {{ o.user.profile.credits }} credits</span></td>
+      <td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td>{{ o.get_method_display }}</td>
+      <td><span class="mono">{{ o.reference }}</span>{% if o.note %}<br><span class="muted">{{ o.note }}</span>{% endif %}</td>
+      <td>{% if o.status == 'pending' %}<span class="pill exit">pending</span>{% elif o.status == 'paid' %}<span class="pill buy">paid</span>{% else %}<span class="pill sell">rejected</span>{% endif %}</td>
+      <td style="white-space:nowrap">{% if o.status == 'pending' %}
+        <form method="post" action="{% url 'staff_order_decide' o.id %}" style="display:inline">{% csrf_token %}<input type="hidden" name="decision" value="approve"><button class="btn primary small">Approve</button></form>
+        <form method="post" action="{% url 'staff_order_decide' o.id %}" style="display:inline">{% csrf_token %}<input type="hidden" name="decision" value="reject"><button class="btn danger small">Reject</button></form>
+      {% else %}<span class="muted">{{ o.decided|date:"M d, H:i" }}</span>{% endif %}
+      <a class="btn ghost small" href="{% url 'chat_conversation' o.user.id %}">Chat</a></td></tr>
+  {% empty %}<tr><td colspan="9" class="empty">No orders in this view.</td></tr>{% endfor %}
+  </tbody></table>
+  {% include "staff/_pager.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% load static %}
+<section class="s rv" id="disclaimer" aria-labelledby="disc-title">
+  <div class="disc-grid">
+    <div class="panel disc-card"><h3>Not financial advice</h3><p>{{ SITE_NAME }} provides software, research tools and informational signals only. Nothing on this website is a recommendation to buy, sell or hold any instrument. We are not a registered investment adviser, broker-dealer or portfolio manager in any jurisdiction.</p></div>
+    <div class="panel disc-card"><h3>Trading involves substantial risk of loss</h3><p>Gold, cryptocurrencies and leveraged products can move against you quickly. You can lose some or all of the capital you put at risk. Only trade with money you can afford to lose.</p></div>
+    <div class="panel disc-card"><h3>Past performance is not a guarantee</h3><p>Backtests, equity curves and win-rate figures on this site are historical simulations with modelled costs. They include losing trades on purpose. Live spreads, slippage, gaps, latency and your own settings will differ. Results can be worse than the backtest.</p></div>
+    <div class="panel disc-card"><h3>Automation can fail</h3><p>Software, internet connections, TradingView alerts, brokers and exchanges all fail sometimes. Automated orders can fill at unexpected prices or not fill at all. Keep a stop at the broker, monitor any live system, and use paper mode until you understand the behaviour.</p></div>
+    <div class="panel disc-card"><h3>You control your broker account</h3><p>We never hold your funds. Connecting Binance, Exness (MT5) or any other broker is your decision. You are solely responsible for API keys, account settings, position size and compliance with local regulations.</p></div>
+    <div class="panel disc-card"><h3>No guaranteed returns</h3><p>Any target win rate or profit figure mentioned on the site is a development target or a historical simulation — not a promise of future profit. If something is unclear, ask in live chat before you trade live.</p></div>
+  </div>
+  <p class="fine" style="max-width:none;margin-top:22px">By using {{ SITE_NAME }} you acknowledge this disclaimer and our <a href="{% url 'legal' 'terms' %}">Terms of Service</a> and <a href="{% url 'legal' 'risk' %}">Risk Disclosure</a>.</p>
+</section>

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% load static %}
+{% block head %}
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+{% if canonical %}<link rel="canonical" href="{{ canonical }}">{% endif %}
+<meta name="theme-color" content="#FFFFFF">
+{% block seo %}{% endblock %}
+{% if GA_MEASUREMENT_ID %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','{{ GA_MEASUREMENT_ID }}');</script>
+{% endif %}
+<style>
+  :root{
+    --spark:#B6FF2E;--spark2:#9FE01A;--spark-soft:rgba(182,255,46,.18);
+    --graphite:#23262F;--graphite2:#2A2E38;--graphite3:#1A1D24;
+    --ink:var(--graphite);--ink2:#11141A;--ink3:#3A4050;
+    --champagne:var(--spark);--champagne2:var(--spark2);
+    --accent:var(--spark);--accent2:#6BA30F;
+    --bg:#FFFFFF;--bg2:#F6F7F9;--panel:#FFFFFF;--panel2:#F1F3F6;
+    --line:rgba(35,38,47,.1);--line2:rgba(182,255,46,.65);
+    --text:#23262F;--muted:#5B6472;--cyan:var(--accent2);--teal:var(--accent2);
+    --red:#D94A42;--amber:#C99712;
+    --shadow:0 18px 48px rgba(35,38,47,.08);--shadow2:0 28px 70px rgba(35,38,47,.12)
+  }
+  html,body{max-width:100%;overflow-x:hidden;margin:0 !important;padding:0 !important}
+  body{background:var(--bg);color:var(--text)}
+  .site{position:relative;overflow-x:clip;min-height:100vh;margin:0;padding:0;background:
+    radial-gradient(900px 480px at 85% 0%,rgba(182,255,46,.16) 0%,transparent 55%),
+    radial-gradient(700px 420px at 8% 12%,rgba(182,255,46,.08) 0%,transparent 50%),
+    linear-gradient(180deg,#FFFFFF 0%,#F7F8FA 45%,#FFFFFF 100%)}
+  .site *{box-sizing:border-box} .site img,.site svg{max-width:100%}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px;width:100%}
+  .site header.nav{position:sticky;top:0;z-index:40;margin:0;padding:0;width:100%;background:rgba(255,255,255,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(255,255,255,.8)}
+  .site nav{display:grid;grid-template-columns:auto 1fr auto;align-items:center;height:60px;min-height:60px;max-height:60px;gap:12px;position:relative;margin:0;padding:0}
+  .logo{display:inline-flex;align-items:center;line-height:1}
+  .logo:hover{text-decoration:none} .logo img{height:36px;width:auto;border-radius:6px;display:block}
+  .site nav .links{display:flex;gap:2px;list-style:none;margin:0;padding:0;align-items:center;justify-content:center;flex-wrap:nowrap}
+  .site nav .links a{color:var(--muted);font-size:14px;font-weight:600;padding:8px 12px;border-radius:999px;display:inline-block;transition:color .2s,background .2s,transform .2s}
+  .site nav .links a:hover,.site nav .links a.active{color:var(--graphite);background:rgba(182,255,46,.22);text-decoration:none}
+  .site nav .actions{display:flex;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:999px;font-weight:700;font-size:14px;border:1px solid transparent;cursor:pointer;font-family:inherit;transition:transform .18s ease,box-shadow .18s ease,background .18s,border-color .18s,color .18s}
+  .btn:hover{transform:translateY(-2px)} .btn:active{transform:translateY(0)}
+  .btn.primary{background:var(--spark);color:var(--graphite);box-shadow:0 10px 28px rgba(182,255,46,.35)} .btn.primary:hover{background:var(--spark2);filter:none;text-decoration:none;box-shadow:0 14px 34px rgba(182,255,46,.4)}
+  .btn.ghost{border-color:rgba(35,38,47,.16);background:#fff;color:var(--graphite)} .btn.ghost:hover{border-color:rgba(182,255,46,.7);background:rgba(182,255,46,.12);text-decoration:none}
+  .btn.small{padding:9px 16px;font-size:13.5px}
+  .mono{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-weight:600;letter-spacing:0;font-variant-numeric:tabular-nums}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease}
+  .panel:hover{transform:translateY(-3px);box-shadow:var(--shadow2);border-color:rgba(182,255,46,.45)}
+  .site h1,.site h2{text-transform:none;color:var(--graphite);font-weight:800;letter-spacing:-.9px;line-height:1.12;font-family:Fraunces,Georgia,serif}
+  .site h2{font-size:clamp(28px,3.5vw,36px);margin:0 auto 12px;text-align:center;max-width:760px}
+  .site .sub{color:var(--muted);margin:0 auto 36px;font-size:16.5px;max-width:680px;line-height:1.65;text-align:center}
+  .kicker{font-size:12px;color:var(--accent2);font-weight:800;letter-spacing:1.6px;text-transform:uppercase;margin:0 auto 10px;text-align:center}
+  .g{color:var(--accent2)} .r{color:var(--red)} .a{color:var(--amber)}
+  .burger{display:none;background:#fff;border:1px solid var(--line);color:var(--graphite);border-radius:10px;padding:8px 12px;font:inherit;cursor:pointer;font-weight:600}
+  section.s{text-align:center}
+  section.s .prose,section.s .prose-block,section.s .check-list,section.s .flow-line,section.s .paper-card,section.s .callout{text-align:left;margin-left:auto;margin-right:auto}
+  section.s .cta{justify-content:center}
+  section.s .sec-h{text-align:center}
+  .site footer{padding:0;border-top:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.62);font-size:13.5px;margin-top:0;background:var(--graphite)}
+  .foot-main{padding:56px 0 28px}
+  .fcols{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:28px;margin-bottom:0;text-align:left}
+  .fcols h4{margin:0 0 12px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--spark)}
+  .fcols a{display:block;color:rgba(255,255,255,.62);padding:5px 0;transition:color .15s,transform .15s} .fcols a:hover{color:#fff;text-decoration:none;transform:translateX(2px)}
+  .fcols .brand-blurb{margin:10px 0 0;max-width:320px;line-height:1.6;color:rgba(255,255,255,.55)}
+  .fcols .logo img{border:1px solid rgba(255,255,255,.12)}
+  .foot-disc{margin:28px 0 0;padding:18px 20px;border:1px solid rgba(182,255,46,.28);border-radius:14px;background:rgba(182,255,46,.08);text-align:left}
+  .foot-disc .inner{display:flex;gap:14px;align-items:flex-start}
+  .foot-disc b{display:inline-block;color:var(--spark);font-size:11px;letter-spacing:1.3px;text-transform:uppercase;margin:0 0 6px}
+  .foot-disc p{margin:0;line-height:1.65;font-size:13px;color:rgba(255,255,255,.58);max-width:none}
+  .foot-disc a{color:var(--spark);font-weight:700;white-space:nowrap}
+  .foot-bottom{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.1);font-size:12.5px;color:rgba(255,255,255,.45)}
+  .foot-bottom .links{display:flex;gap:14px;flex-wrap:wrap}
+  .foot-bottom .links a{color:rgba(255,255,255,.5)} .foot-bottom .links a:hover{color:#fff}
+  .foot-social{display:flex;gap:10px;margin-top:14px}
+  .foot-social a{width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.14);display:grid;place-items:center;color:rgba(255,255,255,.7);padding:0;transition:background .15s,color .15s,border-color .15s}
+  .foot-social a:hover{background:rgba(182,255,46,.15);border-color:rgba(182,255,46,.45);color:var(--spark);text-decoration:none;transform:none}
+  .foot-social svg{width:16px;height:16px}
+  @media(max-width:700px){.foot-disc{padding:16px}.foot-disc a{white-space:normal}}
+  .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.22,1,.36,1),transform .7s cubic-bezier(.22,1,.36,1)}
+  .rv.in{opacity:1;transform:none}
+  .rv.d1{transition-delay:.08s}.rv.d2{transition-delay:.16s}.rv.d3{transition-delay:.24s}.rv.d4{transition-delay:.32s}
+  @media(prefers-reduced-motion:reduce){.rv,.rv.d1,.rv.d2,.rv.d3,.rv.d4{opacity:1;transform:none;transition:none}}
+  .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(35,38,47,.45);backdrop-filter:blur(8px)} .modal.open{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  @keyframes pop{from{transform:translateY(18px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  .modal-card{position:relative;width:100%;max-width:420px;padding:36px 32px 28px;background:#fff;border:1px solid var(--line);border-radius:20px;box-shadow:0 28px 80px rgba(35,38,47,.18);animation:pop .28s cubic-bezier(.22,1,.36,1)}
+  .modal-card .modal-brand{display:flex;justify-content:center;margin-bottom:18px}
+  .modal-card .modal-brand img{height:36px;width:auto;border-radius:7px}
+  .modal-card h2{font-size:26px;margin:0 0 6px;text-align:center;color:var(--graphite)} .modal-card > .muted{text-align:center;color:var(--muted)}
+  .modal-card label{color:var(--muted)} .modal-card input{background:var(--bg2);border:1px solid var(--line);color:var(--text);border-radius:12px}
+  .modal-card input:focus{border-color:rgba(182,255,46,.8);outline:none;box-shadow:0 0 0 3px rgba(182,255,46,.25)}
+  .modal-x{position:absolute;top:12px;right:14px;background:none;border:0;color:var(--muted);font-size:26px;cursor:pointer;line-height:1} .modal-x:hover{color:var(--graphite)}
+  @media(max-width:1000px){.fcols{grid-template-columns:1fr 1fr}}
+  @media(max-width:1080px){.site nav .links a{padding:8px 9px;font-size:13.5px}}
+  @media(max-width:980px){
+    .site nav{grid-template-columns:1fr auto;height:56px;min-height:56px;max-height:56px}
+    .site nav .links,.site nav .actions{display:none}
+    .site nav .mobile{display:flex;position:absolute;top:56px;left:0;right:0;background:#fff;flex-direction:column;align-items:stretch;padding:12px 16px 18px;border-bottom:1px solid var(--line);box-shadow:0 24px 48px rgba(35,38,47,.12);max-height:calc(100vh - 56px);overflow-y:auto;gap:4px}
+    .site nav .mobile.open{display:flex} .site nav .mobile a,.site nav .mobile .btn{width:100%;justify-content:center;text-align:center;padding:12px 10px}
+    .site nav .mobile form{width:100%} .burger{display:inline-block}
+  }
+  .site nav .mobile{display:none}
+  @media(max-width:700px){.fcols{grid-template-columns:1fr 1fr}}
+  @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
+</style>
+{% block page_head %}{% endblock %}
+{% endblock %}
+{% block content %}
+<div class="site {% block site_class %}{% endblock %}">
+<header class="nav"><div class="wrap"><nav aria-label="Main">
+  <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></a>
+  <ul class="links">
+    <li><a href="{% url 'landing' %}#features">Features</a></li>
+    <li><a href="{% url 'landing' %}#how" class="{% if nav_page == 'how' %}active{% endif %}">How it Works</a></li>
+    <li><a href="{% url 'landing' %}#pricing" class="{% if nav_page == 'pricing' %}active{% endif %}">Pricing</a></li>
+    <li><a href="{% url 'landing' %}#markets" class="{% if nav_page == 'markets' %}active{% endif %}">Supported Markets</a></li>
+    <li><a href="{% url 'landing' %}#faq" class="{% if nav_page == 'faq' %}active{% endif %}">FAQ</a></li>
+    <li><a href="{% url 'site_contact' %}" class="{% if nav_page == 'contact' %}active{% endif %}">Contact</a></li>
+  </ul>
+  <div class="actions">
+    {% if user.is_authenticated %}
+      {% if user.is_superuser %}<a class="btn primary small" href="{% url 'staff_home' %}">Admin →</a>
+      {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
+      <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
+    {% else %}
+      <a class="btn ghost small" href="{% url 'login' %}" data-modal="login">Log In</a>
+      <a class="btn primary small" href="{% url 'register' %}" data-modal="register">Get Started</a>
+    {% endif %}
+  </div>
+  <button class="burger" type="button" aria-label="Menu" aria-expanded="false" onclick="const u=document.getElementById('menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'))">Menu</button>
+  <div class="mobile" id="menu">
+    <a href="{% url 'landing' %}#features">Features</a>
+    <a href="{% url 'landing' %}#how">How it Works</a>
+    <a href="{% url 'landing' %}#pricing">Pricing</a>
+    <a href="{% url 'landing' %}#markets">Supported Markets</a>
+    <a href="{% url 'landing' %}#faq">FAQ</a>
+    <a href="{% url 'site_contact' %}">Contact</a>
+    <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
+    <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
+    {% if user.is_authenticated %}
+      {% if user.is_superuser %}<a class="btn primary small" href="{% url 'staff_home' %}">Admin →</a>
+      {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
+    {% else %}
+      <a class="btn ghost small" href="{% url 'login' %}" data-modal="login">Log In</a>
+      <a class="btn primary small" href="{% url 'register' %}" data-modal="register">Get Started</a>
+    {% endif %}
+  </div>
+</nav></div></header>
+
+{% block site %}{% endblock %}
+
+<footer>
+  <div class="foot-main"><div class="wrap">
+    <div class="fcols">
+      <div>
+        <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="38"></a>
+        <p class="brand-blurb">Trading automation you can test before you trust — paper mode, backtests and risk rules you control.</p>
+        {% if SUPPORT_EMAIL %}<p style="margin:12px 0 0"><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></p>{% endif %}
+        <div class="foot-social" aria-label="Social">
+          <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.94 6.5A2.19 2.19 0 1 1 4.75 4.3 2.19 2.19 0 0 1 6.94 6.5zM4.9 8.77h4.08V19.5H4.9zm6.55 0h3.91v1.46h.06c.54-1 1.87-2.05 3.85-2.05 4.12 0 4.88 2.71 4.88 6.23V19.5h-4.08v-4.67c0-1.11-.02-2.54-1.55-2.54-1.55 0-1.79 1.21-1.79 2.46V19.5h-4.08z"/></svg></a>
+          <a href="https://x.com/" target="_blank" rel="noopener noreferrer" aria-label="X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 3H21l-6.48 7.41L22 21h-5.6l-4.38-5.73L6.9 21H4.8l6.93-7.92L2.5 3h5.74l3.96 5.25L18.9 3zm-1.97 16.2h1.55L7.58 4.7H5.92l11.01 14.5z"/></svg></a>
+          <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.5 31.5 0 0 0 0 12a31.5 31.5 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.5 31.5 0 0 0 24 12a31.5 31.5 0 0 0-.5-5.8zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/></svg></a>
+        </div>
+      </div>
+      <div>
+        <h4>Quick Links</h4>
+        <a href="{% url 'landing' %}#features">Features</a>
+        <a href="{% url 'landing' %}#how">How it Works</a>
+        <a href="{% url 'landing' %}#pricing">Pricing</a>
+        <a href="{% url 'landing' %}#markets">Supported Markets</a>
+        <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
+        <a href="{% url 'site_performance' %}">Performance</a>
+        <a href="{% url 'blog' %}">Blog</a>
+        <a href="{% url 'site_contact' %}">Contact</a>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a href="{% url 'site_tradingview' %}">TradingView</a>
+        <a href="{% url 'site_paper' %}">Paper trading</a>
+        <a href="{% url 'site_gold' %}">Gold / XAUUSD</a>
+        <a href="{% url 'site_bitcoin' %}">Bitcoin</a>
+        <a href="{% url 'site_binance' %}">Binance</a>
+        <a href="{% url 'site_mt5' %}">MT5</a>
+        <a href="{% url 'site_risk' %}">Risk management</a>
+        <a href="{% url 'site_faq' %}">FAQ</a>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <a href="{% url 'legal' 'terms' %}">Terms of Service</a>
+        <a href="{% url 'legal' 'risk' %}">Risk disclosure</a>
+        <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
+        <a href="{% url 'site_about' %}">About</a>
+      </div>
+    </div>
+    <div class="foot-disc"><div class="inner">
+      <div>
+        <b>Disclaimer</b>
+        <p>{{ SITE_NAME }} is software and information only — not financial advice. Trading gold and crypto involves substantial risk of loss. Backtests are historical simulations, not a promise of future results. You are solely responsible for your trading decisions. <a href="{% url 'site_disclaimer' %}">Read the full disclaimer →</a></p>
+      </div>
+    </div></div>
+    <div class="foot-bottom">
+      <span>© {% now "Y" %} {{ SITE_NAME }}. All rights reserved.</span>
+      <div class="links">
+        <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
+        <a href="{% url 'legal' 'terms' %}">Terms</a>
+        <a href="{% url 'legal' 'risk' %}">Risk</a>
+      </div>
+    </div>
+  </div></div>
+</footer>
+
+{% if not user.is_authenticated %}
+<div class="modal" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
+  <div class="modal-card">
+    <button class="modal-x" type="button" aria-label="Close" data-close>&times;</button>
+    <div class="modal-brand"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></div>
+    <h2 id="login-title">Welcome back</h2><p class="muted" style="margin:0 0 18px">Log in with your e-mail or username.</p>
+    <form method="post" action="{% url 'login' %}">{% csrf_token %}
+      <label for="m-login-user">E-mail or username</label><input id="m-login-user" name="username" placeholder="you@example.com" autocomplete="username" required>
+      <label for="m-login-pw">Password</label><input id="m-login-pw" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
+      <input type="hidden" name="next" value="{% url 'dashboard' %}">
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Log in</button>
+    </form>
+    <p class="muted" style="margin:16px 0 0;text-align:center">New here? <a href="{% url 'register' %}" data-modal="register" style="color:var(--spark)">Create an account</a></p>
+  </div>
+</div>
+<div class="modal" id="modal-register" role="dialog" aria-modal="true" aria-labelledby="reg-title">
+  <div class="modal-card">
+    <button class="modal-x" type="button" aria-label="Close" data-close>&times;</button>
+    <div class="modal-brand"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></div>
+    <h2 id="reg-title">Create your account</h2><p class="muted" style="margin:0 0 18px">Free to create. Unlock the bot or buy signals afterwards.</p>
+    <form method="post" action="{% url 'register' %}">{% csrf_token %}
+      <label for="m-reg-user">Username</label><input id="m-reg-user" name="username" placeholder="Choose a username" autocomplete="username" required maxlength="150">
+      <label for="m-reg-email">E-mail</label><input id="m-reg-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
+      <label for="m-reg-pw1">Password</label><input id="m-reg-pw1" name="password1" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" required minlength="8">
+      <label for="m-reg-pw2">Repeat password</label><input id="m-reg-pw2" name="password2" type="password" placeholder="Repeat password" autocomplete="new-password" required minlength="8">
+      <input type="hidden" name="next" id="m-reg-next" value="">
+      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Create account</button>
+    </form>
+    <p class="muted" style="margin:16px 0 0;text-align:center">Already have one? <a href="{% url 'login' %}" data-modal="login" style="color:var(--spark)">Log in</a></p>
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  const modals = {login: document.getElementById('modal-login'), register: document.getElementById('modal-register')};
+  function openModal(name, next) {
+    Object.values(modals).forEach(m => m && m.classList.remove('open'));
+    const m = modals[name]; if (!m) { location.href = name === 'login' ? "{% url 'login' %}" : "{% url 'register' %}"; return; }
+    if (name === 'register' && next) document.getElementById('m-reg-next').value = next;
+    m.classList.add('open'); document.body.style.overflow = 'hidden';
+    setTimeout(() => { const f = m.querySelector('input'); if (f) f.focus(); }, 50);
+  }
+  function closeModals() { Object.values(modals).forEach(m => m && m.classList.remove('open')); document.body.style.overflow = ''; }
+  document.querySelectorAll('[data-modal]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openModal(a.dataset.modal); }));
+  document.querySelectorAll('a[href*="/accounts/register/?next="]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openModal('register', new URL(a.href).searchParams.get('next')); }));
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
+  Object.values(modals).forEach(m => m && m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
+  if (location.hash === '#login') openModal('login'); if (location.hash === '#register') openModal('register');
+  document.querySelectorAll('#menu a, #menu button').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('menu'); if(m) m.classList.remove('open'); }));
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold: .12, rootMargin: '0px 0px -40px 0px'});
+  document.querySelectorAll('.rv').forEach(el => io.observe(el));
+  document.querySelectorAll('.mid-cards, .faq-mid, .plans-mid, .brokers, .target').forEach(grid => {
+    [...grid.children].forEach((card, i) => {
+      if (!card.classList.contains('rv')) { card.classList.add('rv'); if (i < 4) card.classList.add('d' + (i + 1)); io.observe(card); }
+    });
+  });
+</script>
+{% block page_scripts %}{% endblock %}
+{% endblock %}

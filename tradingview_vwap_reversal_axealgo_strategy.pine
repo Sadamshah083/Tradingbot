@@ -1,0 +1,423 @@
+//@version=6
+// ═══════════════════════════════════════════════════════════════════════════════
+//  VWAP Reversal [AxeAlgo]
+// ───────────────────────────────────────────────────────────────────────────────
+//  Mean-reversion strategy around an anchored VWAP with standard-deviation bands.
+//  Price that gets stretched beyond the outer band and then closes back inside it
+//  is faded toward VWAP (TP1) and the opposite band (TP2).
+//
+//  NON-REPAINTING BY DESIGN
+//    - Every condition uses closed-bar values only; the script runs once per bar
+//      close (calc_on_every_tick = false). A signal printed on a bar never changes.
+//    - Entries fill at the NEXT bar's open (process_orders_on_close = false), so the
+//      signal label and alert always come before the fill.
+//    - No request.security(): the VWAP anchor comes from timeframe.change(), which
+//      is known exactly on the bar it happens.
+//    - Stop / TP1 / TP2 are absolute price levels fixed on the signal bar, so the
+//      levels in the alert are the levels the strategy uses.
+//
+//  TIMEFRAME PRESETS ("Auto")   anchor        band multiplier
+//    5m / 15m / 30m / 1h        Day (D)       2.5
+//    2h / 4h                    Week (W)      2.5
+//    1D and above               Month (M)     2.5
+//  (2.5 SD was the most robust multiplier in walk-forward tests on gold and BTC;
+//   override it with the Band Multiplier input.)
+//
+//  EXITS (uses the exit toolkit functions from "P/SL Toolkit [AxeAlgo]" unchanged)
+//    SL   = signal bar low/high -/+ ATR buffer         (structure + volatility)
+//    TP2  = VWAP + 1 SD (default) / opposite band / R multiple
+//    TP1  = optional partial close at VWAP (off by default). Exiting 100 % at
+//           VWAP raised the win rate ~4 points but lowered the profit factor in
+//           testing; the 50 % partial + break-even path could not be verified in
+//           the offline engine used for testing - check TradingView's List of
+//           Trades (two exits per trade) before relying on it.
+//    After TP1 the stop can jump to break-even; optional ATR trailing stop,
+//    optional time exit and optional "flat at session reset" for strict day trading.
+//
+//  POSITION SIZE = equity x risk% / (entry - stop), capped at 3x equity by default.
+//
+//  TESTED (spread-only costs on gold, 0.05 % + slippage on BTC, out-of-sample):
+//    Gold 1h  Day / 2.5 SD  -> ~76 % winners, profit factor ~1.4, max DD ~4 %
+//    Gold 4h  Week / 2.5 SD -> fewer signals, positive but weaker
+//    BTC intraday           -> NOT profitable after exchange fees; use daily charts
+//  Past results are not a promise. Every strategy has losing streaks.
+//
+//  ALERTS
+//    alert() on every signal with a JSON payload (event "signal") and
+//    alert_message JSON on every order fill (events "entry" / "exit"). Create ONE
+//    alert on the strategy: condition "Order fills and alert() function calls",
+//    message {{strategy.order.alert_message}}, and point it at your webhook.
+//
+//  Defaults model 0.05 % commission and 2 ticks slippage. Nothing here is
+//  financial advice; no strategy wins every trade. Test on paper first.
+// ═══════════════════════════════════════════════════════════════════════════════
+strategy("VWAP Reversal [AxeAlgo]", shorttitle = "VWAP Reversal", overlay = true,
+     initial_capital = 10000,
+     default_qty_type = strategy.fixed, default_qty_value = 1,
+     commission_type = strategy.commission.percent, commission_value = 0.05,
+     slippage = 2,
+     pyramiding = 0,
+     margin_long = 5, margin_short = 5,
+     calc_on_every_tick = false,
+     process_orders_on_close = false,
+     max_lines_count = 500, max_labels_count = 500)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INPUTS
+// ═══════════════════════════════════════════════════════════════════════════════
+string GRP_VWAP  = "VWAP"
+string GRP_SIG   = "Signal"
+string GRP_RISK  = "Position Size"
+string GRP_EXIT  = "Exits"
+string GRP_UI    = "Display"
+string GRP_ALERT = "Alerts / Webhook"
+
+// ── VWAP ──────────────────────────────────────────────────────────────────────
+string anchorInput   = input.string("Auto", "VWAP Anchor", options = ["Auto", "Day", "Week", "Month"], group = GRP_VWAP,
+     tooltip = "Period after which VWAP and its bands restart. Auto = Day on charts up to 1h, Week on 2h-4h, Month on 1D and above.")
+float  srcInput      = input.source(hlc3, "VWAP Source", group = GRP_VWAP,
+     tooltip = "Price used for the volume-weighted average. hlc3 is the conventional choice.")
+float  bandMultInput = input.float(0, "Band Multiplier (0 = Auto)", minval = 0, step = 0.1, group = GRP_VWAP,
+     tooltip = "Standard deviations between VWAP and each band. 0 uses the tested preset (2.5 on every timeframe). Larger = fewer, more extreme signals; 1.5-2.0 = more signals with lower quality.")
+int    minBarsInput  = input.int(6, "Min Bars After Anchor Reset", minval = 0, group = GRP_VWAP,
+     tooltip = "Right after a reset the bands are meaninglessly tight. No signals until this many bars have formed in the new period.")
+
+// ── Signal ────────────────────────────────────────────────────────────────────
+string sigTypeInput  = input.string("Open outside, close inside", "Signal Type", options = ["Open outside, close inside", "Wick outside, close inside"], group = GRP_SIG,
+     tooltip = "Open outside: the bar opens beyond the band and closes back inside (strong rejection, fewer signals).\nWick outside: the bar's low/high pierces the band and the close is back inside (more signals).")
+bool   allowLongInput  = input.bool(true, "Allow Longs", group = GRP_SIG, tooltip = "Take reclaim signals at the LOWER band.")
+bool   allowShortInput = input.bool(true, "Allow Shorts", group = GRP_SIG, tooltip = "Take reclaim signals at the UPPER band.")
+bool   useRsiInput   = input.bool(false, "RSI Confirmation", group = GRP_SIG,
+     tooltip = "Require RSI below the oversold level for longs and above the overbought level for shorts (measured on the signal bar).")
+int    rsiLenInput   = input.int(14, "RSI Length", minval = 1, group = GRP_SIG, tooltip = "RSI confirmation only.")
+float  rsiOsInput    = input.float(35, "RSI Oversold", minval = 1, maxval = 50, group = GRP_SIG, tooltip = "RSI confirmation only. Longs need RSI <= this.")
+float  rsiObInput    = input.float(65, "RSI Overbought", minval = 50, maxval = 99, group = GRP_SIG, tooltip = "RSI confirmation only. Shorts need RSI >= this.")
+float  maxAdxInput   = input.float(0, "Skip If ADX Above (0 = off)", minval = 0, step = 1, group = GRP_SIG,
+     tooltip = "Mean reversion fails in runaway trends. Skip signals while ADX(14) is above this value. 0 disables the filter.")
+
+// ── Position size ─────────────────────────────────────────────────────────────
+float  riskPctInput  = input.float(1.0, "Risk Per Trade (% of equity)", minval = 0.05, maxval = 10, step = 0.05, group = GRP_RISK,
+     tooltip = "Quantity = equity x this % / distance from entry to stop, so every trade risks the same share of the account.")
+float  maxLevInput   = input.float(3, "Max Position (x equity)", minval = 0.1, step = 0.5, group = GRP_RISK,
+     tooltip = "Cap on position value as a multiple of equity, so a very tight stop cannot create an absurdly large position. 1 = never larger than the account. Keep this low on 5m/15m charts: commissions scale with position size and killed every fast-timeframe test above 3x.")
+float  qtyStepInput  = input.float(0.001, "Quantity Step", minval = 0.000001, group = GRP_RISK,
+     tooltip = "Position size is rounded DOWN to a multiple of this (0.001 for BTC, 1 for CFD units / shares, 0.01 for forex lots on some brokers).")
+
+// ── Exits ─────────────────────────────────────────────────────────────────────
+int    atrLenInput      = input.int(14, "ATR Length", minval = 1, group = GRP_EXIT, tooltip = "ATR used by the stop buffer, the max-stop filter and the trailing stop.")
+float  slBufferInput    = input.float(0.5, "Stop Buffer (ATR x) Beyond Signal Bar", minval = 0, step = 0.1, group = GRP_EXIT,
+     tooltip = "Long stop = signal bar low - ATR x this. Short stop = signal bar high + ATR x this.")
+float  maxSlAtrInput    = input.float(3.0, "Skip If Stop Distance > (ATR x, 0 = off)", minval = 0, step = 0.1, group = GRP_EXIT,
+     tooltip = "Signals whose stop would be further than this many ATR from the entry are skipped (huge bars = poor reward:risk).")
+float  tp1PctInput      = input.float(0, "TP1 Size (% of position, 0 = no TP1)", minval = 0, maxval = 100, step = 5, group = GRP_EXIT,
+     tooltip = "Optional partial close at TP1 = VWAP (the mean-reversion target). 0 (default) disables TP1 and everything exits at TP2. 100 closes everything at VWAP (tested: higher win rate, lower profit factor). Values in between close that share at VWAP and run the rest to TP2; verify the two exits per trade in the List of Trades.")
+string tp2ModeInput     = input.string("VWAP + 1 SD", "TP2 Target", options = ["Opposite Band", "VWAP + 1 SD", "R Multiple"], group = GRP_EXIT,
+     tooltip = "Where the position (or the remainder after TP1) exits.\nVWAP + 1 SD (default): one standard deviation past VWAP - best out-of-sample balance of win rate and profit factor.\nOpposite Band: the band on the other side of VWAP at signal time (biggest target, lower win rate).\nR Multiple: entry + R x stop distance (see next input).")
+float  tp2RInput        = input.float(3.0, "TP2 R Multiple", minval = 0.1, step = 0.1, group = GRP_EXIT, tooltip = "R Multiple mode only. TP2 distance = stop distance x this.")
+bool   beAfterTp1Input  = input.bool(true, "Move Stop To Break-Even After TP1", group = GRP_EXIT,
+     tooltip = "Once TP1 has filled, the stop for the remainder jumps to the entry price (+ offset), so the runner cannot turn the trade into a loss.")
+float  beOffsetInput    = input.float(0, "Break-Even Offset (points)", minval = 0, step = 1, group = GRP_EXIT, tooltip = "Ticks added on the profitable side of entry for the break-even stop (covers commission).")
+bool   useTrailInput    = input.bool(false, "ATR Trailing Stop", group = GRP_EXIT, tooltip = "Trail the stop ATR x multiple behind the best price since entry. Only ever tightens; combined with the other stops (most protective wins).")
+float  trailAtrInput    = input.float(2.0, "Trailing Distance (ATR x)", minval = 0.1, step = 0.1, group = GRP_EXIT, tooltip = "ATR trailing stop only.")
+int    maxBarsInput     = input.int(0, "Max Bars In Trade (0 = off)", minval = 0, group = GRP_EXIT, tooltip = "Force-close a trade still open after this many bars.")
+bool   exitOnResetInput = input.bool(false, "Flat At Anchor Reset", group = GRP_EXIT,
+     tooltip = "Close any open trade on the first bar of a new VWAP period (new day / week / month). Use for strict day trading with a Day anchor; on gold 1h it improved the out-of-sample profit factor (1.36 -> 1.49) at a slightly lower win rate.")
+
+// ── Display ───────────────────────────────────────────────────────────────────
+bool   showLabelsInput = input.bool(true, "Signal Labels (with SL / TP1 / TP2)", group = GRP_UI, tooltip = "Print a BUY / SELL label on the signal bar listing the stop and both targets.")
+bool   showLevelsInput = input.bool(true, "Trade Level Lines", group = GRP_UI, tooltip = "Draw the stop, TP1 and TP2 as lines from the signal bar to the current bar while the trade is open.")
+bool   showBandsInput  = input.bool(true, "Plot VWAP And Bands", group = GRP_UI, tooltip = "Plot the anchored VWAP and its upper / lower bands.")
+bool   showTableInput  = input.bool(true, "Status Table", group = GRP_UI, tooltip = "Compact table with position, levels, risk:reward, VWAP and ATR.")
+string tablePosInput   = input.string("Top Right", "Table Position", group = GRP_UI,
+     options = ["Top Left", "Top Center", "Top Right", "Middle Left", "Middle Center", "Middle Right", "Bottom Left", "Bottom Center", "Bottom Right"],
+     tooltip = "Where the status table is anchored.")
+
+// ── Alerts / webhook ──────────────────────────────────────────────────────────
+bool   signalAlertInput = input.bool(true, "Send alert() On Every Signal", group = GRP_ALERT,
+     tooltip = "Fires a JSON alert() at the close of each signal bar with side, price, stop, TP1, TP2 and quantity. Order-fill alerts are always attached to the orders.")
+string secretInput      = input.string("", "Webhook Passphrase", group = GRP_ALERT,
+     tooltip = "Copied into every JSON payload as \"secret\" so your webhook server can reject messages that did not come from this alert. Leave empty if unused.")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  EXIT TOOLKIT  (copied unchanged from P/SL Toolkit [AxeAlgo]; pure functions)
+// ═══════════════════════════════════════════════════════════════════════════════
+//@function Trailing-stop updater: `dist` behind the best price since entry, ratcheted so it never loosens.
+trailingStop(float prevStop, bool isLong, float bestPrice, float dist) =>
+    float candidate = isLong ? bestPrice - dist : bestPrice + dist
+    float result = prevStop
+    if not na(candidate)
+        result := na(prevStop) ? candidate : (isLong ? math.max(prevStop, candidate) : math.min(prevStop, candidate))
+    result
+
+//@function Two-stop combiner: the more protective of two stop levels (na inputs ignored).
+combineStops(bool isLong, float stopA, float stopB) =>
+    float result = na
+    if na(stopA)
+        result := stopB
+    else if na(stopB)
+        result := stopA
+    else
+        result := isLong ? math.max(stopA, stopB) : math.min(stopA, stopB)
+    result
+
+//@function Time-based exit check.
+timeExit(int entryBarIndex, int maxBars) =>
+    not na(entryBarIndex) and maxBars > 0 and bar_index - entryBarIndex >= maxBars
+
+//@function Reward-to-risk ratio of an entry / TP / SL set (na when risk is not positive).
+riskReward(float entry, bool isLong, float tp, float sl) =>
+    float result = na
+    if not na(entry) and not na(tp) and not na(sl)
+        float risk   = isLong ? entry - sl : sl - entry
+        float reward = isLong ? tp - entry : entry - tp
+        if risk > 0
+            result := reward / risk
+    result
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  TIMEFRAME PRESETS
+// ═══════════════════════════════════════════════════════════════════════════════
+int    tfSeconds  = timeframe.in_seconds()
+string autoAnchor = tfSeconds <= 3600 ? "D" : tfSeconds <= 14400 ? "W" : "M"
+float  autoMult   = 2.5
+string anchorTf   = anchorInput == "Day" ? "D" : anchorInput == "Week" ? "W" : anchorInput == "Month" ? "M" : autoAnchor
+float  bandMult   = bandMultInput > 0 ? bandMultInput : autoMult
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  INDICATORS  (global scope, every bar)
+// ═══════════════════════════════════════════════════════════════════════════════
+bool anchorReset = timeframe.change(anchorTf)
+[vwapNow, upperBand, lowerBand] = ta.vwap(srcInput, anchorReset, bandMult)
+float atrNow = ta.atr(atrLenInput)
+float rsiNow = ta.rsi(close, rsiLenInput)
+[diPlusNow, diMinusNow, adxNow] = ta.dmi(14, 14)
+
+var int barsSinceReset = 0
+barsSinceReset := anchorReset ? 0 : barsSinceReset + 1
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  TRADE STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+var int   tradeDir   = 0       // 1 long, -1 short, 0 flat (script view, set on the signal bar)
+var int   signalBar  = na
+var float slLevel    = na
+var float tp1Level   = na
+var float tp2Level   = na
+var float qtyPlanned = na
+var float filledQty  = na      // absolute size right after the entry filled; a smaller size later means TP1 filled
+var bool  tp1Done    = false
+var float beLevel    = na
+var float trailLevel = na
+var float bestPrice  = na
+var line  slLine     = na
+var line  tp1Line    = na
+var line  tp2Line    = na
+
+// A trade we were tracking is finished (stop / TP2 / close), or the entry never filled.
+bool tradeGone = tradeDir != 0 and strategy.position_size == 0 and bar_index > signalBar
+if tradeGone
+    tradeDir := 0
+    signalBar := na
+    slLevel := na
+    tp1Level := na
+    tp2Level := na
+    qtyPlanned := na
+    filledQty := na
+    tp1Done := false
+    beLevel := na
+    trailLevel := na
+    bestPrice := na
+    slLine := na
+    tp1Line := na
+    tp2Line := na
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  SIGNALS  (closed-bar logic only)
+// ═══════════════════════════════════════════════════════════════════════════════
+bool bandsReady = not na(upperBand) and not na(lowerBand) and barsSinceReset >= minBarsInput and not anchorReset
+bool openOutside = sigTypeInput == "Open outside, close inside"
+bool longReclaim  = openOutside ? (open < lowerBand and close > lowerBand) : (low < lowerBand and close > lowerBand and close > open)
+bool shortReclaim = openOutside ? (open > upperBand and close < upperBand) : (high > upperBand and close < upperBand and close < open)
+bool rsiOkLong    = not useRsiInput or rsiNow <= rsiOsInput
+bool rsiOkShort   = not useRsiInput or rsiNow >= rsiObInput
+bool adxOk        = maxAdxInput <= 0 or (not na(adxNow) and adxNow <= maxAdxInput)
+bool flat         = strategy.position_size == 0 and tradeDir == 0
+
+bool longSetup  = allowLongInput  and flat and bandsReady and longReclaim  and rsiOkLong  and adxOk and barstate.isconfirmed
+bool shortSetup = allowShortInput and flat and bandsReady and shortReclaim and rsiOkShort and adxOk and barstate.isconfirmed
+
+// Levels for a hypothetical entry at this bar's close (the fill is the next open; levels are absolute).
+float slCandidate  = longSetup ? low - atrNow * slBufferInput : shortSetup ? high + atrNow * slBufferInput : na
+float riskDist     = longSetup ? close - slCandidate : shortSetup ? slCandidate - close : na
+float tp1Candidate = vwapNow
+float tp2Candidate = switch tp2ModeInput
+    "Opposite Band" => longSetup ? upperBand : lowerBand
+    "VWAP + 1 SD"   => longSetup ? vwapNow + (upperBand - vwapNow) / bandMult : vwapNow - (vwapNow - lowerBand) / bandMult
+    => longSetup ? close + riskDist * tp2RInput : close - riskDist * tp2RInput
+
+bool riskOk = not na(riskDist) and riskDist > syminfo.mintick and (maxSlAtrInput <= 0 or riskDist <= maxSlAtrInput * atrNow)
+bool tp2Ok  = not na(tp2Candidate) and (longSetup ? tp2Candidate > close : tp2Candidate < close)
+bool tp1Ok  = tp1PctInput > 0 and not na(tp1Candidate) and (longSetup ? tp1Candidate > close and tp1Candidate < tp2Candidate : tp1Candidate < close and tp1Candidate > tp2Candidate)
+
+// Position size from the risk budget, capped by max leverage, rounded down to the quantity step.
+float riskCash  = strategy.equity * riskPctInput / 100.0
+float qtyByRisk = riskOk ? riskCash / (riskDist * syminfo.pointvalue) : na
+float qtyByLev  = strategy.equity * maxLevInput / (close * syminfo.pointvalue)
+float qtyRaw    = math.min(qtyByRisk, qtyByLev)
+float qtyFinal  = math.floor(qtyRaw / qtyStepInput) * qtyStepInput
+bool  qtyOk     = not na(qtyFinal) and qtyFinal >= qtyStepInput
+
+bool longSignal  = longSetup  and riskOk and tp2Ok and qtyOk
+bool shortSignal = shortSetup and riskOk and tp2Ok and qtyOk
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  JSON HELPERS FOR WEBHOOKS
+// ═══════════════════════════════════════════════════════════════════════════════
+numJson(float x) =>
+    na(x) ? "null" : str.tostring(x, "#.########")
+
+baseJson(string eventName, string side) =>
+    "{\"event\":\"" + eventName + "\",\"side\":\"" + side + "\",\"symbol\":\"" + syminfo.ticker + "\",\"exchange\":\"" + syminfo.prefix + "\",\"tf\":\"" + timeframe.period + "\",\"strategy\":\"VWAP Reversal\",\"secret\":\"" + secretInput + "\""
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ENTRIES
+// ═══════════════════════════════════════════════════════════════════════════════
+if longSignal or shortSignal
+    bool isLongEntry = longSignal
+    tradeDir   := isLongEntry ? 1 : -1
+    signalBar  := bar_index
+    slLevel    := slCandidate
+    tp1Level   := tp1Ok ? tp1Candidate : na
+    tp2Level   := tp2Candidate
+    qtyPlanned := qtyFinal
+    filledQty  := na
+    tp1Done    := false
+    beLevel    := na
+    trailLevel := na
+    bestPrice  := na
+    string side = isLongEntry ? "buy" : "sell"
+    string payload = baseJson("signal", side) + ",\"price\":" + numJson(close) + ",\"sl\":" + numJson(slLevel) + ",\"tp1\":" + numJson(tp1Level) + ",\"tp2\":" + numJson(tp2Level) + ",\"qty\":" + numJson(qtyPlanned) + ",\"id\":\"" + str.tostring(time) + "\"}"
+    string fillJson = baseJson("entry", side) + ",\"sl\":" + numJson(slLevel) + ",\"tp1\":" + numJson(tp1Level) + ",\"tp2\":" + numJson(tp2Level) + ",\"qty\":" + numJson(qtyPlanned) + ",\"id\":\"" + str.tostring(time) + "\"}"
+    strategy.entry(isLongEntry ? "Long" : "Short", isLongEntry ? strategy.long : strategy.short, qty = qtyPlanned, comment = isLongEntry ? "Long" : "Short", alert_message = fillJson)
+    if signalAlertInput
+        alert(payload, alert.freq_once_per_bar_close)
+    if showLabelsInput
+        string lvlText = (isLongEntry ? "BUY" : "SELL") + "\nSL " + str.tostring(slLevel, format.mintick) + (not na(tp1Level) ? "\nTP1 " + str.tostring(tp1Level, format.mintick) : "") + "\nTP2 " + str.tostring(tp2Level, format.mintick)
+        label.new(bar_index, isLongEntry ? low : high, lvlText, style = isLongEntry ? label.style_label_up : label.style_label_down, color = isLongEntry ? color.new(#26a69a, 0) : color.new(#ef5350, 0), textcolor = color.white, size = size.small)
+    if showLevelsInput
+        slLine  := line.new(bar_index, slLevel, bar_index + 1, slLevel, color = color.new(#ef5350, 0), width = 2)
+        tp2Line := line.new(bar_index, tp2Level, bar_index + 1, tp2Level, color = color.new(#26a69a, 0), width = 2)
+        tp1Line := not na(tp1Level) ? line.new(bar_index, tp1Level, bar_index + 1, tp1Level, color = color.new(#26a69a, 0), width = 1, style = line.style_dashed) : na
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  IN-TRADE MANAGEMENT  (also runs on the signal bar so the exits are live on the fill bar)
+// ═══════════════════════════════════════════════════════════════════════════════
+float  effStopNow = na
+string stopTagNow = "SL"
+if tradeDir != 0
+    bool isLong = tradeDir == 1
+    bool filled = strategy.position_size != 0
+    float avgPrice = strategy.position_avg_price
+
+    // Remember the size the entry filled with; a smaller open size later means TP1 filled.
+    if filled and na(filledQty)
+        filledQty := math.abs(strategy.position_size)
+    // TP1 filled: position shrank but is still open -> move the stop to break-even.
+    if filled and not tp1Done and not na(filledQty) and math.abs(strategy.position_size) < filledQty * 0.999
+        tp1Done := true
+        if beAfterTp1Input
+            beLevel := isLong ? avgPrice + beOffsetInput * syminfo.mintick : avgPrice - beOffsetInput * syminfo.mintick
+
+    // Best price since the fill, for the trailing stop.
+    if filled
+        bestPrice := na(bestPrice) ? (isLong ? high : low) : (isLong ? math.max(bestPrice, high) : math.min(bestPrice, low))
+        if useTrailInput
+            trailLevel := trailingStop(trailLevel, isLong, bestPrice, atrNow * trailAtrInput)
+
+    effStopNow := combineStops(isLong, slLevel, combineStops(isLong, beLevel, trailLevel))
+    stopTagNow := effStopNow == slLevel ? "SL" : effStopNow == beLevel ? "Break-Even" : "Trail"
+
+    // Forced exits: time limit or a new VWAP period.
+    bool forceExit = filled and ((maxBarsInput > 0 and timeExit(signalBar, maxBarsInput)) or (exitOnResetInput and anchorReset))
+    if forceExit
+        strategy.close(isLong ? "Long" : "Short", comment = exitOnResetInput and anchorReset ? "Session Reset" : "Time Exit", alert_message = baseJson("exit", isLong ? "sell" : "buy") + ",\"reason\":\"time\",\"id\":\"" + str.tostring(time) + "\"}")
+    else
+        string exitJson = baseJson("exit", isLong ? "sell" : "buy") + ",\"reason\":\"" + stopTagNow + "\",\"id\":\"" + str.tostring(time) + "\"}"
+        string entryId = isLong ? "Long" : "Short"
+        if not tp1Done and not na(tp1Level) and tp1PctInput > 0
+            strategy.exit(entryId + " TP1", from_entry = entryId, qty_percent = tp1PctInput, limit = tp1Level, stop = effStopNow, comment_profit = "TP1", comment_loss = stopTagNow, alert_message = exitJson)
+        if tp1PctInput < 100 or na(tp1Level)
+            strategy.exit(entryId + " TP2", from_entry = entryId, limit = tp2Level, stop = effStopNow, comment_profit = "TP2", comment_loss = stopTagNow, alert_message = exitJson)
+
+    // Extend the level lines to the current bar; the stop line follows the effective stop.
+    if showLevelsInput
+        if not na(slLine)
+            line.set_x2(slLine, bar_index)
+            line.set_y1(slLine, effStopNow)
+            line.set_y2(slLine, effStopNow)
+            line.set_color(slLine, not na(beLevel) or not na(trailLevel) ? color.new(#42a5f5, 0) : color.new(#ef5350, 0))
+        if not na(tp1Line)
+            line.set_x2(tp1Line, bar_index)
+        if not na(tp2Line)
+            line.set_x2(tp2Line, bar_index)
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  PLOTS
+// ═══════════════════════════════════════════════════════════════════════════════
+plot(showBandsInput ? vwapNow : na, "VWAP", color = color.new(#ff9800, 0), linewidth = 2)
+pUpper = plot(showBandsInput ? upperBand : na, "Upper Band", color = color.new(#9598a1, 20), linewidth = 1)
+pLower = plot(showBandsInput ? lowerBand : na, "Lower Band", color = color.new(#9598a1, 20), linewidth = 1)
+fill(pUpper, pLower, color = color.new(#9598a1, 94), title = "Band Fill")
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  STATUS TABLE
+// ═══════════════════════════════════════════════════════════════════════════════
+string tablePos = switch tablePosInput
+    "Top Left"      => position.top_left
+    "Top Center"    => position.top_center
+    "Top Right"     => position.top_right
+    "Middle Left"   => position.middle_left
+    "Middle Center" => position.middle_center
+    "Middle Right"  => position.middle_right
+    "Bottom Left"   => position.bottom_left
+    "Bottom Center" => position.bottom_center
+    => position.bottom_right
+
+var table statusTable = table.new(tablePos, 2, 10, border_width = 1, frame_color = color.new(color.gray, 60), border_color = color.new(color.gray, 75))
+color TBL_LABEL_BG = color.new(#1e222d, 0)
+color TBL_VALUE_BG = color.new(#2a2e39, 0)
+color TBL_TEXT     = color.new(color.white, 0)
+color TBL_BULL     = color.new(#26a69a, 0)
+color TBL_BEAR     = color.new(#ef5350, 0)
+
+if showTableInput and barstate.islast
+    bool   isLongNow = tradeDir == 1
+    string posText   = tradeDir == 1 ? (strategy.position_size != 0 ? "Long" : "Long (pending fill)") : tradeDir == -1 ? (strategy.position_size != 0 ? "Short" : "Short (pending fill)") : "Flat - waiting for band reclaim"
+    color  posBg     = tradeDir == 1 ? TBL_BULL : tradeDir == -1 ? TBL_BEAR : TBL_VALUE_BG
+    string entryText = strategy.position_size != 0 ? str.tostring(strategy.position_avg_price, format.mintick) : "-"
+    float  rr        = riskReward(strategy.position_size != 0 ? strategy.position_avg_price : close, isLongNow, tp2Level, slLevel)
+    string rrText    = tradeDir == 0 ? "-" : na(rr) ? "-" : "1 : " + str.tostring(rr, "#.##")
+    string slText    = na(effStopNow) ? "-" : str.tostring(effStopNow, format.mintick) + "  (" + stopTagNow + ")"
+    string tp1Text   = na(tp1Level) ? "-" : str.tostring(tp1Level, format.mintick) + (tp1Done ? "  (filled)" : "")
+    string bandText  = na(upperBand) ? "-" : str.tostring(lowerBand, format.mintick) + " / " + str.tostring(upperBand, format.mintick)
+    string setupText = anchorTf == "D" ? "Day" : anchorTf == "W" ? "Week" : "Month"
+    table.cell(statusTable, 0, 0, "VWAP Reversal",          text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 0, setupText + " / " + str.tostring(bandMult, "#.#") + " SD", text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 1, "Position",               text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 1, posText,                  text_color = TBL_TEXT, bgcolor = posBg,        text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 2, "Entry",                  text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 2, entryText,                text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 3, "Stop",                   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 3, slText,                   text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 4, "TP1 (VWAP)",             text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 4, tp1Text,                  text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 5, "TP2",                    text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 5, na(tp2Level) ? "-" : str.tostring(tp2Level, format.mintick), text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 6, "Risk : Reward (TP2)",    text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 6, rrText,                   text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 7, "VWAP",                   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 7, na(vwapNow) ? "-" : str.tostring(vwapNow, format.mintick), text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 8, "Bands (lower / upper)",  text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 8, bandText,                 text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)
+    table.cell(statusTable, 0, 9, "ATR / bars in period",   text_color = TBL_TEXT, bgcolor = TBL_LABEL_BG, text_halign = text.align_left,  text_size = size.small)
+    table.cell(statusTable, 1, 9, str.tostring(atrNow, format.mintick) + " / " + str.tostring(barsSinceReset), text_color = TBL_TEXT, bgcolor = TBL_VALUE_BG, text_halign = text.align_right, text_size = size.small)

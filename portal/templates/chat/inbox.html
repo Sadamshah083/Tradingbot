@@ -1,0 +1,16 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Inbox · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Live chat{% endblock %}
+{% block page_lead %}Conversations with customers, unread first. This list refreshes every 10 seconds.{% endblock %}
+{% block staff %}
+<div class="card"><table><thead><tr><th>Customer</th><th>Last message</th><th>When</th><th></th></tr></thead><tbody>
+{% for r in rows %}
+  <tr><td><b>{{ r.user.email|default:r.user.username }}</b> {% if r.unread %}<span class="badge">{{ r.unread }}</span>{% endif %}<br><span class="muted">{{ r.user.username }} · {{ r.user.profile.credits }} credits{% if r.user.profile.bot_access %} · bot owner{% endif %}</span></td>
+    <td>{% if r.last %}<span class="{% if r.last.from_admin %}muted{% endif %}">{% if r.last.from_admin %}You: {% endif %}{{ r.last.text|truncatechars:90 }}</span>{% endif %}</td>
+    <td class="muted">{% if r.last %}{{ r.last.created|naturaltime }}{% endif %}</td>
+    <td><a class="btn primary small" href="{% url 'chat_conversation' r.user.id %}">Open</a></td></tr>
+{% empty %}<tr><td colspan="4" class="empty">No conversations yet.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}
+{% block scripts %}<script>setTimeout(() => location.reload(), 10000);</script>{% endblock %}

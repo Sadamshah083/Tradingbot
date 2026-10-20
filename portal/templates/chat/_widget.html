@@ -1,0 +1,45 @@
+{# Live chat widget. Context: messages_list, last_id, poll_url, send_url, me_is_admin (bool) #}
+<div class="chat" id="chat">
+  <div class="log" id="log">
+    {% for m in messages_list %}
+      <div class="msg {% if m.from_admin == me_is_admin %}me{% else %}them{% endif %}">{{ m.text }}<span class="meta">{% if m.from_admin %}{{ m.author.username|default:"Support" }}{% else %}{{ m.customer.username }}{% endif %} · {{ m.created|date:"M d, H:i" }}</span></div>
+    {% empty %}
+      <div class="empty" id="chat-empty">{% if me_is_admin %}No messages yet in this conversation.{% else %}Say hello — the team replies here, usually within a few hours.{% endif %}</div>
+    {% endfor %}
+  </div>
+  <form id="chat-form" autocomplete="off">
+    <input id="chat-text" placeholder="Type a message and press Enter" maxlength="2000" required>
+    <button class="btn primary" type="submit">Send</button>
+  </form>
+</div>
+<script>
+(function () {
+  let after = {{ last_id }};
+  const log = document.getElementById('log'), form = document.getElementById('chat-form'), input = document.getElementById('chat-text');
+  const meIsAdmin = {{ me_is_admin|yesno:"true,false" }};
+  function add(m) {
+    const empty = document.getElementById('chat-empty'); if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'msg ' + (m.from_admin === meIsAdmin ? 'me' : 'them');
+    div.textContent = m.text;
+    const meta = document.createElement('span'); meta.className = 'meta'; meta.textContent = `${m.author} · ${fmtTime(m.time)}`;
+    div.appendChild(meta); log.appendChild(div); log.scrollTop = log.scrollHeight;
+    after = Math.max(after, m.id);
+  }
+  async function poll() {
+    try {
+      const r = await fetch(`{{ poll_url }}?after=${after}`, {credentials: 'same-origin'});
+      if (r.ok) { const d = await r.json(); d.items.forEach(add); }
+    } catch (e) {}
+  }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim(); if (!text) return;
+    input.value = ''; input.focus();
+    const r = await fetch(`{{ send_url }}`, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text})});
+    if (r.ok) { const d = await r.json(); add(d.message); } else { input.value = text; alert('Could not send, please try again.'); }
+  });
+  log.scrollTop = log.scrollHeight;
+  setInterval(poll, 2000);
+})();
+</script>

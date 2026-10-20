@@ -1,0 +1,19 @@
+<section class="s rv" id="backtesting">
+  <div class="kicker">Backtesting</div>
+  <h2>Backtesting with the losing trades left in</h2>
+  <p class="sub">Its purpose is to examine how clearly defined rules behaved against historical data under stated assumptions — not to look perfect.</p>
+  <h3 class="sec-h">What to examine in a backtest</h3>
+  <div class="mid-cards three">
+    <article class="panel mid-card"><h3>Number of trades</h3><p>Very small samples can give misleading results.</p></article>
+    <article class="panel mid-card"><h3>Winning and losing trades</h3><p>A strategy should be examined across both.</p></article>
+    <article class="panel mid-card"><h3>Drawdown</h3><p>Study the decline between equity peaks instead of looking only at profit.</p></article>
+    <article class="panel mid-card"><h3>Profit factor</h3><p>Compare aggregate profitable trades with aggregate losing trades.</p></article>
+    <article class="panel mid-card"><h3>Costs</h3><p>Spreads, commissions and other assumptions can materially change a historical simulation.</p></article>
+    <article class="panel mid-card"><h3>Time period</h3><p>A strategy tested during only one type of market environment may behave very differently later.</p></article>
+  </div>
+  <div class="panel callout" style="margin:28px 0;max-width:860px;padding:22px 24px">
+    <h3 style="margin:0 0 8px;font-size:18px;color:#fff">Backtests are not forecasts</h3>
+    <p class="muted" style="margin:0;line-height:1.65">Historical simulations cannot predict future results. They are research tools. Use them to understand strategy behaviour — not as a guarantee of what a live account will produce.</p>
+  </div>
+  {% include "site/sections/_backtest_charts.html" %}
+</section>

@@ -1,0 +1,376 @@
+//@version=6
+strategy(
+    "BTC & GOLD Advanced MTF Strategy",
+    overlay=true,
+    pyramiding=0,
+    initial_capital=10000,
+    commission_type=strategy.commission.percent,
+    commission_value=0.04,
+    calc_on_every_tick=false,
+    process_orders_on_close=true,
+    default_qty_type=strategy.percent_of_equity,
+    default_qty_value=100
+)
+
+// =====================================================
+// BACKTEST PERIOD
+// =====================================================
+startDate = input.time(timestamp("2021-09-26 00:00:00"), "Backtest Start", group="Backtest")
+endDate = input.time(timestamp("2026-09-26 23:59:00"), "Backtest End", group="Backtest")
+inDateRange = time >= startDate and time <= endDate
+
+// =====================================================
+// MARKET SETTINGS
+// =====================================================
+market = input.string("BTC", "Market", options=["BTC", "GOLD"], group="Market")
+allowEntries = input.bool(true, "Allow New Entries", group="Risk")
+
+btcAllowed = market == "BTC" and (
+    syminfo.basecurrency == "BTC" or
+    syminfo.ticker == "BTCUSDT" or
+    syminfo.ticker == "BTCUSD"
+)
+
+goldAllowed = market == "GOLD" and (
+    syminfo.basecurrency == "XAU" or
+    syminfo.ticker == "XAUUSD"
+)
+
+marketAllowed = btcAllowed or goldAllowed
+
+// =====================================================
+// RISK SETTINGS
+// =====================================================
+riskPercent = input.float(1.0, "Risk % Per Trade", minval=0.25, maxval=2.0, step=0.25, group="Risk")
+atrMultiplier = input.float(1.5, "ATR Stop Multiplier", minval=0.5, maxval=4.0, step=0.1, group="Risk")
+tp1RR = input.float(1.0, "TP1 R Multiple", minval=0.5, maxval=5.0, step=0.25, group="Risk")
+tp2RR = input.float(2.0, "TP2 R Multiple", minval=1.0, maxval=6.0, step=0.25, group="Risk")
+tp3RR = input.float(3.0, "TP3 R Multiple", minval=1.5, maxval=10.0, step=0.25, group="Risk")
+swingLength = input.int(10, "Swing Lookback", minval=3, maxval=50, group="Risk")
+qtyStep = input.float(0.001, "Quantity Step", minval=0.000001, group="Risk")
+moveBE = input.bool(true, "Move Stop To Break Even After TP1", group="Risk")
+
+// =====================================================
+// FILTER SETTINGS
+// =====================================================
+rsiLength = input.int(14, "RSI Length", group="Filters")
+adxLength = input.int(14, "ADX Length", group="Filters")
+adxSmoothing = input.int(14, "ADX Smoothing", group="Filters")
+minADX = input.float(18.0, "Minimum ADX", minval=5, maxval=50, step=1, group="Filters")
+breakoutLength = input.int(20, "Breakout Lookback", minval=5, maxval=100, group="Filters")
+entryType = input.string("Both", "Entry Type", options=["Breakout", "Pullback", "Both"], group="Filters")
+showDashboard = input.bool(true, "Show Dashboard", group="Dashboard")
+
+// =====================================================
+// SUPPORTED TIMEFRAMES
+// =====================================================
+is5 = timeframe.isminutes and timeframe.multiplier == 5
+is15 = timeframe.isminutes and timeframe.multiplier == 15
+is1H = timeframe.isminutes and timeframe.multiplier == 60
+is4H = timeframe.isminutes and timeframe.multiplier == 240
+is1D = timeframe.isdaily and timeframe.multiplier == 1
+supportedTimeframe = is5 or is15 or is1H or is4H or is1D
+
+// =====================================================
+// CURRENT CHART INDICATORS
+// =====================================================
+ema20 = ta.ema(close, 20)
+ema50 = ta.ema(close, 50)
+ema200 = ta.ema(close, 200)
+atr = ta.atr(14)
+rsi = ta.rsi(close, rsiLength)
+[plusDI, minusDI, adx] = ta.dmi(adxLength, adxSmoothing)
+
+trendBull = close > ema20 and ema20 > ema50 and ema50 > ema200
+trendBear = close < ema20 and ema20 < ema50 and ema50 < ema200
+bullMomentum = rsi >= 52 and rsi <= 75 and adx >= minADX and plusDI > minusDI
+bearMomentum = rsi <= 48 and rsi >= 25 and adx >= minADX and minusDI > plusDI
+
+// =====================================================
+// MTF TREND STATE HELPER
+// =====================================================
+f_tfTrendState() =>
+    ema20Local = ta.ema(close, 20)
+    ema50Local = ta.ema(close, 50)
+    ema200Local = ta.ema(close, 200)
+    if close[1] > ema20Local[1] and ema20Local[1] > ema50Local[1] and ema50Local[1] > ema200Local[1]
+        1
+    else if close[1] < ema20Local[1] and ema20Local[1] < ema50Local[1] and ema50Local[1] < ema200Local[1]
+        -1
+    else
+        0
+
+state5 = request.security(syminfo.tickerid, "5", f_tfTrendState(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+state15 = request.security(syminfo.tickerid, "15", f_tfTrendState(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+state1H = request.security(syminfo.tickerid, "60", f_tfTrendState(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+state4H = request.security(syminfo.tickerid, "240", f_tfTrendState(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+state1D = request.security(syminfo.tickerid, "D", f_tfTrendState(), gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_off)
+
+// =====================================================
+// HIGHER TIMEFRAME CONFIRMATION
+// =====================================================
+htfBull = false
+htfBear = false
+
+if is5
+    htfBull := state15 == 1 and state1H == 1 and state4H == 1 and state1D == 1
+    htfBear := state15 == -1 and state1H == -1 and state4H == -1 and state1D == -1
+else if is15
+    htfBull := state1H == 1 and state4H == 1 and state1D == 1
+    htfBear := state1H == -1 and state4H == -1 and state1D == -1
+else if is1H
+    htfBull := state4H == 1 and state1D == 1
+    htfBear := state4H == -1 and state1D == -1
+else if is4H
+    htfBull := state1D == 1
+    htfBear := state1D == -1
+else if is1D
+    htfBull := trendBull
+    htfBear := trendBear
+
+// =====================================================
+// ENTRY TRIGGERS
+// =====================================================
+previousHigh = ta.highest(high, breakoutLength)[1]
+previousLow = ta.lowest(low, breakoutLength)[1]
+
+breakoutLong = close > previousHigh
+breakoutShort = close < previousLow
+
+pullbackLong = low <= ema20 and close > ema20 and close > open and rsi > 52
+pullbackShort = high >= ema20 and close < ema20 and close < open and rsi < 48
+
+longTrigger = entryType == "Breakout" ? breakoutLong : entryType == "Pullback" ? pullbackLong : breakoutLong or pullbackLong
+shortTrigger = entryType == "Breakout" ? breakoutShort : entryType == "Pullback" ? pullbackShort : breakoutShort or pullbackShort
+
+// =====================================================
+// STOP LOSS
+// =====================================================
+swingLow = ta.lowest(low, swingLength)[1]
+swingHigh = ta.highest(high, swingLength)[1]
+
+longAtrStop = close - atr * atrMultiplier
+shortAtrStop = close + atr * atrMultiplier
+
+longStopCandidate = math.min(swingLow, longAtrStop)
+shortStopCandidate = math.max(swingHigh, shortAtrStop)
+
+longRisk = close - longStopCandidate
+shortRisk = shortStopCandidate - close
+
+// =====================================================
+// POSITION SIZE
+// =====================================================
+riskCash = strategy.equity * riskPercent / 100.0
+longRiskPerUnit = longRisk * syminfo.pointvalue
+shortRiskPerUnit = shortRisk * syminfo.pointvalue
+
+longQtyRaw = longRiskPerUnit > 0 ? riskCash / longRiskPerUnit : 0.0
+shortQtyRaw = shortRiskPerUnit > 0 ? riskCash / shortRiskPerUnit : 0.0
+
+f_roundQty(qty) =>
+    math.floor(qty / qtyStep) * qtyStep
+
+longQty = f_roundQty(longQtyRaw)
+shortQty = f_roundQty(shortQtyRaw)
+
+// =====================================================
+// FINAL SIGNALS
+// =====================================================
+flat = strategy.position_size == 0
+
+longSignal = marketAllowed and supportedTimeframe and allowEntries and inDateRange and flat and trendBull and bullMomentum and htfBull and longTrigger and longRisk > syminfo.mintick and longQty >= qtyStep and barstate.isconfirmed
+shortSignal = marketAllowed and supportedTimeframe and allowEntries and inDateRange and flat and trendBear and bearMomentum and htfBear and shortTrigger and shortRisk > syminfo.mintick and shortQty >= qtyStep and barstate.isconfirmed
+
+// =====================================================
+// LOCKED TRADE LEVELS
+// =====================================================
+var float tradeEntry = na
+var float tradeStop = na
+var float tradeTP1 = na
+var float tradeTP2 = na
+var float tradeTP3 = na
+var bool breakEvenActive = false
+
+// =====================================================
+// LONG ENTRY
+// =====================================================
+if longSignal
+    tradeEntry := close
+    tradeStop := longStopCandidate
+    riskDistance = tradeEntry - tradeStop
+    tradeTP1 := tradeEntry + riskDistance * tp1RR
+    tradeTP2 := tradeEntry + riskDistance * tp2RR
+    tradeTP3 := tradeEntry + riskDistance * tp3RR
+    breakEvenActive := false
+    strategy.entry("LONG", strategy.long, qty=longQty)
+
+// =====================================================
+// SHORT ENTRY
+// =====================================================
+if shortSignal
+    tradeEntry := close
+    tradeStop := shortStopCandidate
+    riskDistance = tradeStop - tradeEntry
+    tradeTP1 := tradeEntry - riskDistance * tp1RR
+    tradeTP2 := tradeEntry - riskDistance * tp2RR
+    tradeTP3 := tradeEntry - riskDistance * tp3RR
+    breakEvenActive := false
+    strategy.entry("SHORT", strategy.short, qty=shortQty)
+
+// =====================================================
+// BREAK EVEN
+// =====================================================
+if strategy.position_size > 0 and moveBE and not na(tradeTP1)
+    if high >= tradeTP1
+        breakEvenActive := true
+
+if strategy.position_size < 0 and moveBE and not na(tradeTP1)
+    if low <= tradeTP1
+        breakEvenActive := true
+
+longActiveStop = breakEvenActive ? math.max(tradeStop, tradeEntry) : tradeStop
+shortActiveStop = breakEvenActive ? math.min(tradeStop, tradeEntry) : tradeStop
+
+// =====================================================
+// LONG EXITS
+// =====================================================
+if strategy.position_size > 0
+    strategy.exit("LONG TP1", from_entry="LONG", stop=longActiveStop, limit=tradeTP1, qty_percent=40)
+    strategy.exit("LONG TP2", from_entry="LONG", stop=longActiveStop, limit=tradeTP2, qty_percent=35)
+    strategy.exit("LONG TP3", from_entry="LONG", stop=longActiveStop, limit=tradeTP3, qty_percent=25)
+
+// =====================================================
+// SHORT EXITS
+// =====================================================
+if strategy.position_size < 0
+    strategy.exit("SHORT TP1", from_entry="SHORT", stop=shortActiveStop, limit=tradeTP1, qty_percent=40)
+    strategy.exit("SHORT TP2", from_entry="SHORT", stop=shortActiveStop, limit=tradeTP2, qty_percent=35)
+    strategy.exit("SHORT TP3", from_entry="SHORT", stop=shortActiveStop, limit=tradeTP3, qty_percent=25)
+
+// =====================================================
+// RESET VALUES AFTER POSITION CLOSE
+// =====================================================
+tradeClosed = strategy.position_size == 0 and strategy.position_size[1] != 0
+
+if tradeClosed
+    tradeEntry := na
+    tradeStop := na
+    tradeTP1 := na
+    tradeTP2 := na
+    tradeTP3 := na
+    breakEvenActive := false
+
+// =====================================================
+// VISUAL BUY / SELL SIGNALS
+// =====================================================
+plotshape(longSignal, title="BUY", style=shape.labelup, location=location.belowbar, color=color.green, text="BUY", textcolor=color.white, size=size.normal)
+plotshape(shortSignal, title="SELL", style=shape.labeldown, location=location.abovebar, color=color.red, text="SELL", textcolor=color.white, size=size.normal)
+
+// =====================================================
+// EMA LINES
+// =====================================================
+plot(ema20, "EMA 20", color=color.aqua, linewidth=2)
+plot(ema50, "EMA 50", color=color.orange, linewidth=2)
+plot(ema200, "EMA 200", color=color.purple, linewidth=2)
+
+// =====================================================
+// ENTRY / SL / TP LINES
+// =====================================================
+plot(strategy.position_size != 0 ? tradeEntry : na, "ENTRY", color=color.blue, linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? tradeStop : na, "STOP LOSS", color=color.red, linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? tradeTP1 : na, "TP1", color=color.new(color.green, 50), linewidth=1, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? tradeTP2 : na, "TP2", color=color.new(color.green, 25), linewidth=2, style=plot.style_linebr)
+plot(strategy.position_size != 0 ? tradeTP3 : na, "TP3", color=color.green, linewidth=2, style=plot.style_linebr)
+
+// =====================================================
+// DASHBOARD HELPERS
+// =====================================================
+f_stateText(state) =>
+    if state == 1
+        "BULL"
+    else if state == -1
+        "BEAR"
+    else
+        "NEUTRAL"
+
+f_stateColor(state) =>
+    if state == 1
+        color.green
+    else if state == -1
+        color.red
+    else
+        color.gray
+
+// =====================================================
+// PERFORMANCE METRICS
+// =====================================================
+winRate = strategy.closedtrades > 0 ? strategy.wintrades / strategy.closedtrades * 100 : na
+profitFactor = strategy.grossloss < 0 ? strategy.grossprofit / math.abs(strategy.grossloss) : na
+
+// =====================================================
+// DASHBOARD
+// =====================================================
+var table dashboard = table.new(position.top_right, 2, 13, border_width=1)
+
+if barstate.islast and showDashboard
+    status = strategy.position_size > 0 ? "LONG" : strategy.position_size < 0 ? "SHORT" : longSignal ? "BUY READY" : shortSignal ? "SELL READY" : "WAIT"
+    statusColor = strategy.position_size > 0 ? color.green : strategy.position_size < 0 ? color.red : longSignal ? color.green : shortSignal ? color.red : color.orange
+
+    table.cell(dashboard, 0, 0, "STATUS", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 0, status, bgcolor=statusColor, text_color=color.white)
+
+    table.cell(dashboard, 0, 1, "5 MIN", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 1, f_stateText(state5), bgcolor=f_stateColor(state5), text_color=color.white)
+
+    table.cell(dashboard, 0, 2, "15 MIN", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 2, f_stateText(state15), bgcolor=f_stateColor(state15), text_color=color.white)
+
+    table.cell(dashboard, 0, 3, "1 HOUR", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 3, f_stateText(state1H), bgcolor=f_stateColor(state1H), text_color=color.white)
+
+    table.cell(dashboard, 0, 4, "4 HOUR", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 4, f_stateText(state4H), bgcolor=f_stateColor(state4H), text_color=color.white)
+
+    table.cell(dashboard, 0, 5, "DAILY", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 5, f_stateText(state1D), bgcolor=f_stateColor(state1D), text_color=color.white)
+
+    table.cell(dashboard, 0, 6, "ENTRY", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 6, na(tradeEntry) ? "-" : str.tostring(tradeEntry, format.mintick), text_color=color.white)
+
+    table.cell(dashboard, 0, 7, "STOP", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 7, na(tradeStop) ? "-" : str.tostring(tradeStop, format.mintick), text_color=color.white)
+
+    table.cell(dashboard, 0, 8, "TP1", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 8, na(tradeTP1) ? "-" : str.tostring(tradeTP1, format.mintick), text_color=color.white)
+
+    table.cell(dashboard, 0, 9, "TP2", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 9, na(tradeTP2) ? "-" : str.tostring(tradeTP2, format.mintick), text_color=color.white)
+
+    table.cell(dashboard, 0, 10, "TP3", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 10, na(tradeTP3) ? "-" : str.tostring(tradeTP3, format.mintick), text_color=color.white)
+
+    table.cell(dashboard, 0, 11, "WIN RATE", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 11, na(winRate) ? "-" : str.tostring(winRate, "#.##") + "%", text_color=color.white)
+
+    table.cell(dashboard, 0, 12, "PROFIT FACTOR", bgcolor=color.black, text_color=color.white)
+    table.cell(dashboard, 1, 12, na(profitFactor) ? "-" : str.tostring(profitFactor, "#.##"), text_color=color.white)
+
+// =====================================================
+// ALERTS
+// =====================================================
+var string buyMessage = ""
+var string sellMessage = ""
+
+if longSignal
+    buyMessage := "BUY | Entry: " + str.tostring(close, format.mintick) + " | SL: " + str.tostring(longStopCandidate, format.mintick) + " | TP1: " + str.tostring(close + longRisk * tp1RR, format.mintick) + " | TP2: " + str.tostring(close + longRisk * tp2RR, format.mintick) + " | TP3: " + str.tostring(close + longRisk * tp3RR, format.mintick)
+    alert(buyMessage, alert.freq_once_per_bar_close)
+
+if shortSignal
+    sellMessage := "SELL | Entry: " + str.tostring(close, format.mintick) + " | SL: " + str.tostring(shortStopCandidate, format.mintick) + " | TP1: " + str.tostring(close - shortRisk * tp1RR, format.mintick) + " | TP2: " + str.tostring(close - shortRisk * tp2RR, format.mintick) + " | TP3: " + str.tostring(close - shortRisk * tp3RR, format.mintick)
+    alert(sellMessage, alert.freq_once_per_bar_close)
+
+// =====================================================
+// TIMEFRAME WARNING
+// =====================================================
+bgcolor(not supportedTimeframe ? color.new(color.red, 90) : na)

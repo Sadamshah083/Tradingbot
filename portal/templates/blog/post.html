@@ -1,0 +1,37 @@
+{% extends "site/base.html" %}
+{% block title %}{{ p.seo_title|default:p.title }} · {{ SITE_NAME }}{% endblock %}
+{% block seo %}
+<meta name="description" content="{{ p.meta_description|default:p.excerpt|default:p.body_html|striptags|truncatechars:155 }}">
+<meta property="og:type" content="article"><meta property="og:url" content="{{ canonical }}"><meta property="og:title" content="{{ p.og_title|default:p.seo_title|default:p.title }}">
+<meta property="og:description" content="{{ p.og_description|default:p.meta_description|default:p.excerpt }}">{% if p.og_image or p.featured_image %}<meta property="og:image" content="{{ p.og_image|default:p.featured_image }}"><meta name="twitter:card" content="summary_large_image">{% endif %}
+<meta property="article:published_time" content="{{ p.published_at|date:'c' }}">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"{{ p.title|escapejs }}","datePublished":"{{ p.published_at|date:'c' }}","dateModified":"{{ p.updated|date:'c' }}","author":{"@type":"Person","name":"{{ p.author_name|default:SITE_NAME|escapejs }}"},"publisher":{"@type":"Organization","name":"{{ SITE_NAME }}"},"mainEntityOfPage":"{{ canonical }}"{% if p.featured_image %},"image":"{{ p.featured_image }}"{% endif %}}</script>
+{% endblock %}
+{% block page_head %}
+<style>
+  .art{max-width:760px;margin:0 auto;padding:56px 0 20px} .art h1{font-size:42px;margin:14px 0 14px} .ameta{color:var(--muted);font-size:14px;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+  .cover{width:100%;border-radius:14px;border:1px solid var(--line);margin:0 0 30px;display:block}
+  .prose{font-size:17px;line-height:1.75;color:#d5dbe6} .prose h2{font-size:26px;margin:38px 0 12px} .prose h3{font-size:20px;margin:30px 0 10px;color:var(--text)} .prose p{margin:0 0 18px} .prose a{color:var(--teal)} .prose img{max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line)}
+  .prose ul,.prose ol{padding-left:24px;margin:0 0 18px} .prose li{margin:6px 0} .prose blockquote{border-left:3px solid var(--teal);margin:20px 0;padding:6px 18px;color:var(--muted);font-style:italic}
+  .prose pre{background:#0b1220;border:1px solid var(--line);border-radius:10px;padding:16px;overflow:auto;font-size:14px} .prose code{font-family:"JetBrains Mono",Consolas,monospace;font-size:.92em;background:rgba(255,255,255,.06);padding:2px 6px;border-radius:5px} .prose pre code{background:none;padding:0}
+  .prose table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:15px} .prose th,.prose td{border:1px solid var(--line);padding:9px 12px;text-align:left} .prose th{background:rgba(255,255,255,.04)}
+  .prose iframe,.prose video{max-width:100%;border-radius:10px}
+  .tags{display:flex;gap:8px;flex-wrap:wrap;margin:30px 0} .tags span{padding:4px 11px;border-radius:999px;border:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  .rel{max-width:760px;margin:30px auto 0} .rel .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px} .rel a{display:block;padding:16px;color:var(--text);font-weight:600;font-size:15px;line-height:1.4} .rel a:hover{border-color:var(--line2);text-decoration:none}
+  @media(max-width:700px){.art h1{font-size:30px}.rel .grid{grid-template-columns:1fr}.prose{font-size:16px}}
+</style>
+{% endblock %}
+{% block site %}
+<div class="wrap">
+  <article class="art">
+    <div class="kicker"><a href="{% url 'blog' %}" style="color:inherit">Blog</a>{% if p.category %} · <a href="{% url 'blog' %}?category={{ p.category.slug }}" style="color:inherit">{{ p.category.name }}</a>{% endif %}</div>
+    <h1>{{ p.title }}</h1>
+    <div class="ameta"><span>{{ p.author_name|default:SITE_NAME }}</span><span>{{ p.published_at|date:"F d, Y" }}</span><span>{{ p.reading_minutes }} min read</span>{% if not p.published %}<span class="a">DRAFT PREVIEW</span>{% endif %}</div>
+    {% if p.featured_image %}<img class="cover" src="{{ p.featured_image }}" alt="{{ p.featured_image_alt|default:p.title }}">{% endif %}
+    <div class="prose">{{ p.body_html|safe }}</div>
+    {% if p.tag_list %}<div class="tags">{% for t in p.tag_list %}<span>#{{ t }}</span>{% endfor %}</div>{% endif %}
+    {% if user.is_superuser %}<p><a class="btn ghost small" href="{% url 'staff_blog_edit' p.id %}">Edit this post</a></p>{% endif %}
+  </article>
+  {% if related %}<div class="rel"><div class="kicker">Read next</div><div class="grid">{% for r in related %}<a class="panel" href="{{ r.get_absolute_url }}">{{ r.title }}<br><span class="muted" style="font-weight:500;font-size:12.5px">{{ r.published_at|date:"M d, Y" }}</span></a>{% endfor %}</div></div>{% endif %}
+</div>
+{% endblock %}

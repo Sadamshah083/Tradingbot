@@ -1,0 +1,13 @@
+{% extends "site/base.html" %}
+{% block title %}{{ title }} · {{ SITE_NAME }}{% endblock %}
+{% block site %}
+<div class="wrap"><div style="max-width:760px;padding:56px 0 10px">
+  <div class="kicker">Legal</div>
+  <h1 style="font-size:38px;margin:0 0 8px">{{ title }}</h1>
+  <p class="sub">Last updated {% now "F Y" %}. Plain language on purpose; if anything is unclear, ask in the live chat.</p>
+  {% for heading, text in sections %}
+  <div class="panel" style="padding:20px 22px;margin-bottom:12px"><h3 style="margin:0 0 8px;font-size:17px">{{ heading }}</h3><p style="margin:0;color:var(--muted);font-size:15px;line-height:1.6">{{ text }}</p></div>
+  {% endfor %}
+  <p class="muted" style="margin-top:20px"><a href="{% url 'legal' 'terms' %}">Terms</a> · <a href="{% url 'legal' 'risk' %}">Risk disclosure</a> · <a href="{% url 'site_disclaimer' %}">Disclaimer</a></p>
+</div></div>
+{% endblock %}

@@ -1,0 +1,111 @@
+//@version=5
+strategy("1M Intraday Edge - VWAP + ORB + EMA + RSI", overlay=true, pyramiding=0, initial_capital=10000, default_qty_type=strategy.percent_of_equity, default_qty_value=1.5, calc_on_every_tick=false, commission_type=strategy.commission.percent, commission_value=0.04)
+
+// ==========================================
+// Inputs
+// ==========================================
+fastLen = input.int(9, "Fast EMA", minval=1)
+slowLen = input.int(21, "Slow EMA", minval=1)
+trendLen = input.int(50, "Trend EMA", minval=1)
+rsiLen = input.int(14, "RSI Length", minval=1)
+rsiLongLevel = input.int(55, "RSI Long Level", minval=1, maxval=99)
+rsiShortLevel = input.int(45, "RSI Short Level", minval=1, maxval=99)
+orbMinutes = input.int(15, "Opening Range Minutes", minval=1, maxval=60)
+atrLen = input.int(14, "ATR Length", minval=1)
+riskMult = input.float(1.5, "Stop ATR Multiplier", step=0.1)
+profitMult = input.float(2.5, "Profit ATR Multiplier", step=0.1)
+volumeMult = input.float(1.2, "Volume Filter Multiplier", step=0.1)
+session = input.session("0930-1600", "Trading Session")
+showSessionFill = input.bool(true, "Show Session Fill")
+
+// ==========================================
+// Core indicators
+// ==========================================
+fastEma = ta.ema(close, fastLen)
+slowEma = ta.ema(close, slowLen)
+trendEma = ta.ema(close, trendLen)
+rsi = ta.rsi(close, rsiLen)
+atr = ta.atr(atrLen)
+vwap = ta.vwap
+avgVol = ta.sma(volume, 20)
+
+inSession = not na(time(timeframe.period, session))
+newDay = ta.change(time("D")) != 0
+
+// ==========================================
+// Opening range setup
+// ==========================================
+var float openingRangeHigh = na
+var float openingRangeLow = na
+var bool openingRangeReady = false
+
+if newDay
+    openingRangeHigh := na
+    openingRangeLow := na
+    openingRangeReady := false
+
+if inSession and time(timeframe.period, "0930-0945")
+    if na(openingRangeHigh)
+        openingRangeHigh := high
+        openingRangeLow := low
+    else
+        openingRangeHigh := math.max(openingRangeHigh, high)
+        openingRangeLow := math.min(openingRangeLow, low)
+
+openingRangeReady := not na(openingRangeHigh) and not na(openingRangeLow) and time(timeframe.period, "0945-1600")
+
+// ==========================================
+// Plot visuals
+// ==========================================
+plot(fastEma, "Fast EMA", color.new(color.teal, 0), 2)
+plot(slowEma, "Slow EMA", color.new(color.orange, 0), 2)
+plot(trendEma, "Trend EMA", color.new(color.purple, 0), 2)
+plot(vwap, "VWAP", color.new(color.blue, 0), 2)
+
+if showSessionFill
+    bgcolor(inSession ? color.new(color.green, 85) : na)
+
+if not na(openingRangeHigh)
+    plot(openingRangeHigh, "Opening Range High", color.new(color.red, 0), 1, plot.style_linebr)
+    plot(openingRangeLow, "Opening Range Low", color.new(color.green, 0), 1, plot.style_linebr)
+
+// ==========================================
+// Trade conditions
+// ==========================================
+trendBullish = fastEma > slowEma and slowEma > trendEma
+trendBearish = fastEma < slowEma and slowEma < trendEma
+volumeFilter = volume >= avgVol * volumeMult
+
+longCondition = inSession and openingRangeReady and trendBullish and close > vwap and rsi > rsiLongLevel and close >= openingRangeHigh and volumeFilter and barstate.isconfirmed
+shortCondition = inSession and openingRangeReady and trendBearish and close < vwap and rsi < rsiShortLevel and close <= openingRangeLow and volumeFilter and barstate.isconfirmed
+
+allowTrade = strategy.position_size == 0
+
+// ==========================================
+// Entry logic
+// ==========================================
+if longCondition and allowTrade
+    strategy.entry("Long", strategy.long)
+
+if shortCondition and allowTrade
+    strategy.entry("Short", strategy.short)
+
+// ==========================================
+// Risk management
+// ==========================================
+if strategy.position_size > 0
+    strategy.exit("Long Exit", from_entry="Long", stop=strategy.position_avg_price - atr * riskMult, limit=strategy.position_avg_price + atr * profitMult)
+
+if strategy.position_size < 0
+    strategy.exit("Short Exit", from_entry="Short", stop=strategy.position_avg_price + atr * riskMult, limit=strategy.position_avg_price - atr * profitMult)
+
+strategy.close_all(when = not inSession and strategy.position_size != 0)
+
+// ==========================================
+// Optional markers
+// ==========================================
+plotshape(longCondition and allowTrade, title="Buy Signal", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), text="BUY", textcolor=color.new(color.white, 0), size=size.small)
+plotshape(shortCondition and allowTrade, title="Sell Signal", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), text="SELL", textcolor=color.new(color.white, 0), size=size.small)
+
+alertcondition(longCondition and allowTrade, title="Long Alert", message="1M Intraday Edge Long")
+alertcondition(shortCondition and allowTrade, title="Short Alert", message="1M Intraday Edge Short")

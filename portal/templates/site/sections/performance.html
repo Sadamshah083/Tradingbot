@@ -1,0 +1,17 @@
+<section class="s rv" id="performance" aria-labelledby="bt-title">
+  <div class="kicker">Performance</div>
+  <h2 id="bt-title">Performance should be inspected, not advertised as certainty</h2>
+  <p class="sub">Trading performance cannot be reduced to one percentage. Sambot presents strategy research with the data needed to examine the result in context.</p>
+  <h3 class="sec-h">What we publish</h3>
+  <div class="mid-cards three" style="margin-bottom:28px">
+    <article class="panel mid-card"><p>Historical date range &amp; number of trades</p></article>
+    <article class="panel mid-card"><p>Winning trades, losing trades &amp; profit factor</p></article>
+    <article class="panel mid-card"><p>Drawdown, assumed costs &amp; trade list</p></article>
+  </div>
+  <div class="panel callout" style="margin-bottom:28px;max-width:860px;padding:22px 24px">
+    <h3 style="margin:0 0 8px;font-size:18px;color:#fff">Historical performance is not live performance</h3>
+    <p class="muted" style="margin:0;line-height:1.65">Backtests simulate previous conditions. Real markets introduce changing spreads, slippage, latency, liquidity, gaps, data differences and execution behaviour. Future results can be materially different.</p>
+  </div>
+  {% include "site/sections/_backtest_charts.html" %}
+  <p class="prose" style="margin-top:24px">Our goal is not to ask you to trust a headline percentage. Review the methodology. Review the trade history. Look at the losing periods. Then observe the strategy in <a href="{% url 'site_paper' %}">paper mode</a>.</p>
+</section>

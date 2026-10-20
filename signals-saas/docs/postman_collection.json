@@ -1,0 +1,54 @@
+{
+  "info": { "name": "AxeAlgo Signals SaaS - webhooks", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "webhookSecret", "value": "long-random-string-for-tradingview" }
+  ],
+  "item": [
+    {
+      "name": "Signal webhook - valid BUY",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Webhook-Secret", "value": "{{webhookSecret}}" }],
+        "url": "{{baseUrl}}/api/webhook/signal",
+        "body": { "mode": "raw", "raw": "{\"symbol\":\"EURUSD\",\"direction\":\"BUY\",\"entry\":1.0850,\"stopLoss\":1.0820,\"takeProfit\":1.0950,\"timeframe\":\"15m\",\"strategy\":\"VWAP_Reversal\"}" }
+      }
+    },
+    {
+      "name": "Signal webhook - valid SELL (gold)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Webhook-Secret", "value": "{{webhookSecret}}" }],
+        "url": "{{baseUrl}}/api/webhook/signal",
+        "body": { "mode": "raw", "raw": "{\"symbol\":\"XAUUSD\",\"direction\":\"SELL\",\"entry\":4285.5,\"stopLoss\":4299.8,\"takeProfit\":4260.0,\"timeframe\":\"1h\",\"strategy\":\"VWAP_Reversal\"}" }
+      }
+    },
+    {
+      "name": "Signal webhook - wrong secret (401)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Webhook-Secret", "value": "wrong" }],
+        "url": "{{baseUrl}}/api/webhook/signal",
+        "body": { "mode": "raw", "raw": "{\"symbol\":\"EURUSD\",\"direction\":\"BUY\",\"entry\":1.0850,\"stopLoss\":1.0820,\"takeProfit\":1.0950,\"timeframe\":\"15m\"}" }
+      }
+    },
+    {
+      "name": "Signal webhook - missing TP (400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Webhook-Secret", "value": "{{webhookSecret}}" }],
+        "url": "{{baseUrl}}/api/webhook/signal",
+        "body": { "mode": "raw", "raw": "{\"symbol\":\"EURUSD\",\"direction\":\"BUY\",\"entry\":1.0850,\"stopLoss\":1.0820,\"timeframe\":\"15m\"}" }
+      }
+    },
+    {
+      "name": "Signal webhook - wrong side (400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Webhook-Secret", "value": "{{webhookSecret}}" }],
+        "url": "{{baseUrl}}/api/webhook/signal",
+        "body": { "mode": "raw", "raw": "{\"symbol\":\"EURUSD\",\"direction\":\"BUY\",\"entry\":1.0850,\"stopLoss\":1.0900,\"takeProfit\":1.0950,\"timeframe\":\"15m\"}" }
+      }
+    }
+  ]
+}

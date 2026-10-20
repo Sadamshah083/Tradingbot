@@ -1,0 +1,53 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Signals · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Active signals{% endblock %}
+{% block page_lead %}Signals from TradingView (through the bot) and signals you send by hand. Each one costs a customer 1 credit (${{ PRICE_SIGNAL }}); exits are free.{% endblock %}
+{% block staff %}
+<div class="grid g2" style="grid-template-columns:1fr 1.4fr">
+  <div class="card">
+    <h2>Send a signal by hand</h2>
+    <p class="muted" style="margin:0 0 4px">Goes to <b>{{ eligible }}</b> customer{{ eligible|pluralize }} who are active and have credits (dashboard + Telegram).</p>
+    <form method="post" action="{% url 'staff_signal_create' %}">{% csrf_token %}
+      <div class="row">
+        <div><label>Side</label><select name="side"><option value="buy">BUY</option><option value="sell">SELL</option></select></div>
+        <div><label>Symbol</label><input name="symbol" placeholder="XAUUSD" required></div>
+        <div><label>Timeframe</label><input name="tf" placeholder="1h"></div>
+      </div>
+      <div class="row">
+        <div><label>Entry price</label><input name="price" type="number" step="any" required></div>
+        <div><label>Stop loss</label><input name="sl" type="number" step="any" required></div>
+        <div><label>Take profit</label><input name="tp" type="number" step="any" required></div>
+      </div>
+      <label>Note (optional)</label><input name="note" placeholder="e.g. news at 17:30, keep size small">
+      <button class="btn primary" style="margin-top:14px">Send to paying customers</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Last alerts received by the bot</h2>
+    <table><thead><tr><th>When</th><th>Event</th><th>Symbol</th><th>Price</th><th>SL</th><th>TP</th><th>Mode</th></tr></thead><tbody>
+    {% for a in recent_alerts %}<tr><td class="muted">{{ a.when|date:"M d, H:i" }}</td><td>{% if a.side %}<span class="pill {{ a.side }}">{{ a.event }} {{ a.side }}</span>{% else %}<span class="pill exit">{{ a.event }} {{ a.reason|default:"" }}</span>{% endif %}</td><td>{{ a.symbol }} <span class="muted">{{ a.tf }}</span></td><td class="mono">{{ a.price|default_if_none:"" }}</td><td class="mono bad">{{ a.sl|default_if_none:"" }}</td><td class="mono good">{{ a.tp2|default_if_none:"" }}</td><td class="muted">{{ a.mode }}</td></tr>
+    {% empty %}<tr><td colspan="7" class="empty">{% if bot.online %}No TradingView alert has reached the bot yet.{% else %}Bot offline - start it with webhook_bot\run_local.ps1.{% endif %}</td></tr>{% endfor %}
+    </tbody></table>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <div class="tabs"><a class="btn {% if view == 'active' %}primary{% else %}ghost{% endif %} small" href="?view=active">Active</a><a class="btn {% if view == 'all' %}primary{% else %}ghost{% endif %} small" href="?view=all">All history</a></div>
+  <table><thead><tr><th>#</th><th>Time</th><th>Signal</th><th>Symbol</th><th>Entry</th><th>Stop</th><th>Target</th><th>Source</th><th>Delivered</th><th>{% if view == 'active' %}Close{% else %}Status{% endif %}</th></tr></thead><tbody>
+  {% for s in rows %}
+    <tr><td class="mono muted">{{ s.id }}</td><td class="muted" style="white-space:nowrap">{{ s.created|date:"M d, H:i" }}</td>
+      <td>{% if s.event == 'signal' %}<span class="pill {{ s.side }}">{{ s.side|upper }}</span>{% else %}<span class="pill exit">{{ s.event|upper }} {{ s.reason }}</span>{% endif %}</td>
+      <td>{{ s.symbol }} <span class="muted">{{ s.timeframe }}</span></td><td class="mono">{{ s.price|default_if_none:"—" }}</td><td class="mono bad">{{ s.sl|default_if_none:"—" }}</td><td class="mono good">{{ s.tp2|default_if_none:"—" }}</td>
+      <td class="muted">{{ s.source }}</td><td>{{ s.deliveries.count }} customer{{ s.deliveries.count|pluralize }}</td>
+      <td style="white-space:nowrap">{% if view == 'active' %}
+        <form method="post" action="{% url 'staff_signal_close' s.id %}" style="display:inline-flex;gap:6px;align-items:center">{% csrf_token %}
+          <select name="result" style="width:auto;padding:7px 10px;font-size:13px"><option value="tp">hit target</option><option value="sl">hit stop</option><option value="be">breakeven</option><option value="manual">closed manually</option></select>
+          <label style="margin:0;display:inline-flex;gap:4px;align-items:center;font-size:12px"><input type="checkbox" name="notify" value="1" checked style="width:auto"> tell customers</label>
+          <button class="btn ghost small">Close</button></form>
+        {% else %}{% if s.closed %}<span class="pill">closed {{ s.result }}</span>{% elif s.event == 'signal' %}<span class="pill buy">open</span>{% else %}<span class="muted">-</span>{% endif %}{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="10" class="empty">{% if view == 'active' %}No open signals.{% else %}No signals yet.{% endif %}</td></tr>{% endfor %}
+  </tbody></table>
+  {% include "staff/_pager.html" %}
+</div>
+{% endblock %}

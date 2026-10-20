@@ -1,0 +1,29 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Customer bots · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Customer bots{% endblock %}
+{% block page_lead %}Every customer's automated bot, its mode and risk settings, and everything the engine did for them. Broker secrets are never shown.{% endblock %}
+{% block staff %}
+<div class="grid g4">
+  <div class="card"><h2>Bots configured</h2><div class="stat">{{ totals.bots }}</div></div>
+  <div class="card"><h2>Bots ON</h2><div class="stat good">{{ totals.on }}</div><div class="muted">{{ totals.live }} in LIVE mode</div></div>
+  <div class="card"><h2>Open positions</h2><div class="stat">{{ totals.open }}</div></div>
+  <div class="card"><h2>Markets</h2>{% for k, m in markets.items %}<div style="display:flex;justify-content:space-between"><b>{{ k }}</b><span class="{% if m.open %}good{% else %}bad{% endif %}">{% if m.open %}OPEN{% else %}CLOSED{% endif %}</span></div>{% endfor %}
+    <form method="post" action="{% url 'staff_bot_action' 0 %}" style="margin-top:8px" onsubmit="return confirm('Emergency-stop EVERY customer bot?')">{% csrf_token %}<input type="hidden" name="action" value="kill_all"><button class="btn danger small">Emergency stop all</button></form></div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Bots</h2>
+  <table><thead><tr><th>Customer</th><th>State</th><th>Mode</th><th>Broker</th><th>Markets / TF</th><th>Risk</th><th>Today</th><th>Record</th><th></th></tr></thead><tbody>
+  {% for b in bots %}<tr><td><b>{{ b.user.email|default:b.user.username }}</b><br><span class="muted">{{ b.user.username }}</span></td>
+    <td>{% if b.kill_switch %}<span class="pill sell">EMERGENCY STOP</span>{% elif b.active %}<span class="pill buy">ON</span>{% else %}<span class="pill">OFF</span>{% endif %}</td>
+    <td>{% if b.mode == 'live' %}<span class="pill sell">LIVE</span>{% else %}paper{% endif %}</td>
+    <td>{{ b.get_broker_display }}{% if b.conn %}<br><span class="pill {% if b.conn.status == 'ok' %}buy{% elif b.conn.status == 'error' %}sell{% else %}exit{% endif %}">{{ b.conn.status }}</span>{% endif %}</td>
+    <td class="mono" style="font-size:12.5px">{{ b.markets }}<br>{{ b.timeframes }}</td><td class="mono" style="font-size:12.5px">{{ b.risk_pct }}% / trade<br>{{ b.max_daily_loss_pct }}% day · {{ b.max_open_trades }} open</td>
+    <td class="mono {% if b.st.pnl_today > 0 %}good{% elif b.st.pnl_today < 0 %}bad{% endif %}">{{ b.st.pnl_today|floatformat:2 }}<br><span class="muted">{{ b.st.trades_today }} trades</span></td>
+    <td class="mono">{{ b.st.closed }} closed · {{ b.st.win_rate|default_if_none:"—" }}%<br><span class="muted">PF {{ b.st.profit_factor|default_if_none:"—" }}</span></td>
+    <td style="white-space:nowrap"><form method="post" action="{% url 'staff_bot_action' b.user_id %}" style="display:inline">{% csrf_token %}{% if b.kill_switch %}<input type="hidden" name="action" value="clear"><button class="btn ghost small">Clear stop</button>{% else %}<input type="hidden" name="action" value="kill"><button class="btn danger small">Stop</button>{% endif %}</form> <a class="btn ghost small" href="{% url 'chat_conversation' b.user_id %}">Chat</a></td></tr>
+  {% empty %}<tr><td colspan="9" class="empty">No customer has configured a bot yet.</td></tr>{% endfor %}</tbody></table></div>
+<div class="card" style="margin-top:16px"><h2>Engine activity (all customers)</h2>
+  <table><thead><tr><th>When</th><th>Customer</th><th>Signal</th><th>Mode</th><th>Qty</th><th>Entry</th><th>SL</th><th>TP</th><th>Status</th><th>P/L</th><th>Note</th></tr></thead><tbody>
+  {% for e in executions %}<tr><td class="muted" style="white-space:nowrap">{{ e.opened_at|date:"M d, H:i" }}</td><td>{{ e.user.username }}</td><td><span class="pill {{ e.side }}">{{ e.side|upper }}</span> {{ e.symbol }} <span class="muted">{{ e.timeframe }}</span></td><td>{% if e.mode == 'live' %}<span class="pill sell">LIVE</span>{% else %}paper{% endif %} {{ e.broker }}</td><td class="mono">{{ e.qty|floatformat:-4 }}</td><td class="mono">{{ e.entry|default_if_none:"" }}</td><td class="mono bad">{{ e.sl|default_if_none:"" }}</td><td class="mono good">{{ e.tp|default_if_none:"" }}</td><td>{{ e.status }}</td><td class="mono">{{ e.pnl|default_if_none:"" }}</td><td class="muted" style="font-size:12.5px">{{ e.reason }}</td></tr>
+  {% empty %}<tr><td colspan="11" class="empty">No engine activity yet.</td></tr>{% endfor %}</tbody></table>{% include "staff/_pager.html" %}</div>
+{% endblock %}

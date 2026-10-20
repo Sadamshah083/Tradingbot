@@ -1,0 +1,26 @@
+{% extends "staff/base.html" %}
+{% load humanize %}
+{% block title %}Payments · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Card payments (Stripe){% endblock %}
+{% block page_lead %}Every card payment made through Stripe Checkout. Successful payments are delivered automatically; card numbers never touch this server.{% endblock %}
+{% block staff %}
+<div class="grid g4">
+  <div class="card"><h2>Stripe</h2><div class="stat small {% if configured %}good{% else %}warn{% endif %}">{% if configured %}{% if test_mode %}TEST mode{% else %}LIVE{% endif %}{% else %}Not configured{% endif %}</div>
+    <div class="muted">{% if configured %}webhook secret {% if has_webhook_secret %}set{% else %}<span class="warn">missing</span>{% endif %}{% else %}add STRIPE_SECRET_KEY to .env{% endif %}</div></div>
+  <div class="card"><h2>Paid</h2><div class="stat good">{{ totals.paid }}</div><div class="muted">${{ totals.revenue|floatformat:0 }} by card</div></div>
+  <div class="card"><h2>Pending</h2><div class="stat">{{ totals.pending }}</div><div class="muted">checkout opened, not finished</div></div>
+  <div class="card"><h2>Failed / expired</h2><div class="stat">{{ totals.failed }}</div></div>
+</div>
+<div class="card" style="margin-top:16px"><h2>Setup (once)</h2>
+  <ol style="margin:0;padding-left:20px;color:var(--muted);font-size:14.5px;line-height:1.7">
+    <li>Create a Stripe account at stripe.com and copy the <b>Secret key</b> (Developers ←’ API keys). Put it in the server's <code>portal/.env</code> as <code>STRIPE_SECRET_KEY=sk_live_...</code> (use <code>sk_test_...</code> first to test with card 4242 4242 4242 4242).</li>
+    <li>Developers ←’ Webhooks ←’ Add endpoint: URL <code>{{ webhook_url }}</code>, events <code>checkout.session.completed</code>, <code>checkout.session.async_payment_succeeded</code>, <code>checkout.session.async_payment_failed</code>, <code>checkout.session.expired</code>, <code>charge.refunded</code>. Copy the signing secret into <code>STRIPE_WEBHOOK_SECRET=whsec_...</code>.</li>
+    <li>Restart the portal service. The "Pay by card" button appears on checkout automatically.</li>
+  </ol></div>
+<div class="card" style="margin-top:16px">
+  <table><thead><tr><th>#</th><th>When</th><th>Customer</th><th>Product</th><th>Amount</th><th>Stripe status</th><th>Order</th><th>Payment intent</th></tr></thead><tbody>
+  {% for o in orders %}<tr><td class="mono">{{ o.id }}</td><td class="muted">{{ o.created|naturaltime }}</td><td>{{ o.user.email|default:o.user.username }}</td><td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td>{{ o.stripe_status|default:"—" }}</td>
+    <td>{% if o.status == 'paid' %}<span class="pill buy">paid &amp; delivered</span>{% elif o.status == 'pending' %}<span class="pill exit">pending</span>{% else %}<span class="pill sell">{{ o.status }}</span>{% endif %}</td>
+    <td class="mono" style="font-size:12px">{% if o.stripe_payment_intent %}<a href="https://dashboard.stripe.com/{% if test_mode %}test/{% endif %}payments/{{ o.stripe_payment_intent }}" target="_blank">{{ o.stripe_payment_intent|truncatechars:22 }}</a>{% else %}—{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="8" class="empty">No card payments yet.</td></tr>{% endfor %}</tbody></table>{% include "staff/_pager.html" %}</div>
+{% endblock %}

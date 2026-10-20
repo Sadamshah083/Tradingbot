@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
+{% block head %}
+<style>
+  .guide{margin-top:16px}.guide ol{margin:8px 0 0;padding-left:20px;color:var(--muted);font-size:14px;line-height:1.7}.guide ol b{color:var(--text)}
+  .guide details{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;background:#0f1729}
+  .guide summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between}
+  .guide summary:after{content:"+";color:var(--teal)} .guide details[open] summary:after{content:"−"}
+  .lock-banner{padding:12px 14px;border-radius:10px;border:1px solid rgba(248,113,113,.35);background:rgba(248,113,113,.06);margin-bottom:14px;font-size:14px}
+  @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:1fr !important}}
+  @media(max-width:520px){.grid.g4{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<h1>Hi {{ user.username }} <span class="muted" style="font-size:14px;font-weight:500"><span class="dot"></span>live</span></h1>
+<p class="lead">Pay for what you need: <b>${{ PRICE_BOT }}</b> unlocks the bot for 30 days; <b>${{ PRICE_SIGNAL }}</b> buys one signal credit. Nothing unlocks without payment.</p>
+
+{% if not profile.credits and not profile.bot_active_access %}
+<div class="lock-banner">You have no active bot access and no signal credits. <a href="{% url 'checkout' 'bot' %}">Get the bot (${{ PRICE_BOT }} / 30 days)</a> or <a href="{% url 'checkout' 'signals' %}">buy signal credits (${{ PRICE_SIGNAL }} each)</a>.</div>
+{% elif not profile.credits %}
+<div class="lock-banner">Signal delivery is paused — you have <b>0 credits</b>. Buy more to receive the next signal. Your bot access{% if profile.bot_active_access %} stays active until {{ profile.bot_access_until|date:"M d, Y" }}{% else %} is separate{% endif %}.</div>
+{% endif %}
+
+<div class="grid g4">
+  <div class="card"><h2>Signal credits</h2><div class="stat {% if profile.credits %}good{% else %}bad{% endif %}" id="credits">{{ profile.credits }}</div><div class="muted">${{ PRICE_SIGNAL }} = 1 signal. Each delivery uses 1 credit; at 0, delivery stops until you <a href="{% url 'checkout' 'signals' %}">buy more</a>.</div></div>
+  <div class="card"><h2>Received</h2><div class="stat">{{ profile.used }}</div><div class="muted">signals delivered to you so far</div></div>
+  <div class="card"><h2>Bot access</h2>
+    {% if profile.bot_active_access %}<div class="stat small good">{{ profile.bot_days_left }} days left</div><div class="muted">until {{ profile.bot_access_until|date:"M d, Y" }} · <a href="{% url 'checkout' 'bot' %}">extend</a></div><a class="btn primary small" href="{% url 'bot_dashboard' %}" style="margin-top:8px">Open my bot</a>
+    {% elif profile.bot_access_until %}<div class="stat small bad">Expired</div><div class="muted">{{ profile.bot_access_until|date:"M d, Y" }} · bot &amp; webhook off · <a href="{% url 'checkout' 'bot' %}">renew ${{ PRICE_BOT }}</a></div>
+    {% else %}<div class="stat small">${{ PRICE_BOT }}</div><div class="muted">30 days · Binance, Exness, paper · <a href="{% url 'checkout' 'bot' %}">unlock</a></div>{% endif %}</div>
+  <div class="card"><h2>Status</h2><div class="stat small {% if profile.active %}good{% else %}bad{% endif %}">{% if profile.active %}Active{% else %}Paused{% endif %}</div><div class="muted">{% if profile.telegram_chat_id %}Telegram delivery on{% else %}Telegram off — ask in chat{% endif %}</div></div>
+</div>
+
+<div class="card guide">
+  <h2>How to use {{ SITE_NAME }}</h2>
+  <details open><summary>1 · Signals ($1 each)</summary>
+    <ol>
+      <li><b>Buy credits</b> — <a href="{% url 'checkout' 'signals' %}">Checkout → Signals</a>. Card unlocks instantly; bank/USDT after we confirm.</li>
+      <li><b>Wait for delivery</b> — gold 1h setups appear in the table below and on Telegram if linked. Each new signal uses 1 credit.</li>
+      <li><b>When a signal finishes</b> — you get a free EXIT update (no credit). After your last credit is used, <b>no new signals</b> until you buy more.</li>
+    </ol>
+  </details>
+  <details {% if profile.bot_active_access %}open{% endif %}><summary>2 · Bot ($20 / 30 days) — runs on our server</summary>
+    <ol>
+      <li><b>Pay ${{ PRICE_BOT }}</b> — unlocks My bot for {{ BOT_ACCESS_DAYS|default:30 }} days. Without payment the bot page stays locked.</li>
+      <li><b>TradingView strategy (not source code)</b> — enter your TV username on My bot. We invite you to the private script; you never get the Pine source.</li>
+      <li><b>Connect a broker</b> — Binance: API key (futures only, no withdrawals). Exness / other MT5: run our MT5 bridge next to MetaTrader on Windows. Or stay in paper mode.</li>
+      <li><b>Webhook</b> — paste your personal webhook into the TradingView alert. It only works while bot access is active; after 30 days it rejects until you renew.</li>
+      <li><b>When 30 days end</b> — bot turns OFF, webhook expires, TradingView invite is revoked. Settings and history are kept.</li>
+    </ol>
+    {% if profile.bot_active_access %}<a class="btn primary small" href="{% url 'bot_dashboard' %}" style="margin-top:10px">Open My bot setup</a>{% else %}<a class="btn primary small" href="{% url 'checkout' 'bot' %}" style="margin-top:10px">Unlock bot — ${{ PRICE_BOT }}</a>{% endif %}
+  </details>
+  <details><summary>3 · Brokers every customer can use</summary>
+    <ol>
+      <li><b>Binance Futures (USDT-M)</b> — direct API from our server. Prefer Testnet first; restrict keys to IP 169.58.250.40.</li>
+      <li><b>Exness (and any MT5 broker)</b> — no public web API. Run the MT5 bridge on a Windows PC/VPS beside MetaTrader; our server sends orders to your bridge.</li>
+      <li><b>Paper</b> — default. Same risk engine, simulated fills, zero broker connection required.</li>
+    </ol>
+  </details>
+</div>
+
+{% if orders %}
+<div class="card" style="margin-top:16px"><h2>Your orders</h2>
+  <div class="tablewrap"><table><thead><tr><th>#</th><th>Product</th><th>Amount</th><th>Reference</th><th>Status</th><th>When</th></tr></thead><tbody>
+  {% for o in orders %}<tr><td class="mono">{{ o.id }}</td><td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td class="mono">{{ o.reference }}</td>
+    <td>{% if o.status == 'pending' %}<span class="pill exit">pending confirmation</span>{% elif o.status == 'paid' %}<span class="pill buy">paid & delivered</span>{% else %}<span class="pill sell">not confirmed — see chat</span>{% endif %}</td><td class="muted">{{ o.created|naturaltime }}</td></tr>{% endfor %}
+  </tbody></table></div></div>
+{% endif %}
+<div class="grid g2" style="margin-top:16px;grid-template-columns:1.6fr 1fr">
+  <div class="card">
+    <h2>Your signals {% if not profile.credits %}<span class="pill sell" style="margin-left:6px">locked · 0 credits</span>{% endif %}</h2>
+    <div class="tablewrap"><table id="signals"><thead><tr><th>Time</th><th>Signal</th><th>Entry</th><th>Stop</th><th>Target</th><th>Credits</th></tr></thead>
+    <tbody>
+    {% for d in deliveries %}
+      <tr><td class="muted">{{ d.created|date:"M d, H:i" }}</td>
+        <td>{% if d.signal.event == 'signal' %}<span class="pill {{ d.signal.side }}">{{ d.signal.side|upper }} {{ d.signal.symbol }} {{ d.signal.timeframe }}</span>{% else %}<span class="pill exit">EXIT {{ d.signal.symbol }} · {{ d.signal.reason }}</span>{% endif %}</td>
+        <td class="mono">{{ d.signal.price|default_if_none:"—" }}</td><td class="mono bad">{{ d.signal.sl|default_if_none:"—" }}</td><td class="mono good">{{ d.signal.tp2|default_if_none:"—" }}</td><td class="muted">{{ d.credits_after }}</td></tr>
+    {% empty %}
+      <tr id="empty-row"><td colspan="6" class="empty">{% if profile.credits %}No signals yet. The next gold 1h setup will show up here automatically.{% else %}Pay ${{ PRICE_SIGNAL }} per signal to unlock delivery — <a href="{% url 'checkout' 'signals' %}">buy credits</a>.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Live chat</h2>
+    {% for m in latest_chat reversed %}<div class="msg {% if m.from_admin %}them{% else %}me{% endif %}" style="max-width:100%;margin-bottom:8px">{{ m.text|truncatechars:120 }}<span class="meta">{% if m.from_admin %}Support{% else %}You{% endif %} · {{ m.created|naturaltime }}</span></div>{% empty %}<p class="muted">Questions about a signal, an order or broker setup? The team answers here.</p>{% endfor %}
+    <a class="btn primary" href="{% url 'chat_room' %}" style="margin-top:10px">Open chat</a>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  let after = {{ last_delivery_id }};
+  const tbody = document.querySelector('#signals tbody');
+  async function poll() {
+    try {
+      const r = await fetch(`{% url 'signal_feed' %}?after=${after}`, {credentials: 'same-origin'});
+      if (!r.ok) return;
+      const data = await r.json();
+      document.getElementById('credits').textContent = data.credits;
+      for (const it of data.items) {
+        after = Math.max(after, it.id);
+        const empty = document.getElementById('empty-row'); if (empty) empty.remove();
+        const tr = document.createElement('tr');
+        const pill = it.event === 'signal' ? `<span class="pill ${it.side}">${it.side.toUpperCase()} ${it.symbol} ${it.tf}</span>` : `<span class="pill exit">EXIT ${it.symbol} · ${it.reason || ''}</span>`;
+        tr.innerHTML = `<td class="muted">${fmtTime(it.time)}</td><td>${pill}</td><td class="mono">${it.price ?? '—'}</td><td class="mono bad">${it.sl ?? '—'}</td><td class="mono good">${it.tp2 ?? '—'}</td><td class="muted">${it.credits_after}</td>`;
+        tbody.prepend(tr);
+        tr.style.background = 'rgba(45,212,191,.12)'; setTimeout(() => tr.style.background = '', 2500);
+      }
+    } catch (e) { /* offline; try again next tick */ }
+  }
+  setInterval(poll, 5000);
+</script>
+{% endblock %}

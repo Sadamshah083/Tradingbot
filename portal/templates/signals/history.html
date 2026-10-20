@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Signals · {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<h1>Signal history</h1>
+<p class="lead">Everything delivered to your account, newest first.</p>
+<div class="card"><table><thead><tr><th>Time</th><th>Signal</th><th>Entry</th><th>Stop</th><th>TP1</th><th>Target</th><th>Credits after</th></tr></thead><tbody>
+{% for d in deliveries %}
+  <tr><td class="muted">{{ d.created|date:"M d, Y H:i" }}</td>
+    <td>{% if d.signal.event == 'signal' %}<span class="pill {{ d.signal.side }}">{{ d.signal.side|upper }} {{ d.signal.symbol }} {{ d.signal.timeframe }}</span>{% else %}<span class="pill exit">EXIT {{ d.signal.symbol }} · {{ d.signal.reason }}</span>{% endif %}</td>
+    <td class="mono">{{ d.signal.price|default_if_none:"—" }}</td><td class="mono bad">{{ d.signal.sl|default_if_none:"—" }}</td><td class="mono">{{ d.signal.tp1|default_if_none:"—" }}</td><td class="mono good">{{ d.signal.tp2|default_if_none:"—" }}</td><td class="muted">{{ d.credits_after }}</td></tr>
+{% empty %}<tr><td colspan="7" class="empty">Nothing yet.</td></tr>{% endfor %}
+</tbody></table></div>
+{% endblock %}

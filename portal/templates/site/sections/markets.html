@@ -1,0 +1,38 @@
+<section class="s rv" id="markets" aria-labelledby="mk-title">
+  <div class="kicker">Markets</div>
+  <h2 id="mk-title">Markets currently supported by Sambot</h2>
+  <p class="sub">Sambot focuses on a deliberately limited set of markets rather than claiming to automate everything.</p>
+  <div class="mid-cards">
+    <article class="panel mid-card featured-card">
+      <div class="n">METALS · SESSIONS</div>
+      <h3>Gold / XAUUSD</h3>
+      <p>Gold is traded within market sessions rather than continuously. Supported gold workflows use defined trading sessions, TradingView signals, configurable account controls and recorded activity.</p>
+      <ul class="check-list compact">
+        <li>XAUUSD strategy research</li>
+        <li>Gold backtesting</li>
+        <li>Paper-mode testing</li>
+        <li>MT5 workflow</li>
+        <li>Risk controls</li>
+      </ul>
+      <a class="btn primary small" href="{% url 'site_gold' %}" style="margin-top:14px">Explore Gold Automation</a>
+    </article>
+    <article class="panel mid-card featured-card">
+      <div class="n">CRYPTO · 24/7</div>
+      <h3>Bitcoin</h3>
+      <p>Bitcoin markets operate continuously, creating a different automation environment from session-based markets. Supported BTC workflows include paper testing, account controls and recorded signal activity.</p>
+      <ul class="check-list compact">
+        <li>BTC strategy research</li>
+        <li>Historical testing</li>
+        <li>Binance integration</li>
+        <li>Paper mode</li>
+        <li>Risk management</li>
+      </ul>
+      <a class="btn primary small" href="{% url 'site_bitcoin' %}" style="margin-top:14px">Explore Bitcoin Automation</a>
+    </article>
+  </div>
+  <div class="brokers" style="margin-top:20px">
+    <a class="panel brk" href="{% url 'site_binance' %}" style="text-decoration:none;color:inherit"><div class="ic">B</div><div><b>Binance Futures</b><span>API-based integration for supported TradingView → Binance workflows.</span></div></a>
+    <a class="panel brk" href="{% url 'site_mt5' %}" style="text-decoration:none;color:inherit"><div class="ic">M</div><div><b>MetaTrader 5</b><span>Local bridge between Sambot and the MetaTrader environment.</span></div></a>
+    <a class="panel brk" href="{% url 'site_paper' %}" style="text-decoration:none;color:inherit"><div class="ic">P</div><div><b>Paper mode</b><span>Simulated execution — start here before any connected environment.</span></div></a>
+  </div>
+</section>

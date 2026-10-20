@@ -1,0 +1,32 @@
+{% load static %}
+<section class="s rv" id="strategy" aria-labelledby="st-title">
+    <div class="kicker">Strategy &amp; risk management</div><h2 id="st-title">Rules you can read, limits you control</h2>
+    <p class="sub"><b>VWAP Reversal</b>: after price stretches beyond the 2.5-standard-deviation band around VWAP and closes back inside, a mean-reversion signal is issued with a stop beyond the extreme and a target at the band. Confirmed on bar close, so it never repaints. The risk engine wraps every signal:</p>
+    <div class="risk">
+      <div class="panel"><b>RISK / TRADE</b>Position sized so a stop-out costs a fixed % of equity (0.1 - 5%).</div>
+      <div class="panel"><b>DAILY LOSS</b>Trading stops for the day once the limit is reached.</div>
+      <div class="panel"><b>OPEN TRADES</b>Cap on simultaneous positions and on total exposure.</div>
+      <div class="panel"><b>LOSING STREAK</b>Pause after N consecutive losses.</div>
+      <div class="panel"><b>STOP / TARGET</b>From the signal or fixed % / risk-reward, placed with the order.</div>
+      <div class="panel"><b>BREAK-EVEN</b>Stop moves to entry after a configurable number of R.</div>
+      <div class="panel"><b>TRAILING STOP</b>Follows price at a % distance once in profit.</div>
+      <div class="panel"><b>EMERGENCY STOP</b>One click blocks all new orders, for you or for the admin.</div>
+    </div>
+    <div class="kicker" style="margin-top:34px">On the chart</div>
+    <p class="sub" style="margin-bottom:10px">Long / Short entries with take-profit and stop-loss printed on the gold chart — the same signal path your bot executes.</p>
+    <div class="strategy-shot">
+      <img src="{% static 'img/hero-chart.png' %}" width="1240" height="775" alt="Sambot strategy on XAUUSD chart with Long/Short signals, take profit and stop loss">
+      <div class="live-bar">
+        <span class="live"><i></i>Live feed · GOLD &amp; BTC</span>
+        <div class="tickers">
+          <span>XAU <b id="tick-xau">—</b></span>
+          <span>BTC <b id="tick-btc">—</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="kicker" style="margin-top:34px">Timeframes</div>
+    <p class="sub" style="margin-bottom:6px">You choose which timeframes your bot accepts; signals on any other timeframe are ignored. We do not claim one timeframe is universally best. The only combination we have verified so far is <b>gold 1h</b> (below); treat the others as candidates for your own paper testing.</p>
+    <div class="tfs">
+      <div class="panel"><b>5 min</b><span>scalping · untested</span></div><div class="panel"><b>15 min</b><span>intraday · untested</span></div><div class="panel"><b>30 min</b><span>intraday · untested</span></div><div class="panel"><b>1 hour</b><span class="g">verified on gold</span></div><div class="panel"><b>4 hours</b><span>swing · weak result</span></div>
+    </div>
+  </section>
