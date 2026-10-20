@@ -17,6 +17,7 @@ done
 cd "$APP/portal"
 "$APP/portal/.venv/bin/python" manage.py migrate --noinput
 "$APP/portal/.venv/bin/python" manage.py collectstatic --noinput
+"$APP/portal/.venv/bin/python" manage.py ensure_superadmin
 
 # No sudo needed: both units run as this user with Restart=always.
 # gunicorn: HUP respawns workers with the new code; uvicorn: TERM makes systemd restart it.

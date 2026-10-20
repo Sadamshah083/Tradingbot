@@ -14,14 +14,13 @@ from signals.models import SignalDelivery
 
 from .forms import LoginForm, RegisterForm
 from .models import Profile
+from .roles import is_chat_staff, staff_home_name
 
 # The admin side lives in accounts/staff.py and is for the single superadmin only (see `manage.py ensure_superadmin`).
 
 
 def landing(request):
-    """Sales page. Logged-in customers go straight to their dashboard."""
-    if request.user.is_authenticated:
-        return redirect("dashboard")
+    """Public home page (also for logged-in users; the navbar then offers their dashboard)."""
     from django.contrib.auth import get_user_model
     from signals.models import Signal
     return render(request, "landing.html", {
@@ -416,26 +415,37 @@ class CustomerLoginView(LoginView):
     redirect_authenticated_user = True
     extra_context = {"hide_nav": True, "noindex": True}
 
+    def get_default_redirect_url(self):
+        """Customers land on their dashboard, staff on their own console (admin/superadmin: dashboard, agent: chat inbox)."""
+        home = staff_home_name(self.request.user)
+        return reverse(home) if home else reverse("dashboard")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        user = form.get_user()
+        messages.success(self.request, f"Welcome back, {user.first_name or user.username}.")
+        return response
+
 
 class AdminLoginView(LoginView):
-    """/admin/login - same credentials, but only the superadmin gets through and lands on the admin dashboard."""
+    """/admin/login - same credentials, but only the team (superadmin, admin, agent) gets through."""
     template_name = "accounts/admin_login.html"
     authentication_form = LoginForm
     extra_context = {"hide_nav": True, "noindex": True}
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated and request.user.is_superuser:
-            return redirect("staff_home")
+        if request.user.is_authenticated and is_chat_staff(request.user):
+            return redirect(staff_home_name(request.user))
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        if not form.get_user().is_superuser:
-            form.add_error(None, "This login is for the administrator only. Customers log in on the main page.")
+        if not is_chat_staff(form.get_user()):
+            form.add_error(None, "This login is for the SamBot team only. Customers log in on the main page.")
             return self.form_invalid(form)
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse("staff_home")
+        return reverse(staff_home_name(self.request.user) or "staff_home")
 
 
 class CustomerLogoutView(LogoutView):
@@ -467,8 +477,9 @@ def register(request):
 
 @login_required
 def dashboard(request):
-    if request.user.is_superuser:
-        return redirect("staff_home")
+    home = staff_home_name(request.user)
+    if home:
+        return redirect(home)
     profile, _ = Profile.objects.get_or_create(user=request.user)
     profile.expire_if_due()
     profile.refresh_from_db()

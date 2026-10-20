@@ -1,7 +1,7 @@
 {% extends "staff/base.html" %}
 {% block title %}Chat with {{ customer.username }} · {{ SITE_NAME }}{% endblock %}
 {% block page_title %}{{ customer.email|default:customer.username }}{% endblock %}
-{% block page_lead %}<a href="{% url 'chat_inbox' %}">← Inbox</a> · {{ customer.username }} · {{ customer.profile.credits }} credits{% if customer.profile.bot_access %} · bot owner{% endif %} · <a href="{% url 'staff_customers' %}?q={{ customer.username }}">manage account</a>{% endblock %}
+{% block page_lead %}<a href="{% url 'chat_inbox' %}">← Inbox</a> · {{ customer.username }} · {{ customer.profile.credits }} credits{% if customer.profile.bot_access %} · bot owner{% endif %}{% if can_admin %} · <a href="{% url 'staff_customers' %}?q={{ customer.username }}">manage account</a>{% endif %}{% endblock %}
 {% block staff %}
 {% csrf_token %}
 {% url 'chat_staff_poll' customer.id as poll_url %}{% url 'chat_staff_send' customer.id as send_url %}

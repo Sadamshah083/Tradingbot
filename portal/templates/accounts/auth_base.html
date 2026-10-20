@@ -27,6 +27,16 @@
   .auth-card .flash.error{background:rgba(255,107,98,.1);border:1px solid rgba(255,107,98,.35);color:#FF8F88;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:6px}
   .auth-card .errorlist{list-style:none;padding:0;margin:6px 0 0;color:#FF8F88;font-size:13px}
   .auth-card .helptext{display:none}
+  .auth-card .pw{position:relative}.auth-card .pw input{padding-right:64px}
+  .auth-card .pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--muted);font:700 12px Manrope,sans-serif;padding:6px 8px;cursor:pointer;border-radius:8px}
+  .auth-card .pw-toggle:hover{color:#fff;background:rgba(255,255,255,.06)}
+  .auth-card .hint{margin:6px 0 0;font-size:12.5px;color:var(--muted)}.auth-card .hint.warn{color:#FFB4AE}
+  .auth-card .flash.info{background:rgba(125,227,255,.08);border:1px solid rgba(125,227,255,.3);color:#BFEFFF;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:6px}
+  .auth-card .btn.primary[disabled]{opacity:.75;cursor:progress}
+  .auth-card .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(10,16,28,.35);border-top-color:#0A101C;animation:sp .7s linear infinite;margin-right:8px;display:none}
+  .auth-card .btn.loading .spin{display:inline-block}@keyframes sp{to{transform:rotate(360deg)}}
+  .auth-card .row2{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .auth-card .row2 a{color:#7DE3FF;font-weight:600}
   @media(max-width:900px){.auth-wrap{grid-template-columns:1fr;gap:32px;padding:36px 0 56px}.auth-card{margin:0 auto}.auth-side{order:2}.auth-side .lead,.auth-points{max-width:none}}
 </style>
 {% endblock %}
@@ -48,4 +58,25 @@
   </div>
 </div></div>
 </main>
+{% endblock %}
+{% block page_scripts %}
+<script>
+  (function togglePw() {
+    document.querySelectorAll('.auth-card input[type=password]').forEach(inp => {
+      const wrap = document.createElement('div'); wrap.className = 'pw';
+      inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'pw-toggle'; b.textContent = 'Show'; b.setAttribute('aria-label', 'Show password');
+      b.addEventListener('click', () => { const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show'; b.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); });
+      wrap.appendChild(b);
+      const hint = document.createElement('p'); hint.className = 'hint warn'; hint.textContent = 'Caps Lock is on'; hint.hidden = true; wrap.after(hint);
+      inp.addEventListener('keyup', e => { hint.hidden = !(e.getModifierState && e.getModifierState('CapsLock')); });
+      inp.addEventListener('blur', () => { hint.hidden = true; });
+    });
+    document.querySelectorAll('.auth-card form').forEach(f => f.addEventListener('submit', () => {
+      const btn = f.querySelector('button[type=submit]'); if (!btn || btn.disabled) return;
+      btn.classList.add('loading'); btn.insertAdjacentHTML('afterbegin', '<span class="spin"></span>'); setTimeout(() => { btn.disabled = true; }, 0);
+    }));
+    const first = document.querySelector('.auth-card input:not([type=hidden])'); if (first && !document.querySelector('.auth-card .errorlist, .auth-card .flash.error')) first.focus();
+  })();
+</script>
 {% endblock %}

@@ -1,5 +1,8 @@
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
+
+from .roles import role_of, staff_home_name
 
 
 def site(request):
@@ -7,10 +10,14 @@ def site(request):
     pending_orders = 0
     bot = None
     totals = None
+    role = role_of(request.user)
     if request.user.is_authenticated:
         from chat.models import Message
-        if request.user.is_superuser:
+        if role in ("admin", "agent"):
             unread = Message.objects.filter(from_admin=False, read=False).count()
+        if role in ("superadmin", "admin"):
+            unread = Message.objects.filter(from_admin=False, read=False).count()
+        if role == "superadmin":
             from orders.models import Order
             pending_orders = Order.objects.filter(status="pending").count()
             from . import botlink
@@ -25,12 +32,15 @@ def site(request):
                 return {"users": users.count(), "paid": len(paid_ids), "bot": Profile.objects.filter(user__is_superuser=False, bot_access=True).count(),
                         "with_credits": Profile.objects.filter(user__is_superuser=False, credits__gt=0).count()}
             totals = SimpleLazyObject(_totals)
-        else:
+        elif role == "customer":
             unread = Message.objects.filter(customer=request.user, from_admin=True, read=False).count()
     params = request.GET.copy()
     params.pop("page", None)
     qs = params.urlencode()
+    home = staff_home_name(request.user)
     return {
+        "role": role, "is_superadmin": role == "superadmin", "can_admin": role in ("superadmin", "admin"),
+        "staff_home_url": reverse(home) if home else "", "staff_home_label": "Admin" if role in ("superadmin", "admin") else "Inbox",
         "qs": (qs + "&") if qs else "",   # current filters, for pagination links
         "SITE_NAME": settings.SITE_NAME, "SITE_TAGLINE": settings.SITE_TAGLINE, "PRICING_URL": settings.PRICING_URL, "unread_chat": unread, "pending_orders": pending_orders, "bot": bot, "totals": totals,
         "PRICE_BOT": int(settings.PRICE_BOT) if settings.PRICE_BOT == int(settings.PRICE_BOT) else settings.PRICE_BOT,

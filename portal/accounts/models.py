@@ -16,6 +16,9 @@ class Profile(models.Model):
     bot_access_until = models.DateTimeField(null=True, blank=True, help_text="Bot access expires here; each $ package payment adds BOT_ACCESS_DAYS.")
     tradingview_username = models.CharField(max_length=60, blank=True, help_text="For invite-only access to the strategy on TradingView.")
     tv_access_granted = models.BooleanField(default=False, help_text="Admin has added this TradingView username to the invite-only strategy.")
+    role = models.CharField(max_length=10, default="customer", choices=[("customer", "Customer"), ("agent", "Agent"), ("admin", "Admin")],
+                            help_text="Staff role. The single superadmin is the Django superuser, not a role.")
+    last_seen = models.DateTimeField(null=True, blank=True, help_text="Last time this staff member had the chat inbox open.")
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

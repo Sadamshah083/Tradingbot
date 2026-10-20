@@ -1,4 +1,4 @@
-"""The admin side. Every view here is restricted to the single superadmin (SUPERADMIN_EMAIL)."""
+"""The admin side. Superadmin (SUPERADMIN_EMAIL) and "admin" role members; bot control and role changes are superadmin-only."""
 import secrets
 from datetime import datetime, timezone as dt_timezone
 
@@ -19,7 +19,9 @@ from . import botlink
 from .models import CreditLog, Profile
 
 User = get_user_model()
-staff_required = user_passes_test(lambda u: u.is_superuser, login_url="admin_login")
+from .roles import admin_required, is_superadmin, superadmin_required
+
+staff_required = admin_required            # superadmin or the "admin" role
 
 
 def settings_site_name():
@@ -87,7 +89,7 @@ def home(request):
 
 
 # â”€â”€ bot on / off â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@staff_required
+@superadmin_required
 @require_POST
 def bot_mode(request):
     on = request.POST.get("auto") in ("1", "on", "true")
@@ -141,7 +143,16 @@ def customer_update(request, user_id):
     user = get_object_or_404(User, pk=user_id, is_superuser=False)
     profile, _ = Profile.objects.get_or_create(user=user)
     action = request.POST.get("action")
-    if action == "add_credits":
+    if action in ("delete", "set_role") and not is_superadmin(request.user):
+        messages.error(request, "Only the superadmin can do that.")
+        return redirect(request.POST.get("next") or "staff_customers")
+    if action == "set_role":
+        role = request.POST.get("role", "customer")
+        if role in ("customer", "agent", "admin"):
+            profile.role = role
+            profile.save(update_fields=["role"])
+            messages.success(request, f"{user.email or user.username} is now {'a customer' if role == 'customer' else 'an ' + role if role == 'admin' else 'an agent'}.")
+    elif action == "add_credits":
         try:
             n = int(request.POST.get("credits", "0"))
         except ValueError:
@@ -282,7 +293,7 @@ def manual(request):
 
 
 # â”€â”€ bot trades â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-@staff_required
+@superadmin_required
 def bot(request):
     j = botlink.journal(150)
     trades = _ts(list(reversed(j.get("bot_trades", []))))

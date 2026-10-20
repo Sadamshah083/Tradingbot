@@ -2,15 +2,16 @@
 <div class="chat" id="chat">
   <div class="log" id="log">
     {% for m in messages_list %}
-      <div class="msg {% if m.from_admin == me_is_admin %}me{% else %}them{% endif %}">{{ m.text }}<span class="meta">{% if m.from_admin %}{{ m.author.username|default:"Support" }}{% else %}{{ m.customer.username }}{% endif %} · {{ m.created|date:"M d, H:i" }}</span></div>
+      <div class="msg {% if m.from_admin == me_is_admin %}me{% else %}them{% endif %}">{{ m.text }}<span class="meta">{% if m.auto %}Support (auto){% elif m.from_admin %}{{ m.author.username|default:"Support" }}{% else %}{{ m.customer.username }}{% endif %} · {{ m.created|date:"M d, H:i" }}</span></div>
     {% empty %}
-      <div class="empty" id="chat-empty">{% if me_is_admin %}No messages yet in this conversation.{% else %}Say hello — the team replies here, usually within a few hours.{% endif %}</div>
+      <div class="empty" id="chat-empty">{% if me_is_admin %}No messages yet in this conversation.{% else %}Say hello. Support is available 24/7 and replies appear right here.{% endif %}</div>
     {% endfor %}
   </div>
   <form id="chat-form" autocomplete="off">
     <input id="chat-text" placeholder="Type a message and press Enter" maxlength="2000" required>
     <button class="btn primary" type="submit">Send</button>
   </form>
+  <div class="chat-err" id="chat-err" role="alert" hidden>Could not send. Check your connection and try again.</div>
 </div>
 <script>
 (function () {
@@ -29,15 +30,22 @@
   async function poll() {
     try {
       const r = await fetch(`{{ poll_url }}?after=${after}`, {credentials: 'same-origin'});
-      if (r.ok) { const d = await r.json(); d.items.forEach(add); }
+      if (r.ok) {
+        const d = await r.json(); d.items.forEach(add);
+        const st = document.getElementById('chat-status-text');
+        if (st && typeof d.agents_online === 'boolean') st.textContent = d.agents_online ? 'Agent online' : 'Support runs 24/7 · we reply as soon as an agent is online';
+      }
     } catch (e) {}
   }
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = input.value.trim(); if (!text) return;
     input.value = ''; input.focus();
-    const r = await fetch(`{{ send_url }}`, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text})});
-    if (r.ok) { const d = await r.json(); add(d.message); } else { input.value = text; alert('Could not send, please try again.'); }
+    const err = document.getElementById('chat-err'); err.hidden = true;
+    try {
+      const r = await fetch(`{{ send_url }}`, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/json', 'X-CSRFToken': window.csrfToken}, body: JSON.stringify({text})});
+      if (r.ok) { const d = await r.json(); add(d.message); setTimeout(poll, 600); } else { input.value = text; err.hidden = false; }
+    } catch (e) { input.value = text; err.hidden = false; }
   });
   log.scrollTop = log.scrollHeight;
   setInterval(poll, 2000);

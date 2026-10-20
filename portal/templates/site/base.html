@@ -109,7 +109,7 @@
   @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
 </style>
 {% block page_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=25">
+<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=27">
 {% endblock %}
 {% block content %}
 <div class="site {% block site_class %}{% endblock %}">
@@ -126,7 +126,7 @@
   </ul>
   <div class="actions">
     {% if user.is_authenticated %}
-      {% if user.is_superuser %}<a class="btn primary small" href="{% url 'staff_home' %}">Admin →</a>
+      {% if staff_home_url %}<a class="btn primary small" href="{{ staff_home_url }}">{{ staff_home_label }} →</a>
       {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
       <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
@@ -146,7 +146,7 @@
     <a href="{% url 'site_contact' %}">Contact</a>
     <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
     {% if user.is_authenticated %}
-      {% if user.is_superuser %}<a class="btn primary small" href="{% url 'staff_home' %}">Admin →</a>
+      {% if staff_home_url %}<a class="btn primary small" href="{{ staff_home_url }}">{{ staff_home_label }} →</a>
       {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
@@ -218,6 +218,14 @@
   </div></div>
 </footer>
 
+{% if not staff_home_url %}
+<a class="chat-fab" id="chatFab" href="{% if user.is_authenticated %}{% url 'chat_room' %}{% else %}{% url 'login' %}?next={% url 'chat_room' %}{% endif %}" aria-label="Chat with support">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>
+  <span class="fab-txt">Chat with us <small>24/7</small></span>
+  <b class="fab-badge" id="chatFabBadge" {% if not unread_chat %}hidden{% endif %}>{{ unread_chat }}</b>
+</a>
+{% endif %}
+
 
 </div>
 {% endblock %}
@@ -236,6 +244,17 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
     document.addEventListener('click', e => { if (menu.classList.contains('open') && !e.target.closest('#menu, .burger')) set(false); });
     addEventListener('resize', () => { if (innerWidth > 980) set(false); });
+  })();
+
+  (function chatFab() {
+    const badge = document.getElementById('chatFabBadge');
+    if (!badge) return;
+    {% if user.is_authenticated %}
+    const tick = () => fetch("{% url 'chat_unread' %}", {credentials: 'same-origin'}).then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) return; badge.textContent = d.unread; badge.hidden = !d.unread;
+    }).catch(() => {});
+    setInterval(tick, 15000);
+    {% endif %}
   })();
   document.querySelectorAll('#menu a, #menu button').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('menu'); if(m) m.classList.remove('open'); }));
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold: .12, rootMargin: '0px 0px -40px 0px'});
