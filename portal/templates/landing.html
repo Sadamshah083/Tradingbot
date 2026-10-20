@@ -278,6 +278,12 @@
       <p class="dv-cap">Interactive product concept &middot; sample data &middot; no live trades</p>
     </div>
   </section>
+  <div class="statbar" aria-label="SamBot in numbers">
+    <div class="sbi"><b class="num" data-to="{{ stat_users }}">{{ stat_users }}</b><span>Registered users</span><small>Live count</small></div>
+    <div class="sbi"><b class="num" data-to="{{ stat_signals }}">{{ stat_signals }}</b><span>Signals delivered</span><small>Live count</small></div>
+    <div class="sbi"><b id="sb-profit">&mdash;</b><span>Backtest profit</span><small>XAUUSD 1H &middot; historical, not live</small></div>
+    <div class="sbi"><b id="sb-trades">&mdash;</b><span>Trades in backtest</span><small>Win rate <i id="sb-wr">&mdash;</i> &middot; historical</small></div>
+  </div>
 </div></div>
 
 <section class="s rv" id="features" aria-labelledby="feat-title">
@@ -608,11 +614,22 @@
   });
 
 
+  (function countUp() {
+    const els = document.querySelectorAll('.statbar .num');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    els.forEach(el => {
+      const to = +el.dataset.to || 0; if (reduce || to === 0) { el.textContent = to.toLocaleString(); return; }
+      const t0 = performance.now(), dur = 1200;
+      const f = t => { const k = Math.min(1, (t - t0) / dur); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))).toLocaleString(); if (k < 1) requestAnimationFrame(f); };
+      requestAnimationFrame(f);
+    });
+  })();
+
   (function heroDevices() {
     const fit = document.getElementById('dvFit'), stage = document.getElementById('dvStage'), svg = document.getElementById('dvChart');
     if (!fit || !stage) return;
     const DW = 640, DH = 540;
-    const rescale = () => { const k = Math.min(1, fit.clientWidth / DW); stage.style.transform = 'scale(' + k + ')'; fit.style.height = (DH * k) + 'px'; };
+    const rescale = () => { const k = Math.min(1.3, fit.clientWidth / DW); stage.style.transform = 'scale(' + k + ')'; stage.style.left = Math.max(0, (fit.clientWidth - DW * k) / 2) + 'px'; fit.style.height = (DH * k) + 'px'; };
     rescale(); addEventListener('resize', rescale);
     if (window.ResizeObserver) new ResizeObserver(rescale).observe(fit);
 
@@ -687,6 +704,9 @@
     if (netEl) netEl.textContent = money(g.net);
     const wr = document.getElementById('h-wr'); if (wr) wr.textContent = fmt(g.win_rate, 1) + '%';
     const tr = document.getElementById('h-tr'); if (tr) tr.textContent = g.trades.toLocaleString();
+    const sbp = document.getElementById('sb-profit'); if (sbp) sbp.textContent = money(g.net);
+    const sbt = document.getElementById('sb-trades'); if (sbt) sbt.textContent = g.trades.toLocaleString();
+    const sbw = document.getElementById('sb-wr'); if (sbw) sbw.textContent = fmt(g.win_rate, 1) + '%';
     const pNet = document.getElementById('p-net'); if (pNet) pNet.textContent = money(g.net);
     const pWr = document.getElementById('p-wr'); if (pWr) pWr.textContent = fmt(g.win_rate, 1) + '%';
     const pTr = document.getElementById('p-tr'); if (pTr) pTr.textContent = g.trades.toLocaleString();

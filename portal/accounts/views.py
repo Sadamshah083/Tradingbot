@@ -22,7 +22,11 @@ def landing(request):
     """Sales page. Logged-in customers go straight to their dashboard."""
     if request.user.is_authenticated:
         return redirect("dashboard")
+    from django.contrib.auth import get_user_model
+    from signals.models import Signal
     return render(request, "landing.html", {
+        "stat_users": get_user_model().objects.filter(is_superuser=False).count(),
+        "stat_signals": Signal.objects.filter(event="signal").count(),
         "hide_nav": True,
         "canonical": request.build_absolute_uri("/"),
         "nav_page": "home",
