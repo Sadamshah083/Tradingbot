@@ -158,3 +158,28 @@ class BlogRedirectsAndIndexing(TestCase):
         r = self.client.get("/", HTTP_HOST="example.org")
         self.assertNotIn("X-Robots-Tag", r)
         self.assertIn("Sitemap: https://example.org/sitemap.xml", self.client.get("/robots.txt", HTTP_HOST="example.org").content.decode())
+
+
+class AiCrawlersAndLlms(TestCase):
+    @override_settings(SITE_URL="https://example.org")
+    def test_robots_names_ai_crawlers_keeps_private_areas_closed_and_lists_sitemap(self):
+        txt = self.client.get("/robots.txt", HTTP_HOST="example.org").content.decode()
+        for bot in ("GPTBot", "ClaudeBot", "PerplexityBot", "Google-Extended", "CCBot", "Bingbot", "OAI-SearchBot"):
+            self.assertIn(f"User-agent: {bot}", txt)
+        self.assertIn("Disallow: /accounts/", txt)
+        self.assertIn("Disallow: /chat/", txt)
+        self.assertIn("Sitemap: https://example.org/sitemap.xml", txt)
+        self.assertIn("llms.txt", txt)
+
+    def test_llms_files_summarise_the_public_site_without_private_urls(self):
+        short = self.client.get("/llms.txt")
+        self.assertEqual(short.status_code, 200)
+        body = short.content.decode()
+        self.assertTrue(body.startswith("# "))
+        self.assertIn("> ", body)
+        self.assertIn("/how/", body)
+        self.assertNotIn("/accounts/", body)
+        full = self.client.get("/llms-full.txt").content.decode()
+        self.assertIn("## Pricing", full)
+        self.assertIn("does not guarantee", full)
+        self.assertNotIn("/admin/", full)

@@ -40,7 +40,7 @@ if os.getenv("FORCE_HTTPS", "false").lower() == "true":
 # Shared with the webhook bot: the bot posts signals to /api/signals/ with this secret in a header.
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-SITE_NAME = os.getenv("SITE_NAME", "Sambot")
+SITE_NAME = os.getenv("SITE_NAME", "SamBot")
 SITE_TAGLINE = os.getenv("SITE_TAGLINE", "Algorithmic trading, built on real data.")
 PRICING_URL = os.getenv("PRICING_URL", "/pricing/")
 

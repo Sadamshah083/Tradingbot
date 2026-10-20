@@ -413,3 +413,11 @@ html,body{overflow-x:clip !important}
   .h2x .dv-eyebrow,.h2x .dv-cap{max-width:740px;margin-left:auto;margin-right:0}
   .home .hero-band{padding-top:0 !important;padding-bottom:10px !important}
 }
+
+/* hero + numbers strip fit the first screen: the mock-up scales with the window height */
+@media(min-width:921px){
+  .dv-fit{max-width:clamp(500px,calc((100vh - 270px) * 1.185),740px)}
+  .h2x .dv-eyebrow,.h2x .dv-cap{max-width:clamp(500px,calc((100vh - 270px) * 1.185),740px)}
+  .home .hero-band{padding-top:14px !important}
+  .home .hero.h2x{align-items:center}
+}

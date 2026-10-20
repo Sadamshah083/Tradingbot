@@ -1,15 +1,15 @@
 <section class="s rv" id="how" aria-labelledby="how-title">
   <div class="kicker">How it works</div>
-  <h2 id="how-title">How Sambot trading automation works</h2>
+  <h2 id="how-title">How SamBot trading automation works</h2>
   <p class="sub">The objective is not to remove decision-making. It is to automate a defined set of rules consistently while keeping the process visible.</p>
   <div class="prose-block">
     <div class="mid-cards steps-cards">
-      <article class="panel mid-card"><div class="n">01</div><h3>TradingView creates the signal</h3><p>A supported TradingView strategy generates an alert when its configured conditions are met. The alert contains the information Sambot needs to identify the supported market and intended action.</p></article>
-      <article class="panel mid-card"><div class="n">02</div><h3>The webhook receives the alert</h3><p>Your Sambot account provides a dedicated webhook endpoint. TradingView delivers the alert to that endpoint when the configured condition triggers.</p></article>
-      <article class="panel mid-card"><div class="n">03</div><h3>Sambot validates it</h3><p>Before anything continues, Sambot checks the incoming signal against its supported configuration. Invalid, unsupported or duplicate signals can be rejected instead of being silently processed.</p></article>
-      <article class="panel mid-card"><div class="n">04</div><h3>Your risk settings are evaluated</h3><p>Sambot applies the account’s configured limits — risk per trade, maximum open trades, exposure, daily loss thresholds and losing-streak controls.</p></article>
-      <article class="panel mid-card"><div class="n">05</div><h3>Paper or supported connected execution</h3><p>In paper mode, Sambot records a simulated fill. For a supported connected setup, the validated workflow can be routed through the configured integration.</p></article>
-      <article class="panel mid-card"><div class="n">06</div><h3>Position-management rules run</h3><p>Depending on the configuration, Sambot can track stop-loss, take-profit, break-even and trailing-stop rules.</p></article>
+      <article class="panel mid-card"><div class="n">01</div><h3>TradingView creates the signal</h3><p>A supported TradingView strategy generates an alert when its configured conditions are met. The alert contains the information SamBot needs to identify the supported market and intended action.</p></article>
+      <article class="panel mid-card"><div class="n">02</div><h3>The webhook receives the alert</h3><p>Your SamBot account provides a dedicated webhook endpoint. TradingView delivers the alert to that endpoint when the configured condition triggers.</p></article>
+      <article class="panel mid-card"><div class="n">03</div><h3>SamBot validates it</h3><p>Before anything continues, SamBot checks the incoming signal against its supported configuration. Invalid, unsupported or duplicate signals can be rejected instead of being silently processed.</p></article>
+      <article class="panel mid-card"><div class="n">04</div><h3>Your risk settings are evaluated</h3><p>SamBot applies the account’s configured limits — risk per trade, maximum open trades, exposure, daily loss thresholds and losing-streak controls.</p></article>
+      <article class="panel mid-card"><div class="n">05</div><h3>Paper or supported connected execution</h3><p>In paper mode, SamBot records a simulated fill. For a supported connected setup, the validated workflow can be routed through the configured integration.</p></article>
+      <article class="panel mid-card"><div class="n">06</div><h3>Position-management rules run</h3><p>Depending on the configuration, SamBot can track stop-loss, take-profit, break-even and trailing-stop rules.</p></article>
       <article class="panel mid-card"><div class="n">07</div><h3>Everything is recorded</h3><p>Signals, rejections, order activity and completed workflow events are available for review. Automation should be inspectable.</p></article>
     </div>
   </div>

@@ -46,11 +46,11 @@ def _public_reviews():
 
 SITE_PAGES = {
     "how": {
-        "title": "How Sambot trading automation works",
-        "seo_title": "How an Automated Trading Bot Works | Sambot",
-        "meta": "See how Sambot processes TradingView alerts through validation, risk controls, paper testing and supported execution environments.",
+        "title": "How SamBot trading automation works",
+        "seo_title": "How an Automated Trading Bot Works | SamBot",
+        "meta": "See how SamBot processes TradingView alerts through validation, risk controls, paper testing and supported execution environments.",
         "kicker": "How it works",
-        "lead": "Sambot connects a signal source, a configurable risk engine and supported execution environments through one auditable workflow.",
+        "lead": "SamBot connects a signal source, a configurable risk engine and supported execution environments through one auditable workflow.",
         "section": "site/sections/how.html",
         "backtest": False,
         "cta_label": "Start With Paper Trading",
@@ -58,10 +58,10 @@ SITE_PAGES = {
     },
     "tradingview": {
         "title": "TradingView webhook automation without the black box",
-        "seo_title": "TradingView Webhook Bot & Trading Automation | Sambot",
-        "meta": "Connect supported TradingView alerts to Sambot using webhooks for paper testing, validation, risk controls and automated workflow management.",
+        "seo_title": "TradingView Webhook Bot & Trading Automation | SamBot",
+        "meta": "Connect supported TradingView alerts to SamBot using webhooks for paper testing, validation, risk controls and automated workflow management.",
         "kicker": "TradingView",
-        "lead": "Sambot provides the automation layer that receives supported alerts and processes them through validation, account rules and an auditable workflow.",
+        "lead": "SamBot provides the automation layer that receives supported alerts and processes them through validation, account rules and an auditable workflow.",
         "section": "site/sections/tradingview.html",
         "backtest": False,
         "cta_label": "Connect TradingView",
@@ -69,10 +69,10 @@ SITE_PAGES = {
     },
     "paper": {
         "title": "Test the automation before putting capital at risk",
-        "seo_title": "Paper Trading Bot for Strategy Testing | Sambot",
+        "seo_title": "Paper Trading Bot for Strategy Testing | SamBot",
         "meta": "Test TradingView automation with simulated trading before connecting a supported trading account. Review signals, risk settings and results.",
         "kicker": "Paper trading",
-        "lead": "Sambot paper mode lets you observe the trading workflow with simulated execution. No connected trading funds are required.",
+        "lead": "SamBot paper mode lets you observe the trading workflow with simulated execution. No connected trading funds are required.",
         "section": "site/sections/paper.html",
         "backtest": False,
         "cta_label": "Start Paper Testing",
@@ -80,32 +80,32 @@ SITE_PAGES = {
     },
     "backtesting": {
         "title": "Backtesting with the losing trades left in",
-        "seo_title": "Trading Bot Backtesting & Strategy Testing | Sambot",
-        "meta": "Review Sambot strategy backtests with trade histories, assumptions, losing trades and drawdown information before evaluating automation.",
+        "seo_title": "Trading Bot Backtesting & Strategy Testing | SamBot",
+        "meta": "Review SamBot strategy backtests with trade histories, assumptions, losing trades and drawdown information before evaluating automation.",
         "kicker": "Backtesting",
         "lead": "A useful backtest examines how clearly defined rules behaved against historical data under stated assumptions — including the losses.",
         "section": "site/sections/backtesting.html",
         "backtest": True,
-        "cta_label": "View Sambot Backtests",
+        "cta_label": "View SamBot Backtests",
         "cta_url": "site_performance",
     },
     "risk": {
         "title": "Put your trading limits into the automation",
-        "seo_title": "Trading Risk Management Software & Automated Controls | Sambot",
+        "seo_title": "Trading Risk Management Software & Automated Controls | SamBot",
         "meta": "Configure trading risk controls including position risk, daily loss limits, exposure, stop loss, take profit and emergency stops.",
         "kicker": "Risk management",
         "lead": "Configurable controls are checked as part of the signal-processing workflow. They cannot remove market risk — they make your limits part of the system.",
         "section": "site/sections/risk.html",
         "backtest": False,
-        "cta_label": "Explore Sambot Risk Controls",
+        "cta_label": "Explore SamBot Risk Controls",
         "cta_url": "register",
     },
     "markets": {
-        "title": "Markets currently supported by Sambot",
-        "seo_title": "Gold & Bitcoin Trading Automation | Sambot",
-        "meta": "Explore Sambot's supported gold XAUUSD and Bitcoin trading automation environments, historical research and paper testing.",
+        "title": "Markets currently supported by SamBot",
+        "seo_title": "Gold & Bitcoin Trading Automation | SamBot",
+        "meta": "Explore SamBot's supported gold XAUUSD and Bitcoin trading automation environments, historical research and paper testing.",
         "kicker": "Markets",
-        "lead": "Sambot focuses on a deliberately limited set of markets. Markets are added only when the related workflow has been implemented and tested.",
+        "lead": "SamBot focuses on a deliberately limited set of markets. Markets are added only when the related workflow has been implemented and tested.",
         "section": "site/sections/markets.html",
         "backtest": False,
         "cta_label": "Explore Gold Automation",
@@ -113,7 +113,7 @@ SITE_PAGES = {
     },
     "gold": {
         "title": "XAUUSD automation built around testing",
-        "seo_title": "XAUUSD Gold Trading Bot Automation | Sambot",
+        "seo_title": "XAUUSD Gold Trading Bot Automation | SamBot",
         "meta": "Explore XAUUSD automation with TradingView alerts, historical backtesting, paper trading and configurable risk controls.",
         "kicker": "Gold / XAUUSD",
         "lead": "Gold can move quickly around economic events and sessions. Configuration, testing and risk controls matter in any automated gold workflow.",
@@ -124,8 +124,8 @@ SITE_PAGES = {
     },
     "bitcoin": {
         "title": "Bitcoin automation with a complete activity trail",
-        "seo_title": "Bitcoin Trading Automation & BTC Trading Bot | Sambot",
-        "meta": "Test Bitcoin TradingView automation through Sambot using paper trading, historical strategy research and configurable risk controls.",
+        "seo_title": "Bitcoin Trading Automation & BTC Trading Bot | SamBot",
+        "meta": "Test Bitcoin TradingView automation through SamBot using paper trading, historical strategy research and configurable risk controls.",
         "kicker": "Bitcoin",
         "lead": "Supported Bitcoin-oriented TradingView signals with Binance connectivity — designed so signals can first be observed in paper mode.",
         "section": "site/sections/bitcoin.html",
@@ -135,10 +135,10 @@ SITE_PAGES = {
     },
     "binance": {
         "title": "TradingView to Binance Futures through one controlled workflow",
-        "seo_title": "TradingView to Binance Futures Automation | Sambot",
-        "meta": "Connect supported TradingView automation with Binance Futures through Sambot's validation, risk-control and execution workflow.",
+        "seo_title": "TradingView to Binance Futures Automation | SamBot",
+        "meta": "Connect supported TradingView automation with Binance Futures through SamBot's validation, risk-control and execution workflow.",
         "kicker": "Binance Futures",
-        "lead": "Supported TradingView strategy alerts can connect with Binance Futures through Sambot's integration layer — after validation and your configured limits.",
+        "lead": "Supported TradingView strategy alerts can connect with Binance Futures through SamBot's integration layer — after validation and your configured limits.",
         "section": "site/sections/binance.html",
         "backtest": False,
         "cta_label": "Learn About Binance Integration",
@@ -146,10 +146,10 @@ SITE_PAGES = {
     },
     "mt5": {
         "title": "TradingView and MetaTrader 5 automation",
-        "seo_title": "MT5 Trading Automation for TradingView | Sambot",
-        "meta": "Learn how Sambot connects supported TradingView signals with MetaTrader 5 through an MT5 bridge and configurable automation controls.",
+        "seo_title": "MT5 Trading Automation for TradingView | SamBot",
+        "meta": "Learn how SamBot connects supported TradingView signals with MetaTrader 5 through an MT5 bridge and configurable automation controls.",
         "kicker": "MetaTrader 5",
-        "lead": "An MT5-based workflow uses a bridge alongside a MetaTrader 5 terminal so supported TradingView signals can enter the Sambot automation path.",
+        "lead": "An MT5-based workflow uses a bridge alongside a MetaTrader 5 terminal so supported TradingView signals can enter the SamBot automation path.",
         "section": "site/sections/mt5.html",
         "backtest": False,
         "cta_label": "Explore MT5 Automation",
@@ -157,19 +157,19 @@ SITE_PAGES = {
     },
     "performance": {
         "title": "Performance should be inspected, not advertised as certainty",
-        "seo_title": "Trading Bot Backtest Results & Performance Research | Sambot",
-        "meta": "Explore Sambot historical backtests, strategy results, losing trades, drawdowns and testing methodology. Historical results do not predict future performance.",
+        "seo_title": "Trading Bot Backtest Results & Performance Research | SamBot",
+        "meta": "Explore SamBot historical backtests, strategy results, losing trades, drawdowns and testing methodology. Historical results do not predict future performance.",
         "kicker": "Performance",
-        "lead": "A win rate does not show position size. A return does not show drawdown. Sambot presents strategy research with the data needed to examine results in context.",
+        "lead": "A win rate does not show position size. A return does not show drawdown. SamBot presents strategy research with the data needed to examine results in context.",
         "section": "site/sections/performance.html",
         "backtest": True,
         "cta_label": "View Current Research",
         "cta_url": "site_backtesting",
     },
     "pricing": {
-        "title": "Simple pricing for Sambot access",
-        "seo_title": "Sambot Pricing | Trading Automation Software",
-        "meta": "See Sambot pricing for trading automation software, research tools, paper mode, TradingView integration and optional signals.",
+        "title": "Simple pricing for SamBot access",
+        "seo_title": "SamBot Pricing | Trading Automation Software",
+        "meta": "See SamBot pricing for trading automation software, research tools, paper mode, TradingView integration and optional signals.",
         "kicker": "Pricing",
         "lead": "One clear access plan for the software, plus optional signals priced per delivery. Start with paper mode before anything else.",
         "section": "site/sections/pricing.html",
@@ -178,22 +178,22 @@ SITE_PAGES = {
         "cta_url": "register",
     },
     "about": {
-        "title": "Why Sambot exists",
-        "seo_title": "About Sambot | Transparent Trading Automation Software",
-        "meta": "Learn why Sambot focuses on transparent backtesting, paper trading, configurable risk controls and auditable trading automation.",
+        "title": "Why SamBot exists",
+        "seo_title": "About SamBot | Transparent Trading Automation Software",
+        "meta": "Learn why SamBot focuses on transparent backtesting, paper trading, configurable risk controls and auditable trading automation.",
         "kicker": "About",
-        "lead": "Too much trading software markets the promise first and the evidence later. Sambot is built to make it easier to examine what a system is actually doing.",
+        "lead": "Too much trading software markets the promise first and the evidence later. SamBot is built to make it easier to examine what a system is actually doing.",
         "section": "site/sections/about.html",
         "backtest": False,
-        "cta_label": "Explore Sambot",
+        "cta_label": "Explore SamBot",
         "cta_url": "register",
     },
     "faq": {
-        "title": "Sambot Frequently Asked Questions",
-        "seo_title": "Automated Trading Bot FAQ | TradingView, Paper Mode & Sambot",
-        "meta": "Answers about Sambot, TradingView automation, paper trading, backtesting, Binance, MetaTrader 5, risk controls and pricing.",
+        "title": "SamBot Frequently Asked Questions",
+        "seo_title": "Automated Trading Bot FAQ | TradingView, Paper Mode & SamBot",
+        "meta": "Answers about SamBot, TradingView automation, paper trading, backtesting, Binance, MetaTrader 5, risk controls and pricing.",
         "kicker": "FAQ",
-        "lead": "Straight answers about the product, testing, integrations and what Sambot does — and does not — claim.",
+        "lead": "Straight answers about the product, testing, integrations and what SamBot does — and does not — claim.",
         "section": "site/sections/faq.html",
         "backtest": False,
         "faq_schema": True,
@@ -202,27 +202,27 @@ SITE_PAGES = {
     },
     "contact": {
         "title": "Have a question about SamBot?",
-        "seo_title": "Contact Sambot | Trading Automation Support",
-        "meta": "Contact Sambot for questions about accounts, TradingView setup, paper mode, supported integrations and platform functionality.",
+        "seo_title": "Contact SamBot | Trading Automation Support",
+        "meta": "Contact SamBot for questions about accounts, TradingView setup, paper mode, supported integrations and platform functionality.",
         "kicker": "Contact",
         "lead": "Ask about your account, TradingView alerts, paper mode, the MT5 bridge or billing. Write to us and we reply by e-mail; signed-in customers can also use the 24/7 chat.",
         "section": "site/sections/contact.html",
         "backtest": False,
-        "cta_label": "Contact Sambot Support",
+        "cta_label": "Contact SamBot Support",
         "cta_url": "contact_mail",
     },
     "disclaimer": {
         "title": "Disclaimer",
-        "seo_title": "Disclaimer | Sambot",
-        "meta": "Please read this before using Sambot. Trading involves risk and nothing here is financial advice.",
+        "seo_title": "Disclaimer | SamBot",
+        "meta": "Please read this before using SamBot. Trading involves risk and nothing here is financial advice.",
         "kicker": "Important",
-        "lead": "Please read this before using Sambot. Trading involves risk and nothing here is financial advice.",
+        "lead": "Please read this before using SamBot. Trading involves risk and nothing here is financial advice.",
         "section": "site/sections/disclaimer.html",
         "backtest": False,
     },
     "strategy-lab": {
         "title": "Gold & BTC Strategy Lab",
-        "seo_title": "Gold & BTC Strategy Lab | Trend Pullback Bots | Sambot",
+        "seo_title": "Gold & BTC Strategy Lab | Trend Pullback Bots | SamBot",
         "meta": "Two independent bots for XAUUSD and BTCUSD: trend-filtered RSI pullback rules, transparent backtests, held-out results and risk controls. Not a guaranteed 80% win rate.",
         "kicker": "Strategy Lab",
         "lead": "Two independent bots. Exact instruments. Completed-bar rules. Measured history with costs — including the losing trades.",
@@ -421,7 +421,7 @@ def site_page(request, slug):
         "nav_page": slug,
         "page_slug": slug,
         "page_title": page["title"],
-        "page_seo_title": page.get("seo_title") or f"{page['title']} | Sambot",
+        "page_seo_title": page.get("seo_title") or f"{page['title']} | SamBot",
         "page_meta": page.get("meta") or page["lead"],
         "page_kicker": page["kicker"],
         "page_lead": page["lead"],
@@ -583,6 +583,23 @@ def _bot_summary(user, profile):
             "mt5_tone": "good" if st == "connected" else ("muted" if st == "not_configured" else "bad")}
 
 
+PRIVATE_PATHS = ["/reviews/", "/accounts/", "/admin/", "/bot/", "/chat/", "/orders/", "/signals/", "/django-admin/", "/blog/staff/", "/webhook/"]
+
+# Crawlers that fetch pages for AI search, answers and model training. Public pages are open to all of them; private areas stay closed.
+AI_CRAWLERS = [
+    "GPTBot", "OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "Claude-SearchBot", "anthropic-ai",
+    "PerplexityBot", "Perplexity-User", "Google-Extended", "GoogleOther", "Applebot", "Applebot-Extended",
+    "Amazonbot", "meta-externalagent", "meta-externalfetcher", "FacebookBot", "CCBot", "Bytespider", "cohere-ai",
+    "cohere-training-data-crawler", "DuckAssistBot", "MistralAI-User", "YouBot", "PetalBot", "Diffbot", "ImagesiftBot", "Timpibot",
+]
+SEARCH_CRAWLERS = ["Googlebot", "Googlebot-Image", "Bingbot", "DuckDuckBot", "Slurp", "YandexBot", "Baiduspider"]
+
+
+def _robots_group(agents):
+    lines = [f"User-agent: {a}" for a in agents] + ["Allow: /"] + [f"Disallow: {p}" for p in PRIVATE_PATHS]
+    return "\n".join(lines) + "\n"
+
+
 def robots_txt(request):
     base = getattr(settings, "SITE_URL", "https://sambot.aktechsolutions.tech").rstrip("/")
     from urllib.parse import urlparse
@@ -590,20 +607,90 @@ def robots_txt(request):
     if not settings.SEARCH_INDEXING or host != (urlparse(settings.SITE_URL).hostname or "").lower():
         return HttpResponse("User-agent: *\nDisallow: /\n", content_type="text/plain; charset=utf-8")    # staging, preview and alias hosts
     body = (
-        "User-agent: *\n"
-        "Allow: /\n"
-        "Disallow: /reviews/\n"
-        "Disallow: /accounts/\n"
-        "Disallow: /admin/\n"
-        "Disallow: /bot/\n"
-        "Disallow: /chat/\n"
-        "Disallow: /orders/\n"
-        "Disallow: /signals/\n"
-        "Disallow: /django-admin/\n"
-        "Disallow: /blog/staff/\n"
-        f"Sitemap: {base}/sitemap.xml\n"
+        f"# {settings.SITE_NAME}: public pages may be crawled by search engines and AI crawlers. Private areas are disallowed.\n"
+        f"# A plain-language site summary for AI assistants is at {base}/llms.txt (full text: {base}/llms-full.txt)\n\n"
+        + _robots_group(["*"]) + "\n"
+        + _robots_group(SEARCH_CRAWLERS) + "\n"
+        + "# AI search, answer and training crawlers\n"
+        + _robots_group(AI_CRAWLERS) + "\n"
+        + f"Sitemap: {base}/sitemap.xml\n"
     )
     return HttpResponse(body, content_type="text/plain; charset=utf-8")
+
+
+def _live_posts():
+    try:
+        from blog.models import Post
+        from django.db.models import Q
+        return list(Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).order_by("-published_at")[:60])
+    except Exception:
+        return []
+
+
+def llms_txt(request):
+    """/llms.txt: a short, link-rich summary of the public site for AI assistants (llmstxt.org format)."""
+    base = settings.SITE_URL.rstrip("/")
+    out = [
+        f"# {settings.SITE_NAME}",
+        "",
+        "> SamBot is trading automation software. It connects TradingView alerts, configurable risk controls and supported execution environments (MetaTrader 5 and Binance Futures) into one auditable workflow, with a paper-trading mode for testing first. It is software, not a broker, and it does not guarantee profits.",
+        "",
+        "Key facts: supported markets are gold (XAUUSD, via MetaTrader 5) and Bitcoin (BTCUSDT, via Binance Futures). Backtests and paper results are historical or simulated and are not predictions. Trading involves a risk of loss and nothing here is personal investment advice.",
+        "",
+        "## Product",
+    ]
+    for slug in ("how", "tradingview", "paper", "risk", "mt5", "binance", "markets", "gold", "bitcoin", "pricing"):
+        pg = SITE_PAGES.get(slug)
+        if pg:
+            out.append(f"- [{pg['title']}]({base}/{slug}/): {pg.get('meta') or pg['lead']}")
+    out += ["", "## Research and performance"]
+    for slug in ("performance", "backtesting", "strategy-lab"):
+        pg = SITE_PAGES.get(slug)
+        if pg:
+            out.append(f"- [{pg['title']}]({base}/{slug}/): {pg.get('meta') or pg['lead']}")
+    out += ["", "## Help and company"]
+    for slug in ("faq", "about", "contact"):
+        pg = SITE_PAGES.get(slug)
+        if pg:
+            out.append(f"- [{pg['title']}]({base}/{slug}/): {pg.get('meta') or pg['lead']}")
+    out += [f"- [Risk disclosure]({base}/disclaimer/): Trading risks and the limits of backtests and paper trading", f"- [Terms of service]({base}/legal/terms/): Terms for using SamBot"]
+    out += ["", "## Guides (blog)", f"- [All guides]({base}/blog/): Practical articles on TradingView webhooks, paper trading, MT5, risk controls and backtesting"]
+    for p in _live_posts()[:25]:
+        line = f"- [{p.title}]({base}{p.get_absolute_url()})"
+        if (p.excerpt or "").strip():
+            line += f": {p.excerpt.strip()[:140]}"
+        out.append(line)
+    out += ["", "## Optional", f"- [Full text version of this summary]({base}/llms-full.txt)", f"- [Sitemap]({base}/sitemap.xml)", ""]
+    return HttpResponse("\n".join(out), content_type="text/plain; charset=utf-8")
+
+
+def llms_full_txt(request):
+    """/llms-full.txt: the same material with the substance inline (page summaries, FAQ answers, pricing)."""
+    base = settings.SITE_URL.rstrip("/")
+    out = [
+        f"# {settings.SITE_NAME}: full site summary", "",
+        f"> {settings.SITE_NAME} is trading automation software that connects TradingView alerts, configurable risk controls and supported execution environments into one auditable workflow. It is software, not a broker. It does not guarantee profits or future performance.", "",
+        "## Pricing", "",
+        f"- SamBot Access: ${settings.PRICE_BOT:g} for {settings.BOT_ACCESS_DAYS} days (dashboard, paper trading, TradingView webhook, risk controls, activity log, supported MT5 and Binance workflows).",
+        f"- Optional signals: ${settings.PRICE_SIGNAL:g} per delivered signal. Signals are informational, not personal advice.",
+        f"- Creating an account is free. Details: {base}/pricing/", "",
+        "## Pages", "",
+    ]
+    for slug, pg in SITE_PAGES.items():
+        out += [f"### {pg['title']}", f"URL: {base}/{slug}/", pg["lead"], ""]
+    out += ["## Frequently asked questions", ""]
+    for group, qa in FAQ_GROUPS:
+        out += [f"### {group}", ""]
+        for q, a in qa:
+            out += [f"**{q}**", a, ""]
+    posts = _live_posts()
+    if posts:
+        out += ["## Guides", ""]
+        for p in posts:
+            out.append(f"- {p.title}: {base}{p.get_absolute_url()}")
+        out.append("")
+    out += ["## Important limits", "", "Backtests are historical simulations under stated assumptions. Paper trading simulates fills and differs from live execution. Neither predicts future results. Trading involves a risk of loss.", ""]
+    return HttpResponse("\n".join(out), content_type="text/plain; charset=utf-8")
 
 
 def sitemap_xml(request):
@@ -636,13 +723,13 @@ def sitemap_xml(request):
         from blog.models import Post
         from django.db.models import Q
         for p in Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).only("slug", "updated", "published_at"):
-            paths.append((f"/blog/{p.slug}/", "0.65", "monthly"))
+            paths.append((f"/blog/{p.slug}/", "0.65", "monthly", (p.updated or p.published_at or timezone.now()).date().isoformat()))
     except Exception:
         pass
     urls = []
-    for path, pri, freq in paths:
+    for path, pri, freq, *mod in paths:
         urls.append(
-            f"<url><loc>{base}{path}</loc><lastmod>{today}</lastmod>"
+            f"<url><loc>{base}{path}</loc><lastmod>{mod[0] if mod else today}</lastmod>"
             f"<changefreq>{freq}</changefreq><priority>{pri}</priority></url>"
         )
     xml = (

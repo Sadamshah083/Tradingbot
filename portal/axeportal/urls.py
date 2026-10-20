@@ -6,7 +6,7 @@ from django.views.generic import RedirectView
 
 from accounts import staff
 from content import views as content_views
-from accounts.views import AdminLoginView, landing, legal, robots_txt, site_page, sitemap_xml
+from accounts.views import AdminLoginView, landing, legal, llms_full_txt, llms_txt, robots_txt, site_page, sitemap_xml
 
 SITE_SLUGS = [
     "how", "tradingview", "paper", "backtesting", "risk", "markets",
@@ -24,6 +24,8 @@ urlpatterns = [
     path("favicon.ico", RedirectView.as_view(url="/static/img/favicon.ico", permanent=True)),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
+    path("llms.txt", llms_txt, name="llms_txt"),
+    path("llms-full.txt", llms_full_txt, name="llms_full_txt"),
     *[path(f"{slug}/", site_page, {"slug": slug}, name=f"site_{slug}") for slug in SITE_SLUGS],
     path("legal/<slug:kind>/", legal, name="legal"),
     path("admin/", RedirectView.as_view(pattern_name="staff_home", permanent=False)),
