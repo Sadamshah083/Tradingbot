@@ -578,22 +578,24 @@
   </div>
 </section>
 
-<section class="final-cta rv" aria-labelledby="cta-title">
+<section class="cta-band rv" aria-labelledby="cta-title">
   <div class="wrap">
-    <div class="final-inner">
-      <div>
+    <div class="cta-card">
+      <div class="cta-copy">
         <h2 id="cta-title">Start With Paper Trading. Build From What You Learn.</h2>
         <p class="sub">Create your SamBot account to explore the platform, connect your alerts, and review simulated activity. Take time to understand your workflow before deciding whether to enable live trading.</p>
-        <div class="cta">
+        <div class="cta-btns">
           <a class="btn primary" href="{% url 'register' %}">Create Your SamBot Account</a>
           <a class="btn ghost" href="{% url 'site_contact' %}">Contact SamBot</a>
         </div>
-        <p class="fine" style="color:rgba(255,255,255,.5)">Risk disclosure: SamBot provides software and informational tools, not personalised financial advice. Trading involves substantial risk of loss. Historical backtests and paper simulations do not guarantee future performance. You are responsible for your trading decisions.</p>
       </div>
-      <div class="final-mock" aria-hidden="true">
-        <div class="bar"></div>
-        <div class="grid"><div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div></div>
-      </div>
+      <ol class="cta-steps" aria-label="Getting started">
+        <li><i>1</i><div><b>Create your account</b><span>Free to join</span></div></li>
+        <li><i>2</i><div><b>Connect your TradingView alerts</b><span>Webhook set up in minutes</span></div></li>
+        <li><i>3</i><div><b>Review paper activity</b><span>Signals, sizing and risk rules</span></div></li>
+        <li><i>4</i><div><b>Decide on live trading</b><span>Only when you are ready</span></div></li>
+      </ol>
+      <p class="cta-fine">Risk disclosure: SamBot provides software and informational tools, not personalised financial advice. Trading involves substantial risk of loss. Historical backtests and paper simulations do not guarantee future performance. You are responsible for your trading decisions.</p>
     </div>
   </div>
 </section>

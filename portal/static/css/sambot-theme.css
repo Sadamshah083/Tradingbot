@@ -243,3 +243,21 @@ a{color:var(--spark)}
 .statbar small i{font-style:normal}
 @media(max-width:900px){.statbar{grid-template-columns:1fr 1fr}.statbar .sbi:nth-child(3){border-left:0}.statbar .sbi:nth-child(n+3){border-top:1px solid var(--line)}}
 @media(max-width:480px){.statbar .sbi{padding:16px}.statbar span{font-size:12.5px}}
+
+/* ===== Closing CTA band ===== */
+.home .cta-band{padding:56px 0 56px;margin:0;border-top:1px solid var(--line);text-align:left}
+.cta-card{position:relative;display:grid;grid-template-columns:1.15fr .85fr;gap:20px 56px;align-items:center;padding:44px 52px 30px;border-radius:28px;overflow:hidden;background:linear-gradient(135deg,#13203A 0%,#0C1423 60%);border:1px solid rgba(182,255,46,.28);box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.cta-card:before{content:"";position:absolute;right:-8%;top:-30%;width:55%;height:160%;background:radial-gradient(closest-side,rgba(182,255,46,.16),transparent);pointer-events:none}
+.cta-card>*{position:relative}
+.cta-copy h2{margin:0 0 12px;text-align:left;max-width:none;font-family:Manrope,sans-serif;font-size:clamp(26px,3vw,38px);letter-spacing:-1px;color:#fff}
+.cta-copy .sub{text-align:left;margin:0 0 24px;max-width:560px;font-size:15.5px}
+.cta-btns{display:flex;flex-wrap:wrap;gap:12px}
+.cta-steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.cta-steps li{display:flex;align-items:center;gap:14px;padding:13px 16px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid var(--line)}
+.cta-steps i{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--spark);color:#0A101C;font:800 13px "JetBrains Mono",monospace;font-style:normal}
+.cta-steps b{display:block;color:#fff;font-size:14.5px}.cta-steps span{color:var(--muted);font-size:12.5px}
+.cta-fine{grid-column:1/-1;margin:6px 0 0;padding-top:16px;border-top:1px solid var(--line);color:#6B7C97;font-size:12px;line-height:1.55}
+@media(max-width:900px){.cta-card{grid-template-columns:1fr;padding:32px 24px 24px;gap:24px}.home .cta-band{padding:40px 0 44px}}
+
+/* remove the global main bottom padding that left a gap above the footer */
+.site main{padding-bottom:0}
