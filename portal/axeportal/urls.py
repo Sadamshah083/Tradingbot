@@ -12,6 +12,7 @@ SITE_SLUGS = [
 
 urlpatterns = [
     path("", landing, name="landing"),
+    path("favicon.ico", RedirectView.as_view(url="/static/img/favicon.ico", permanent=True)),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     *[path(f"{slug}/", site_page, {"slug": slug}, name=f"site_{slug}") for slug in SITE_SLUGS],
