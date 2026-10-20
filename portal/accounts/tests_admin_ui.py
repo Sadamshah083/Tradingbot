@@ -250,6 +250,7 @@ class NavAndBlogSchedule(TestCase):
         menu = menu[menu.index('id="app-menu"'):]
         self.assertLess(menu.index(">Home<"), menu.index("Dashboard"))
         self.assertEqual(menu[:menu.index("</ul>")].count(">Home<"), 1)      # only one Home link
+        self.assertLess(menu.index("</ul>"), menu.index('id="umBtn"'))        # profile sits after the links, at the right end
 
     def test_blog_visible_to_visitors_and_scheduled_posts_wait_for_their_time(self):
         from datetime import timedelta
