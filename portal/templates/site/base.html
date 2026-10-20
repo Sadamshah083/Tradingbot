@@ -113,11 +113,12 @@
 <header class="nav"><div class="wrap"><nav aria-label="Main">
   <a class="logo" href="{% url 'landing' %}" aria-label="{{ SITE_NAME }}"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></a>
   <ul class="links">
-    <li><a href="{% url 'landing' %}#features">Features</a></li>
-    <li><a href="{% url 'landing' %}#how" class="{% if nav_page == 'how' %}active{% endif %}">How it Works</a></li>
-    <li><a href="{% url 'landing' %}#pricing" class="{% if nav_page == 'pricing' %}active{% endif %}">Pricing</a></li>
-    <li><a href="{% url 'landing' %}#markets" class="{% if nav_page == 'markets' %}active{% endif %}">Supported Markets</a></li>
-    <li><a href="{% url 'landing' %}#faq" class="{% if nav_page == 'faq' %}active{% endif %}">FAQ</a></li>
+    <li><a href="{% url 'landing' %}" class="{% if request.path == '/' %}active{% endif %}">Home</a></li>
+    <li><a href="{% url 'site_how' %}" class="{% if nav_page == 'how' %}active{% endif %}">How it Works</a></li>
+    <li><a href="{% url 'site_markets' %}" class="{% if nav_page == 'markets' %}active{% endif %}">Markets</a></li>
+    <li><a href="{% url 'site_performance' %}" class="{% if nav_page == 'performance' %}active{% endif %}">Performance</a></li>
+    <li><a href="{% url 'site_pricing' %}" class="{% if nav_page == 'pricing' %}active{% endif %}">Pricing</a></li>
+    <li><a href="{% url 'site_faq' %}" class="{% if nav_page == 'faq' %}active{% endif %}">FAQ</a></li>
     <li><a href="{% url 'site_contact' %}" class="{% if nav_page == 'contact' %}active{% endif %}">Contact</a></li>
   </ul>
   <div class="actions">
@@ -126,27 +127,28 @@
       {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
       <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
-      <a class="btn ghost small" href="{% url 'login' %}" data-modal="login">Log In</a>
-      <a class="btn primary small" href="{% url 'register' %}" data-modal="register">Get Started</a>
+      <a class="btn ghost small" href="{% url 'login' %}">Log In</a>
+      <a class="btn primary small" href="{% url 'register' %}">Get Started</a>
     {% endif %}
   </div>
   <button class="burger" type="button" aria-label="Menu" aria-expanded="false" onclick="const u=document.getElementById('menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'))">Menu</button>
   <div class="mobile" id="menu">
-    <a href="{% url 'landing' %}#features">Features</a>
-    <a href="{% url 'landing' %}#how">How it Works</a>
-    <a href="{% url 'landing' %}#pricing">Pricing</a>
-    <a href="{% url 'landing' %}#markets">Supported Markets</a>
-    <a href="{% url 'landing' %}#faq">FAQ</a>
-    <a href="{% url 'site_contact' %}">Contact</a>
+    <a href="{% url 'landing' %}">Home</a>
+    <a href="{% url 'site_how' %}">How it Works</a>
+    <a href="{% url 'site_markets' %}">Markets</a>
+    <a href="{% url 'site_performance' %}">Performance</a>
+    <a href="{% url 'site_pricing' %}">Pricing</a>
     <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
+    <a href="{% url 'site_faq' %}">FAQ</a>
+    <a href="{% url 'site_contact' %}">Contact</a>
     <a href="{% url 'site_disclaimer' %}">Disclaimer</a>
     {% if user.is_authenticated %}
       {% if user.is_superuser %}<a class="btn primary small" href="{% url 'staff_home' %}">Admin →</a>
       {% else %}<a class="btn primary small" href="{% url 'dashboard' %}">Dashboard →</a>{% endif %}
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
-      <a class="btn ghost small" href="{% url 'login' %}" data-modal="login">Log In</a>
-      <a class="btn primary small" href="{% url 'register' %}" data-modal="register">Get Started</a>
+      <a class="btn ghost small" href="{% url 'login' %}">Log In</a>
+      <a class="btn primary small" href="{% url 'register' %}">Get Started</a>
     {% endif %}
   </div>
 </nav></div></header>
@@ -168,10 +170,10 @@
       </div>
       <div>
         <h4>Quick Links</h4>
-        <a href="{% url 'landing' %}#features">Features</a>
-        <a href="{% url 'landing' %}#how">How it Works</a>
-        <a href="{% url 'landing' %}#pricing">Pricing</a>
-        <a href="{% url 'landing' %}#markets">Supported Markets</a>
+        <a href="{% url 'landing' %}">Home</a>
+        <a href="{% url 'site_how' %}">How it Works</a>
+        <a href="{% url 'site_pricing' %}">Pricing</a>
+        <a href="{% url 'site_markets' %}">Supported Markets</a>
         <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
         <a href="{% url 'site_performance' %}">Performance</a>
         <a href="{% url 'blog' %}">Blog</a>
@@ -213,57 +215,11 @@
   </div></div>
 </footer>
 
-{% if not user.is_authenticated %}
-<div class="modal" id="modal-login" role="dialog" aria-modal="true" aria-labelledby="login-title">
-  <div class="modal-card">
-    <button class="modal-x" type="button" aria-label="Close" data-close>&times;</button>
-    <div class="modal-brand"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></div>
-    <h2 id="login-title">Welcome back</h2><p class="muted" style="margin:0 0 18px">Log in with your e-mail or username.</p>
-    <form method="post" action="{% url 'login' %}">{% csrf_token %}
-      <label for="m-login-user">E-mail or username</label><input id="m-login-user" name="username" placeholder="you@example.com" autocomplete="username" required>
-      <label for="m-login-pw">Password</label><input id="m-login-pw" name="password" type="password" placeholder="Password" autocomplete="current-password" required>
-      <input type="hidden" name="next" value="{% url 'dashboard' %}">
-      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Log in</button>
-    </form>
-    <p class="muted" style="margin:16px 0 0;text-align:center">New here? <a href="{% url 'register' %}" data-modal="register" style="color:var(--spark)">Create an account</a></p>
-  </div>
-</div>
-<div class="modal" id="modal-register" role="dialog" aria-modal="true" aria-labelledby="reg-title">
-  <div class="modal-card">
-    <button class="modal-x" type="button" aria-label="Close" data-close>&times;</button>
-    <div class="modal-brand"><img src="{% static 'img/logo.jpg' %}" alt="{{ SITE_NAME }}" width="120" height="36"></div>
-    <h2 id="reg-title">Create your account</h2><p class="muted" style="margin:0 0 18px">Free to create. Unlock the bot or buy signals afterwards.</p>
-    <form method="post" action="{% url 'register' %}">{% csrf_token %}
-      <label for="m-reg-user">Username</label><input id="m-reg-user" name="username" placeholder="Choose a username" autocomplete="username" required maxlength="150">
-      <label for="m-reg-email">E-mail</label><input id="m-reg-email" name="email" type="email" placeholder="you@example.com" autocomplete="email" required>
-      <label for="m-reg-pw1">Password</label><input id="m-reg-pw1" name="password1" type="password" placeholder="Password (8+ characters)" autocomplete="new-password" required minlength="8">
-      <label for="m-reg-pw2">Repeat password</label><input id="m-reg-pw2" name="password2" type="password" placeholder="Repeat password" autocomplete="new-password" required minlength="8">
-      <input type="hidden" name="next" id="m-reg-next" value="">
-      <button class="btn primary" type="submit" style="width:100%;justify-content:center;margin-top:20px">Create account</button>
-    </form>
-    <p class="muted" style="margin:16px 0 0;text-align:center">Already have one? <a href="{% url 'login' %}" data-modal="login" style="color:var(--spark)">Log in</a></p>
-  </div>
-</div>
-{% endif %}
+
 </div>
 {% endblock %}
 {% block scripts %}
 <script>
-  const modals = {login: document.getElementById('modal-login'), register: document.getElementById('modal-register')};
-  function openModal(name, next) {
-    Object.values(modals).forEach(m => m && m.classList.remove('open'));
-    const m = modals[name]; if (!m) { location.href = name === 'login' ? "{% url 'login' %}" : "{% url 'register' %}"; return; }
-    if (name === 'register' && next) document.getElementById('m-reg-next').value = next;
-    m.classList.add('open'); document.body.style.overflow = 'hidden';
-    setTimeout(() => { const f = m.querySelector('input'); if (f) f.focus(); }, 50);
-  }
-  function closeModals() { Object.values(modals).forEach(m => m && m.classList.remove('open')); document.body.style.overflow = ''; }
-  document.querySelectorAll('[data-modal]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openModal(a.dataset.modal); }));
-  document.querySelectorAll('a[href*="/accounts/register/?next="]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openModal('register', new URL(a.href).searchParams.get('next')); }));
-  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeModals));
-  Object.values(modals).forEach(m => m && m.addEventListener('click', e => { if (e.target === m) closeModals(); }));
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
-  if (location.hash === '#login') openModal('login'); if (location.hash === '#register') openModal('register');
   document.querySelectorAll('#menu a, #menu button').forEach(a => a.addEventListener('click', () => { const m=document.getElementById('menu'); if(m) m.classList.remove('open'); }));
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), {threshold: .12, rootMargin: '0px 0px -40px 0px'});
   document.querySelectorAll('.rv').forEach(el => io.observe(el));

@@ -1,0 +1,51 @@
+{% extends "site/base.html" %}
+{% load static %}
+{% block site_class %}authpage{% endblock %}
+{% block seo %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block page_head %}
+<style>
+  .authpage main{padding:0}
+  .auth-wrap{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;min-height:calc(100vh - 60px - 120px);padding:56px 0 72px}
+  .auth-side .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--spark);font-size:12px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;margin:0 0 14px}
+  .auth-side .eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.22)}
+  .auth-side h1{font-family:Manrope,ui-sans-serif,sans-serif;font-size:clamp(30px,4vw,46px);line-height:1.08;letter-spacing:-1.4px;margin:0 0 14px;color:#fff}
+  .auth-side h1 .hi{background:linear-gradient(90deg,#B6FF2E,#4FD1E8);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .auth-side .lead{color:var(--muted);font-size:16px;line-height:1.65;max-width:520px;margin:0 0 26px}
+  .auth-points{list-style:none;margin:0;padding:0;display:grid;gap:12px;max-width:520px}
+  .auth-points li{display:flex;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(15,24,40,.7)}
+  .auth-points i{flex:none;width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(182,255,46,.1);border:1px solid rgba(182,255,46,.2);color:var(--spark);font:800 13px "JetBrains Mono",monospace;font-style:normal}
+  .auth-points b{display:block;color:#fff;font-size:14.5px;margin-bottom:2px}
+  .auth-points span{color:var(--muted);font-size:13.5px;line-height:1.5}
+  .auth-card{width:100%;max-width:440px;margin-left:auto;padding:34px 32px 28px;border-radius:22px;background:linear-gradient(180deg,#121D31,#0C1423);border:1px solid rgba(182,255,46,.22);box-shadow:0 40px 90px rgba(0,0,0,.55),0 0 60px rgba(182,255,46,.07)}
+  .auth-card h2{margin:0 0 6px;text-align:left;font-family:Manrope,sans-serif;font-size:26px;letter-spacing:-.6px;color:#fff;max-width:none}
+  .auth-card .lead2{color:var(--muted);margin:0 0 20px;font-size:14.5px}
+  .auth-card label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px;font-weight:700}
+  .auth-card input{width:100%;padding:12px 14px;border-radius:12px;font:inherit;font-size:15px}
+  .auth-card .btn.primary{width:100%;justify-content:center;margin-top:22px;padding:14px 18px;border-radius:12px}
+  .auth-card .alt{margin:18px 0 0;text-align:center;color:var(--muted);font-size:14px}
+  .auth-card .alt a{color:var(--spark);font-weight:700}
+  .auth-card .flash.error{background:rgba(255,107,98,.1);border:1px solid rgba(255,107,98,.35);color:#FF8F88;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-bottom:6px}
+  .auth-card .errorlist{list-style:none;padding:0;margin:6px 0 0;color:#FF8F88;font-size:13px}
+  .auth-card .helptext{display:none}
+  @media(max-width:900px){.auth-wrap{grid-template-columns:1fr;gap:32px;padding:36px 0 56px}.auth-card{margin:0 auto}.auth-side{order:2}.auth-side .lead,.auth-points{max-width:none}}
+</style>
+{% endblock %}
+{% block site %}
+<main>
+<div class="wrap"><div class="auth-wrap">
+  <div class="auth-side">
+    <p class="eyebrow">{% block auth_eyebrow %}SamBot account{% endblock %}</p>
+    <h1>{% block auth_h1 %}{% endblock %}</h1>
+    <p class="lead">SamBot connects your TradingView alerts to paper trading, risk controls and supported MT5 and Binance workflows, so you can test before you trade live.</p>
+    <ul class="auth-points">
+      <li><i>01</i><div><b>Paper mode first</b><span>Check alerts, sizing and risk rules without placing live orders.</span></div></li>
+      <li><i>02</i><div><b>Risk limits you set</b><span>Daily loss limits and maximum open positions, tested before automation.</span></div></li>
+      <li><i>03</i><div><b>Full activity log</b><span>Review every signal, action and rejection in one dashboard.</span></div></li>
+    </ul>
+  </div>
+  <div class="auth-card">
+    {% block auth_card %}{% endblock %}
+  </div>
+</div></div>
+</main>
+{% endblock %}

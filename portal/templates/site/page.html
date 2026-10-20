@@ -101,7 +101,7 @@
       {% if cta_href|slice:":7" == "mailto:" %}
       <a class="btn primary" href="{{ cta_href }}">{{ cta_label }}</a>
       {% elif cta_href == '/accounts/register/' or 'register' in cta_href %}
-      <a class="btn primary" href="{% url 'register' %}" data-modal="register">{{ cta_label }}</a>
+      <a class="btn primary" href="{% url 'register' %}">{{ cta_label }}</a>
       {% else %}
       <a class="btn primary" href="{{ cta_href }}">{{ cta_label }}</a>
       {% endif %}
