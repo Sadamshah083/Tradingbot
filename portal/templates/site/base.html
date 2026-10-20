@@ -106,7 +106,7 @@
   @media(max-width:560px){.fcols{grid-template-columns:1fr}.site h2{font-size:26px}.logo img{height:32px}.wrap{padding:0 16px}.foot-bottom{flex-direction:column;align-items:flex-start}}
 </style>
 {% block page_head %}{% endblock %}
-<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=18">
+<link rel="stylesheet" href="{% static 'css/sambot-theme.css' %}?v=19">
 {% endblock %}
 {% block content %}
 <div class="site {% block site_class %}{% endblock %}">
@@ -128,7 +128,7 @@
       <form method="post" action="{% url 'logout' %}" style="margin:0">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
       <a class="btn ghost small" href="{% url 'login' %}">Log In</a>
-      <a class="btn primary small" href="{% url 'register' %}">Get Started</a>
+      <a class="btn primary small" href="{% url 'register' %}">Sign Up</a>
     {% endif %}
   </div>
   <button class="burger" type="button" aria-label="Menu" aria-expanded="false" onclick="const u=document.getElementById('menu');u.classList.toggle('open');this.setAttribute('aria-expanded',u.classList.contains('open'))">Menu</button>
@@ -148,7 +148,7 @@
       <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form>
     {% else %}
       <a class="btn ghost small" href="{% url 'login' %}">Log In</a>
-      <a class="btn primary small" href="{% url 'register' %}">Get Started</a>
+      <a class="btn primary small" href="{% url 'register' %}">Sign Up</a>
     {% endif %}
   </div>
 </nav></div></header>

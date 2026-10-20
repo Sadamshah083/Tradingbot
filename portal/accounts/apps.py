@@ -6,4 +6,5 @@ class AccountsConfig(AppConfig):
     name = "accounts"
 
     def ready(self):
+        from . import jwtauth  # noqa: F401  (registers login/logout signal receivers)
         from . import signals_hooks  # noqa: F401  (creates a Profile for every new user)

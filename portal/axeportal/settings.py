@@ -1,4 +1,5 @@
 """Django settings for the AxeAlgo customer portal (accounts, paid signals, live chat)."""
+import hashlib
 import os
 import secrets
 from pathlib import Path
@@ -94,6 +95,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "accounts.jwtauth.JWTAuthMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "accounts.middleware.NoCacheAuthMiddleware",
@@ -123,7 +125,10 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard"
 LOGOUT_REDIRECT_URL = "landing"
-SESSION_COOKIE_AGE = 14 * 24 * 3600
+# Login tokens (see accounts/jwtauth.py). JWT_SECRET must be set in .env; the fallback is derived from SECRET_KEY.
+JWT_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
+JWT_SECRET = os.getenv("JWT_SECRET") or hashlib.sha256(("jwt:" + SECRET_KEY).encode()).hexdigest()
+SESSION_COOKIE_AGE = JWT_EXPIRE_HOURS * 3600
 # After logout / back-button: never serve cached authenticated pages
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 

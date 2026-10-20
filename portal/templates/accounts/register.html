@@ -1,9 +1,9 @@
 {% extends "accounts/auth_base.html" %}
-{% block title %}Create account | {{ SITE_NAME }}{% endblock %}
-{% block auth_eyebrow %}Free account{% endblock %}
-{% block auth_h1 %}Create your <span class="hi">SamBot account</span>{% endblock %}
+{% block title %}Sign up | {{ SITE_NAME }}{% endblock %}
+{% block auth_eyebrow %}Sign up{% endblock %}
+{% block auth_h1 %}Sign up for <span class="hi">SamBot</span>{% endblock %}
 {% block auth_card %}
-    <h2>Create your account</h2>
+    <h2>Sign up</h2>
     <p class="lead2">Free to join. Paid access unlocks automation.</p>
     <form method="post" novalidate>
       {% csrf_token %}
@@ -12,7 +12,7 @@
       <label for="id_email">E-mail</label>{{ form.email }}{{ form.email.errors }}
       <label for="id_password1">Password</label>{{ form.password1 }}{{ form.password1.errors }}
       <label for="id_password2">Repeat password</label>{{ form.password2 }}{{ form.password2.errors }}
-      <button class="btn primary" type="submit">Create account</button>
+      <button class="btn primary" type="submit">Sign up</button>
     </form>
-    <p class="alt">Already registered? <a href="{% url 'login' %}">Log in</a></p>
+    <p class="alt">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
 {% endblock %}
