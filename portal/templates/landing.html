@@ -206,59 +206,76 @@
 {% block site %}
 <main id="top">
 <div class="hero-band"><div class="wrap">
-  <section class="hero" aria-labelledby="hero-title">
+  <section class="hero h2x" aria-labelledby="hero-title">
     <div class="hero-copy" style="animation:rise .8s cubic-bezier(.22,1,.36,1) both">
-      <p class="eyebrow">TradingView automation</p>
-      <h1 id="hero-title">TradingView Automation for <span class="hi">MT5 and Binance</span></h1>
-      <p class="lead">Turn your TradingView alerts into a trading workflow you can test and review. SamBot brings paper trading, strategy backtesting, configurable risk controls, and supported MetaTrader 5 and Binance execution workflows into one platform.</p>
+      <p class="eyebrow">Trading automation. On your terms.</p>
+      <h1 id="hero-title">Your strategy.<br>Your rules.<br><span class="hl">Automated.</span></h1>
+      <p class="lead">Turn TradingView alerts into a repeatable trading workflow. Test in paper mode, define your risk limits, and connect supported MT5 or Binance execution.</p>
       <div class="cta">
-        <a class="btn primary" href="{% url 'register' %}">Create Your Account</a>
-        <a class="btn demo" href="{% url 'site_how' %}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> See How SamBot Works</a>
+        <a class="btn primary" href="{% url 'register' %}">Create your account <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></a>
+        <a class="btn demo" href="#features">Explore the workflow <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
       </div>
-      <div class="trust">
-        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg></i> Free account creation</span>
-        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg></i> Paper mode before live trading</span>
-        <span><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></i> Paid access required for automation</span>
-      </div>
+      <p class="ticks"><span>&#10003; Free account creation</span><span>&#10003; Paper-test before live trading</span></p>
     </div>
+
     <div class="stage">
-      <div class="flow" id="flow" role="img" aria-label="Illustration: a TradingView alert passes through SamBot's webhook and risk checks before a paper or supported live order is placed">
-        <div class="fx-card fx-alert">
-          <div class="fx-h"><span class="fx-dot"></span> TradingView alert</div>
-          <pre><b>{</b> "action": <em>"buy"</em>,
-  "symbol": <em>"XAUUSD"</em>,
-  "sl": <em>risk</em>, "tp": <em>target</em> <b>}</b></pre>
-        </div>
+      <p class="dv-eyebrow"><i></i> Your workspace. At a glance.</p>
+      <div class="dv-fit" id="dvFit">
+        <div class="dv-stage" id="dvStage" role="img" aria-label="Product concept: SamBot trading overview on a tablet and phone in paper mode, with sample data">
 
-        <div class="term">
-          <div class="term-top">
-            <span class="dots"><i></i><i></i><i></i></span>
-            <b>XAUUSD <small>1H</small></b>
-            <span class="live"><i></i> Paper mode</span>
+          <!-- tablet -->
+          <div class="tablet">
+            <div class="screen">
+              <aside class="sb">
+                <span class="sb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M8 6h10v10"/></svg></span>
+                <span class="sb-i on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>
+                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg></span>
+                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 21V4M6 5h12l-3 4 3 4H6"/></svg></span>
+                <span class="sb-i bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
+              </aside>
+              <div class="main">
+                <div class="m-head"><b>Trading overview</b><span class="chip">&#9679; Paper mode</span></div>
+                <div class="m-stats">
+                  <div><small>Simulated equity</small><strong id="dvEq">$10,248<em>.60</em></strong></div>
+                  <div><small>Open P/L</small><strong class="up" id="dvPl">+$48.60</strong></div>
+                  <div><small>Bot status</small><span class="st on" id="dvSt"><i></i> Monitoring</span></div>
+                </div>
+                <div class="m-chart">
+                  <div class="c-head"><div><b>XAUUSD</b><small>Gold / US Dollar</small></div><span class="c-note">Illustrative price action</span></div>
+                  <svg id="dvChart" viewBox="0 0 470 150" preserveAspectRatio="none" aria-hidden="true"></svg>
+                  <div class="c-axis"><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span></div>
+                </div>
+                <div class="m-pos">
+                  <div class="p-head"><b>Open positions</b><span class="cnt" id="dvCnt">2</span></div>
+                  <table><thead><tr><th>Symbol</th><th>Side</th><th>Volume</th><th>P/L</th></tr></thead>
+                  <tbody><tr><td>XAUUSD</td><td><span class="buy">BUY</span></td><td>0.01</td><td class="up">+$31.20</td></tr>
+                  <tr><td>BTCUSD</td><td><span class="buy">BUY</span></td><td>0.02</td><td class="up">+$17.40</td></tr></tbody></table>
+                </div>
+              </div>
+            </div>
           </div>
-          <svg id="hero-chart" class="chart" viewBox="0 0 520 240" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div class="chart-note">Illustrative chart &middot; not a live feed</div>
 
-          <ol class="pipe" aria-hidden="true">
-            <li class="pn" data-n="1"><span class="pi">1</span><b>Alert</b><small>TradingView</small></li>
-            <li class="pn" data-n="2"><span class="pi">2</span><b>Webhook</b><small>Validated</small></li>
-            <li class="pn" data-n="3"><span class="pi">3</span><b>Risk check</b><small>Limits applied</small></li>
-            <li class="pn" data-n="4"><span class="pi">4</span><b>Order</b><small>Paper / MT5 / Binance</small></li>
-          </ol>
-
-          <div class="mstats">
-            <div class="mcard"><div class="lab">Backtest profit</div><div class="val up" id="hero-net">+$1,148</div></div>
-            <div class="mcard"><div class="lab">Win rate</div><div class="val" id="h-wr">&mdash;</div></div>
-            <div class="mcard"><div class="lab">Trades</div><div class="val" id="h-tr">&mdash;</div></div>
+          <!-- phone -->
+          <div class="phone">
+            <div class="pscreen">
+              <span class="notch"></span>
+              <div class="ps-bar"><span>9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
+              <div class="ps-brand"><span class="ps-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M8 6h10v10"/></svg></span><b>sambot</b><span class="ps-menu"><i></i><i></i></span></div>
+              <div class="ps-acc">PAPER ACCOUNT <i></i></div>
+              <div class="ps-eq" id="dvEq2">$10,248.60</div>
+              <div class="ps-chg"><em>+$248.60</em> simulated change</div>
+              <svg class="ps-spark" viewBox="0 0 170 48" preserveAspectRatio="none" aria-hidden="true"><path id="dvSpark" d="M0 40 L12 34 L22 38 L34 28 L46 31 L58 22 L70 27 L84 18 L96 24 L110 14 L124 19 L138 9 L152 15 L170 4"/></svg>
+              <div class="ps-bot"><span class="ps-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg></span><div><b>Strategy bot</b><small id="dvSt2">Monitoring signals</small></div><i class="pdot" id="dvDot"></i></div>
+              <div class="ps-row"><span>Daily loss limit</span><b>2.0%</b></div>
+              <div class="ps-row"><span>Open positions</span><b>2 / 3</b></div>
+              <button type="button" class="ps-btn" id="dvBtn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span>Pause demo bot</span></button>
+              <div class="ps-nav"><span class="on"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Overview</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg>Markets</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Activity</span></div>
+            </div>
           </div>
-          <table class="mock-tbl log"><thead><tr><th>Symbol</th><th>Side</th><th>P/L</th><th></th></tr></thead><tbody id="dash-rows"></tbody></table>
-        </div>
-
-        <div class="fx-card fx-toast">
-          <span class="ok">&#10003;</span>
-          <div><b>Risk check passed</b><small>Daily loss limit &amp; max trades OK</small></div>
         </div>
       </div>
+      <p class="dv-cap">Interactive product concept &middot; sample data &middot; no live trades</p>
     </div>
   </section>
 </div></div>
@@ -591,74 +608,58 @@
   });
 
 
-  (function heroFlow() {
-    const flow = document.getElementById('flow'), svg = document.getElementById('hero-chart');
-    if (!flow || !svg) return;
-    let seed = 7; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-    const N = 40, ENTRY = 24, W = 520, H = 240, PX = 10, PT = 18, PB = 18;
-    const c = []; let prev = 100;
+  (function heroDevices() {
+    const fit = document.getElementById('dvFit'), stage = document.getElementById('dvStage'), svg = document.getElementById('dvChart');
+    if (!fit || !stage) return;
+    const DW = 640, DH = 540;
+    const rescale = () => { const k = Math.min(1, fit.clientWidth / DW); stage.style.transform = 'scale(' + k + ')'; fit.style.height = (DH * k) + 'px'; };
+    rescale(); addEventListener('resize', rescale);
+    if (window.ResizeObserver) new ResizeObserver(rescale).observe(fit);
+
+    // candle chart: climb, then consolidate (illustrative)
+    let seed = 11; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const N = 38, W = 470, H = 150, PX = 4, PT = 8, PB = 8, cs = []; let prev = 100;
     for (let i = 0; i < N; i++) {
-      const drift = i < ENTRY ? (i % 9 < 4 ? -.35 : .55) : .8;
-      const o = prev, cl = o + (rnd() - .46) * 2.6 + drift;
-      c.push({o, c: cl, h: Math.max(o, cl) + rnd() * 1.3, l: Math.min(o, cl) - rnd() * 1.3}); prev = cl;
+      const drift = i < 11 ? 1.9 : (i < 15 ? 0.5 : (i % 2 ? -.15 : .18));
+      const o = prev, c = o + drift + (rnd() - .5) * (i < 11 ? 1.6 : 2.2);
+      cs.push({o, c, h: Math.max(o, c) + rnd() * 1.1, l: Math.min(o, c) - rnd() * 1.1}); prev = c;
     }
-    const entry = c[ENTRY].c, tp = entry + 9, sl = entry - 4.2;
-    const hi = Math.max(tp + 1, ...c.map(k => k.h)), lo = Math.min(sl - 1, ...c.map(k => k.l));
-    const y = v => PT + (H - PT - PB) * (1 - (v - lo) / (hi - lo));
-    const step = (W - PX * 2) / N, x = i => PX + step * (i + .5), bw = step * .58;
+    const hi = Math.max(...cs.map(k => k.h)), lo = Math.min(...cs.map(k => k.l));
+    const y = v => PT + (H - PT - PB) * (1 - (v - lo) / (hi - lo)), st = (W - PX * 2) / N, x = i => PX + st * (i + .5), bw = st * .56;
     let g = '';
-    for (let k = 0; k <= 4; k++) { const gy = PT + (H - PT - PB) * k / 4; g += `<line x1="0" x2="${W}" y1="${gy}" y2="${gy}" class="gl"/>`; }
-    const zx = x(ENTRY), zw = W - zx - 4;
-    const zones = `<g class="zone"><rect x="${zx}" y="${y(tp)}" width="${zw}" height="${y(entry) - y(tp)}" class="z-tp"/><rect x="${zx}" y="${y(entry)}" width="${zw}" height="${y(sl) - y(entry)}" class="z-sl"/>
-      <line x1="${zx}" x2="${W - 4}" y1="${y(entry)}" y2="${y(entry)}" class="l-en"/><line x1="${zx}" x2="${W - 4}" y1="${y(tp)}" y2="${y(tp)}" class="l-tp"/><line x1="${zx}" x2="${W - 4}" y1="${y(sl)}" y2="${y(sl)}" class="l-sl"/>
-      <text x="${W - 8}" y="${y(tp) - 5}" text-anchor="end" class="t-tp">TP</text><text x="${W - 8}" y="${y(sl) + 13}" text-anchor="end" class="t-sl">SL</text></g>`;
-    let candles = '<g class="candles">';
-    c.forEach((k, i) => {
-      const up = k.c >= k.o, cls = up ? 'cu' : 'cd', top = y(Math.max(k.o, k.c)), h = Math.max(1.5, Math.abs(y(k.o) - y(k.c)));
-      candles += `<line x1="${x(i)}" x2="${x(i)}" y1="${y(k.h)}" y2="${y(k.l)}" class="${cls}w"/><rect x="${x(i) - bw / 2}" y="${top}" width="${bw}" height="${h}" rx="1" class="${cls}"/>`;
+    for (let k = 0; k <= 4; k++) { const gy = PT + (H - PT - PB) * k / 4; g += '<line x1="0" x2="' + W + '" y1="' + gy + '" y2="' + gy + '" class="gl"/>'; }
+    const lvl = y(cs[N - 1].c);
+    g += '<line x1="0" x2="' + W + '" y1="' + lvl + '" y2="' + lvl + '" class="lv"/>';
+    let ma = '', can = '<g class="candles">';
+    cs.forEach((k, i) => {
+      const up = k.c >= k.o, cls = up ? 'cu' : 'cd';
+      can += '<line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + y(k.h) + '" y2="' + y(k.l) + '" class="' + cls + 'w"/><rect x="' + (x(i) - bw / 2) + '" y="' + y(Math.max(k.o, k.c)) + '" width="' + bw + '" height="' + Math.max(1.5, Math.abs(y(k.o) - y(k.c))) + '" rx="1" class="' + cls + '"/>';
+      const win = cs.slice(Math.max(0, i - 6), i + 1), avg = win.reduce((a, q) => a + q.c, 0) / win.length;
+      ma += (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(avg).toFixed(1);
     });
-    candles += '</g>';
-    const ex = x(ENTRY), ey = y(c[ENTRY].l) + 16;
-    const marker = `<g class="marker"><path d="M${ex} ${ey - 11} l8 12 h-5 v7 h-6 v-7 h-5z" class="arrow"/><g transform="translate(${ex - 46},${ey + 14})"><rect width="92" height="22" rx="11" class="tag"/><text x="46" y="15" text-anchor="middle" class="tag-t">BUY SIGNAL</text></g></g>`;
-    svg.innerHTML = g + zones + candles + marker;
+    svg.innerHTML = g + '<path d="' + ma + '" class="ma"/>' + can + '</g>';
 
-    const nodes = flow.querySelectorAll('.pn'), reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const set = n => {
-      flow.dataset.step = n;
-      nodes.forEach(el => el.classList.toggle('on', +el.dataset.n <= n));
+    // light interactivity: pause / resume the demo bot, gentle simulated P/L drift
+    const btn = document.getElementById('dvBtn'), dot = document.getElementById('dvDot');
+    const st1 = document.getElementById('dvSt'), st2 = document.getElementById('dvSt2'), eq = document.getElementById('dvEq'), eq2 = document.getElementById('dvEq2'), pl = document.getElementById('dvPl');
+    let running = true, pnl = 48.6;
+    const money = v => v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    const paint = () => {
+      const e = 10200 + pnl, m = money(e).split('.');
+      eq.innerHTML = '$' + m[0] + '<em>.' + m[1] + '</em>'; eq2.textContent = '$' + money(e);
+      pl.textContent = (pnl >= 0 ? '+' : '-') + '$' + money(Math.abs(pnl)); pl.className = pnl >= 0 ? 'up' : 'dn';
     };
-    if (reduce) { set(4); return; }
-    let n = 0; set(0);
-    setTimeout(function tick() {
-      n++;
-      if (n > 5) { n = 0; set(0); svg.classList.remove('run'); void svg.getBoundingClientRect(); svg.classList.add('run'); return setTimeout(tick, 1400); }
-      set(Math.min(n, 4));
-      setTimeout(tick, n === 5 ? 3200 : 1250);
-    }, 2600);
-  })();
-
-
-  (function marketBoard() {
-    const fmtP = v => Number(v).toLocaleString(undefined, {maximumFractionDigits: v > 1000 ? 0 : 2});
-    document.querySelectorAll('.mk-card[data-sym]').forEach(card => {
-      const sym = card.dataset.sym, line = card.querySelector('.line'), area = card.querySelector('.area');
-      Promise.all([
-        fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + '&interval=1h&limit=24').then(r => r.json()),
-        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + sym).then(r => r.json())
-      ]).then(([k, t]) => {
-        const cl = k.map(x => +x[4]), lo = Math.min(...cl), hi = Math.max(...cl), W = 160, H = 48, pad = 4;
-        const pts = cl.map((v, i) => [i * W / (cl.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / ((hi - lo) || 1))]);
-        const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
-        line.setAttribute('d', d); area.setAttribute('d', d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z');
-        const p = +t.priceChangePercent, chg = card.querySelector('.mk-chg');
-        chg.classList.toggle('up', p >= 0); chg.classList.toggle('dn', p < 0);
-        chg.firstElementChild.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
-        card.querySelector('.mk-price').textContent = '$' + fmtP(+t.lastPrice);
-      }).catch(() => {
-        const d = 'M0 34 L20 30 L40 33 L60 24 L80 27 L100 18 L120 21 L140 12 L160 14';
-        line.setAttribute('d', d); area.setAttribute('d', d + ' L160 48 L0 48 Z');
-      });
+    btn.addEventListener('click', () => {
+      running = !running;
+      st1.classList.toggle('on', running); st1.lastChild.textContent = running ? ' Monitoring' : ' Paused';
+      st2.textContent = running ? 'Monitoring signals' : 'Paused (demo)';
+      dot.classList.toggle('off', !running);
+      btn.classList.toggle('paused', !running);
+      btn.querySelector('span').textContent = running ? 'Pause demo bot' : 'Resume demo bot';
     });
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setInterval(() => { if (!running) return; pnl = Math.max(20, Math.min(90, pnl + (rnd() - .48) * 4)); paint(); }, 1800);
+    }
   })();
 
   function drawEq(svg, pts, W, H) {
