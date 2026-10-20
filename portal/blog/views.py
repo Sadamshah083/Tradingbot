@@ -36,7 +36,7 @@ def image_error(upload):
 
 # -- public --------------------------------------------------------------------
 def _listing(request, cat_slug=None):
-    qs = Post.objects.filter(published=True).select_related("category")
+    qs = Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).select_related("category")   # future dates stay scheduled
     cat = cat_slug or request.GET.get("category")
     q = request.GET.get("q", "").strip()
     category = None
@@ -61,11 +61,12 @@ def category(request, slug):
 
 def post(request, slug):
     p = get_object_or_404(Post.objects.select_related("category", "author"), slug=slug)
-    if not p.published and not request.user.is_superuser:
+    scheduled = p.published and p.published_at and p.published_at > timezone.now()
+    if (not p.published or scheduled) and not request.user.is_superuser:
         raise Http404
     if p.published:
         Post.objects.filter(pk=p.pk).update(views=F("views") + 1)
-    related = Post.objects.filter(published=True).exclude(pk=p.pk)
+    related = Post.objects.filter(published=True).filter(Q(published_at__isnull=True) | Q(published_at__lte=timezone.now())).exclude(pk=p.pk)
     if p.category:
         related = related.filter(category=p.category)
     cover = p.og_image or p.cover_url
@@ -81,7 +82,7 @@ def staff_list(request):
     posts = Post.objects.select_related("category").order_by("-published_at", "-created")
     page = paginate(request, posts)
     return render(request, "staff/blog_list.html", {"posts": page, "page": page, "section": "blog", "hide_nav": True,
-                                                    "published": posts.filter(published=True).count()})
+                                                    "published": posts.filter(published=True).count(), "now": timezone.now()})
 
 
 @staff_required

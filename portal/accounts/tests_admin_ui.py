@@ -237,3 +237,32 @@ class ProfileButtonsWork(TestCase):
         self.assertEqual(r.status_code, 200)                           # mismatch shows an error instead of changing anything
         u.refresh_from_db()
         self.assertTrue(u.check_password(PW))
+
+
+class NavAndBlogSchedule(TestCase):
+    def test_public_navbar_has_blog_and_home_is_first_when_logged_in(self):
+        html = self.client.get("/").content.decode()
+        nav = html[html.index('<ul class="links">'):html.index("</ul>", html.index('<ul class="links">'))]
+        self.assertIn(">Blog</a>", nav)
+        make("navu")
+        web_login(self.client, "navu")
+        menu = self.client.get(reverse("dashboard")).content.decode()
+        menu = menu[menu.index('id="app-menu"'):]
+        self.assertLess(menu.index(">Home<"), menu.index("Dashboard"))
+        self.assertEqual(menu[:menu.index("</ul>")].count(">Home<"), 1)      # only one Home link
+
+    def test_blog_visible_to_visitors_and_scheduled_posts_wait_for_their_time(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from blog.models import Post
+        live = Post.objects.create(title="Live today", body_html="<p>x</p>", published=True, published_at=timezone.now() - timedelta(hours=1))
+        later = Post.objects.create(title="Tomorrow post", body_html="<p>y</p>", published=True, published_at=timezone.now() + timedelta(days=1))
+        listing = self.client.get(reverse("blog")).content.decode()
+        self.assertIn("Live today", listing)
+        self.assertNotIn("Tomorrow post", listing)
+        self.assertEqual(self.client.get(later.get_absolute_url()).status_code, 404)
+        self.assertEqual(self.client.get(live.get_absolute_url()).status_code, 200)
+        make("owner", superuser=True)
+        web_login(self.client, "owner")
+        self.assertEqual(self.client.get(later.get_absolute_url()).status_code, 200)
+        self.assertIn("scheduled", self.client.get(reverse("staff_blog")).content.decode())

@@ -121,6 +121,7 @@
     <li><a href="{% url 'site_markets' %}" class="{% if nav_page == 'markets' %}active{% endif %}">Markets</a></li>
     <li><a href="{% url 'site_performance' %}" class="{% if nav_page == 'performance' %}active{% endif %}">Performance</a></li>
     <li><a href="{% url 'site_pricing' %}" class="{% if nav_page == 'pricing' %}active{% endif %}">Pricing</a></li>
+    <li><a href="{% url 'blog' %}" class="{% if request.path|slice:':6' == '/blog/' %}active{% endif %}">Blog</a></li>
     <li><a href="{% url 'site_faq' %}" class="{% if nav_page == 'faq' %}active{% endif %}">FAQ</a></li>
     <li><a href="{% url 'site_contact' %}" class="{% if nav_page == 'contact' %}active{% endif %}">Contact</a></li>
   </ul>
@@ -142,6 +143,7 @@
     <a href="{% url 'site_performance' %}">Performance</a>
     <a href="{% url 'site_pricing' %}">Pricing</a>
     <a href="{% url 'site_strategy-lab' %}">Strategy Lab</a>
+    <a href="{% url 'blog' %}">Blog</a>
     <a href="{% url 'site_faq' %}">FAQ</a>
     <a href="{% url 'site_contact' %}">Contact</a>
     <a href="{% url 'site_disclaimer' %}">Disclaimer</a>

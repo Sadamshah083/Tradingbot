@@ -28,7 +28,7 @@
       </div>
       <label>Picture description (alt text, helps accessibility and SEO)</label><input name="featured_image_alt" value="{{ p.featured_image_alt|default:'' }}" placeholder="What the picture shows">
       <div class="row"><div><label>Tags (internal only, never shown to readers)</label><input name="tags" value="{{ p.tags|default:'' }}" placeholder="backtesting, gold, risk"></div><div><label>Author name</label><input name="author_name" value="{{ p.author_name|default:'' }}" placeholder="Sambot"></div></div>
-      <label>Publication date (optional, e.g. 2026-09-30 09:00)</label><input name="published_at" value="{{ p.published_at|date:'Y-m-d H:i'|default:'' }}" placeholder="leave blank = when published">
+      <label>Publication date: leave blank to publish now, or set a future date and time to schedule it (e.g. 2026-10-22 09:00)</label><input name="published_at" value="{{ p.published_at|date:'Y-m-d H:i'|default:'' }}" placeholder="leave blank = when published">
     </div>
     <div class="card" style="margin-top:16px"><h2>SEO &amp; social</h2>
       <div class="row"><div><label>SEO title (≤70)</label><input name="seo_title" value="{{ p.seo_title|default:'' }}" maxlength="70"></div><div><label>Canonical URL</label><input name="canonical_url" value="{{ p.canonical_url|default:'' }}" placeholder="only if republished from elsewhere"></div></div>

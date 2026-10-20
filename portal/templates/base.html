@@ -102,15 +102,15 @@
   <ul id="app-menu">
     {% if user.is_authenticated %}
       {% if staff_home_url %}
-        <li><a class="btn primary small" href="{{ staff_home_url }}">Open {{ staff_home_label|lower }}</a></li>
         <li><a href="{% url 'landing' %}">Home</a></li>
+        <li><a class="btn primary small" href="{{ staff_home_url }}">Open {{ staff_home_label|lower }}</a></li>
       {% else %}
+        <li><a href="{% url 'landing' %}">Home</a></li>
         <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><span class="txt">Dashboard</span></a></li>
         <li><a href="{% url 'signal_history' %}" class="{% if request.resolver_match.url_name == 'signal_history' %}active{% endif %}"><span class="txt">Signals</span></a></li>
         <li><a href="{% url 'bot_dashboard' %}" class="{% if request.resolver_match.url_name == 'bot_dashboard' %}active{% endif %}"><span class="txt">My bot</span></a></li>
         <li><a href="{% url 'blog' %}"><span class="txt">Blog</span></a></li>
         <li><a href="{% url 'chat_room' %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><span class="txt">Live chat</span> {% if unread_chat %}<span class="badge">{{ unread_chat }}</span>{% endif %}</a></li>
-        <li><a href="{% url 'landing' %}">Home</a></li>
       {% endif %}
       <li>{% include "_usermenu.html" %}</li>
     {% else %}
