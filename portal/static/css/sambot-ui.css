@@ -1,0 +1,24 @@
+/* Dialog (see static/js/sambot-ui.js) */
+html.sd-lock{overflow:hidden}
+.sd-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(6,12,24,.72);backdrop-filter:blur(6px);opacity:0;transition:opacity .16s ease}
+.sd-overlay.sd-in{opacity:1}
+.sd-dialog{width:100%;max-width:420px;padding:28px 26px 22px;border-radius:20px;text-align:center;color:#E8EEFA;font-family:Manrope,ui-sans-serif,system-ui,sans-serif;
+  background:linear-gradient(180deg,#1D3156,#15254A);border:1px solid rgba(160,185,230,.25);box-shadow:0 30px 80px rgba(0,0,0,.6);
+  transform:translateY(14px) scale(.97);transition:transform .2s cubic-bezier(.22,1,.36,1)}
+.sd-in .sd-dialog{transform:none}
+.sd-icon{width:52px;height:52px;margin:0 auto 14px;border-radius:16px;display:grid;place-items:center;background:rgba(125,227,255,.12);color:#7DE3FF;border:1px solid rgba(125,227,255,.3)}
+.sd-icon svg{width:26px;height:26px}
+.sd-danger .sd-icon{background:rgba(255,107,98,.12);color:#FF8F88;border-color:rgba(255,107,98,.35)}
+.sd-title{margin:0 0 8px;font-size:20px;font-weight:800;letter-spacing:-.4px;color:#fff;font-family:inherit;text-transform:none;max-width:none}
+.sd-msg{margin:0;font-size:15px;line-height:1.55;color:#E8EEFA;word-break:break-word}
+.sd-detail{margin:8px 0 0;font-size:13px;line-height:1.5;color:#9FB0CA}
+.sd-actions{display:flex;gap:10px;margin-top:22px}
+.sd-btn{flex:1;padding:12px 16px;border-radius:12px;border:1px solid transparent;font:800 14px Manrope,sans-serif;cursor:pointer;transition:transform .12s,filter .15s,background .15s}
+.sd-btn:hover{transform:translateY(-1px)}
+.sd-btn:focus-visible{outline:2px solid #7DE3FF;outline-offset:2px}
+.sd-ghost{background:rgba(255,255,255,.05);border-color:rgba(160,185,230,.3);color:#E8EEFA}
+.sd-ghost:hover{background:rgba(255,255,255,.09)}
+.sd-primary{background:linear-gradient(180deg,#C6FF4D,#A3EA1C);color:#0F1A2E}
+.sd-red{background:linear-gradient(180deg,#FF7A72,#E5483F);color:#fff}
+@media(max-width:420px){.sd-actions{flex-direction:column-reverse}}
+@media(prefers-reduced-motion:reduce){.sd-overlay,.sd-dialog{transition:none}}

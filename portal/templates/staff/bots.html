@@ -9,7 +9,7 @@
   <div class="card"><h2>Bots ON</h2><div class="stat good">{{ totals.on }}</div><div class="muted">{{ totals.live }} in LIVE mode</div></div>
   <div class="card"><h2>Open positions</h2><div class="stat">{{ totals.open }}</div></div>
   <div class="card"><h2>Markets</h2>{% for k, m in markets.items %}<div style="display:flex;justify-content:space-between"><b>{{ k }}</b><span class="{% if m.open %}good{% else %}bad{% endif %}">{% if m.open %}OPEN{% else %}CLOSED{% endif %}</span></div>{% endfor %}
-    <form method="post" action="{% url 'staff_bot_action' 0 %}" style="margin-top:8px" onsubmit="return confirm('Emergency-stop EVERY customer bot?')">{% csrf_token %}<input type="hidden" name="action" value="kill_all"><button class="btn danger small">Emergency stop all</button></form></div>
+    <form method="post" action="{% url 'staff_bot_action' 0 %}" style="margin-top:8px" data-confirm="Emergency-stop every customer bot?" data-confirm-title="Emergency stop" data-confirm-detail="All customer bots stop placing new orders immediately." data-confirm-ok="Stop all bots" data-confirm-danger>{% csrf_token %}<input type="hidden" name="action" value="kill_all"><button class="btn danger small">Emergency stop all</button></form></div>
 </div>
 <div class="card" style="margin-top:16px"><h2>Bots</h2>
   <table><thead><tr><th>Customer</th><th>State</th><th>Mode</th><th>Broker</th><th>Markets / TF</th><th>Risk</th><th>Today</th><th>Record</th><th></th></tr></thead><tbody>

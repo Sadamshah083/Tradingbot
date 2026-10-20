@@ -33,7 +33,7 @@
     <span class="state {% if bot.kill_switch %}kill{% elif bot.active %}on{% endif %}"><i></i>{% if bot.kill_switch %}EMERGENCY STOP{% elif bot.active %}Bot ON{% else %}Bot OFF{% endif %}</span>
     {% if bot.kill_switch %}<form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="clear_kill"><button class="btn ghost">Clear emergency stop</button></form>
     {% else %}<form method="post" action="{% url 'bot_update' %}">{% csrf_token %}<input type="hidden" name="action" value="toggle"><label class="switch" title="Bot on / off"><input type="checkbox" {% if bot.enabled %}checked{% endif %} onchange="this.form.submit()"><span></span></label></form>
-      <form method="post" action="{% url 'bot_update' %}" onsubmit="return confirm('Stop all new orders immediately?')">{% csrf_token %}<input type="hidden" name="action" value="kill"><button class="btn danger">Emergency stop</button></form>{% endif %}
+      <form method="post" action="{% url 'bot_update' %}" data-confirm="Stop all new orders immediately?" data-confirm-title="Stop the bot?" data-confirm-detail="No new orders will be placed until you resume. Open positions keep their stop-loss and take-profit." data-confirm-ok="Stop orders" data-confirm-danger>{% csrf_token %}<input type="hidden" name="action" value="kill"><button class="btn danger">Emergency stop</button></form>{% endif %}
   </div>
 </div>
 

@@ -11,7 +11,7 @@
     <td>{% if p.published %}<span class="pill buy">published</span>{% else %}<span class="pill exit">draft</span>{% endif %}</td>
     <td class="muted">{{ p.published_at|date:"M d, Y H:i"|default:"—" }}</td><td class="mono">{{ p.views }}</td><td class="muted">{{ p.updated|naturaltime }}</td>
     <td style="white-space:nowrap"><a class="btn ghost small" href="{% url 'staff_blog_edit' p.id %}">Edit</a> <a class="btn ghost small" href="{{ p.get_absolute_url }}" target="_blank">View</a>
-      <form method="post" action="{% url 'staff_blog_delete' p.id %}" style="display:inline" onsubmit="return confirm('Delete this post?')">{% csrf_token %}<button class="btn danger small">Delete</button></form></td></tr>
+      <form method="post" action="{% url 'staff_blog_delete' p.id %}" style="display:inline" data-confirm="Delete this post?" data-confirm-title="Delete post" data-confirm-detail="It will be removed from the blog and cannot be restored." data-confirm-ok="Delete post" data-confirm-danger>{% csrf_token %}<button class="btn danger small">Delete</button></form></td></tr>
 {% empty %}<tr><td colspan="7" class="empty">No posts yet. Click "New post".</td></tr>{% endfor %}
 </tbody></table>{% include "staff/_pager.html" %}</div>
 {% endblock %}
