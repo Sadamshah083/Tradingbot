@@ -4,9 +4,25 @@
 {% block page_title %}Dashboard{% endblock %}
 {% block page_lead %}Everything about your customers, signals and the bot in one place.{% endblock %}
 {% block staff %}
+<style>
+  .dash .grid{align-items:stretch} .dash .card{display:flex;flex-direction:column;min-width:0}
+  .dash .card>.btn{margin-top:auto !important;align-self:flex-start} .dash .card table{margin-bottom:12px}
+  .dash .stat{line-height:1.1} .dash h2{margin-bottom:12px}
+  .qlinks{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+  .qlinks a{display:inline-flex;gap:8px;align-items:center;padding:9px 14px;border-radius:999px;border:1px solid var(--line);color:var(--text);font-size:13px;font-weight:700;background:rgba(255,255,255,.03)}
+  .qlinks a:hover{border-color:rgba(182,255,46,.5);background:rgba(182,255,46,.08);text-decoration:none;color:#fff} .qlinks b{color:#B6FF2E}
+  .tablewrap{overflow-x:auto}
+</style>
+<div class="dash">
+<div class="qlinks">
+  <a href="{% url 'staff_leads' %}">Leads{% if new_leads %} <b>{{ new_leads }} new</b>{% endif %}</a>
+  <a href="{% url 'chat_inbox' %}">Live chat{% if stats.unread %} <b>{{ stats.unread }} unread</b>{% endif %}</a>
+  <a href="{% url 'staff_orders' %}">Orders{% if stats.pending %} <b>{{ stats.pending }} pending</b>{% endif %}</a>
+  <a href="{% url 'staff_signals' %}">Signals</a><a href="{% url 'staff_manual' %}">Manual trader</a><a href="{% url 'staff_connections' %}">MT5 connections</a>
+</div>
 <div class="grid g4">
   <div class="card"><h2>Revenue</h2><div class="stat mono">${{ stats.revenue|floatformat:0 }}</div><div class="muted">bot ${{ stats.revenue_bot|floatformat:0 }} · signals ${{ stats.revenue_signals|floatformat:0 }}</div></div>
-  <div class="card"><h2>Customers</h2><div class="stat">{{ stats.customers }}</div><div class="muted">{{ stats.active }} active · {{ stats.bot_owners }} bought the bot (${{ PRICE_BOT }})</div></div>
+  <div class="card"><h2>Leads &amp; customers</h2><div class="stat">{{ stats.customers }}</div><div class="muted">{{ stats.active }} active · {{ stats.bot_owners }} bought the bot (${{ PRICE_BOT }})</div></div>
   <div class="card"><h2>Signals sold</h2><div class="stat">{{ stats.delivered_24h }}</div><div class="muted">delivered in 24h at ${{ PRICE_SIGNAL }} each · {{ stats.credits }} credits prepaid</div></div>
   <div class="card"><h2>Needs you</h2><div class="stat {% if stats.pending or stats.unread %}warn{% endif %}">{{ stats.pending|add:stats.unread }}</div><div class="muted"><a href="{% url 'staff_orders' %}">{{ stats.pending }} payment{{ stats.pending|pluralize }}</a> · <a href="{% url 'chat_inbox' %}">{{ stats.unread }} chat{{ stats.unread|pluralize }}</a></div></div>
 </div>
@@ -35,20 +51,21 @@
 
 <div class="grid g2" style="margin-top:16px">
   <div class="card"><h2>Latest customers</h2>
-    <table><thead><tr><th>E-mail</th><th>Credits</th><th>Bot</th><th>Joined</th></tr></thead><tbody>
+    <div class="tablewrap"><table><thead><tr><th>E-mail</th><th>Credits</th><th>Bot</th><th>Joined</th></tr></thead><tbody>
     {% for u in recent_customers %}<tr><td><b>{{ u.email|default:u.username }}</b></td><td class="mono">{{ u.profile.credits }}</td><td>{% if u.profile.bot_access %}<span class="pill buy">paid</span>{% else %}<span class="muted">-</span>{% endif %}</td><td class="muted">{{ u.date_joined|naturaltime }}</td></tr>
-    {% empty %}<tr><td colspan="4" class="empty">No customers yet - share <a href="{% url 'register' %}">the sign-up page</a>.</td></tr>{% endfor %}</tbody></table>
+    {% empty %}<tr><td colspan="4" class="empty">No customers yet - share <a href="{% url 'register' %}">the sign-up page</a>.</td></tr>{% endfor %}</tbody></table></div>
     <a class="btn ghost small" href="{% url 'staff_leads' %}" style="margin-top:12px">All leads &amp; customers</a></div>
   <div class="card"><h2>Latest orders</h2>
-    <table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th></tr></thead><tbody>
+    <div class="tablewrap"><table><thead><tr><th>#</th><th>Customer</th><th>Product</th><th>Amount</th><th>Status</th></tr></thead><tbody>
     {% for o in recent_orders %}<tr><td class="mono">{{ o.id }}</td><td>{{ o.user.email|default:o.user.username }}</td><td>{{ o.title }}</td><td class="mono">${{ o.amount_usd }}</td><td>{% if o.status == 'pending' %}<span class="pill exit">pending</span>{% elif o.status == 'paid' %}<span class="pill buy">paid</span>{% else %}<span class="pill sell">rejected</span>{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="5" class="empty">No orders yet.</td></tr>{% endfor %}</tbody></table>
+    {% empty %}<tr><td colspan="5" class="empty">No orders yet.</td></tr>{% endfor %}</tbody></table></div>
     <a class="btn ghost small" href="{% url 'staff_orders' %}" style="margin-top:12px">All orders</a></div>
 </div>
 
 <div class="card" style="margin-top:16px"><h2>Latest bot trades</h2>
-  <table><thead><tr><th>When</th><th>Action</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Stop</th><th>Target</th><th>Result</th></tr></thead><tbody>
+  <div class="tablewrap"><table><thead><tr><th>When</th><th>Action</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Stop</th><th>Target</th><th>Result</th></tr></thead><tbody>
   {% for t in recent_trades %}<tr><td class="muted">{{ t.when|date:"M d, H:i" }}</td><td>{{ t.action }}</td><td>{{ t.symbol }}</td><td>{% if t.side %}<span class="pill {{ t.side }}">{{ t.side|upper }}</span>{% endif %}</td><td class="mono">{{ t.qty|default_if_none:"" }}</td><td class="mono bad">{{ t.sl|default_if_none:"" }}</td><td class="mono good">{{ t.tp|default_if_none:"" }}</td><td class="code">{{ t.result|truncatechars:70 }}</td></tr>
-  {% empty %}<tr><td colspan="8" class="empty">The bot has not placed a trade yet{% if not bot.auto %} (it is OFF){% endif %}.</td></tr>{% endfor %}</tbody></table>
+  {% empty %}<tr><td colspan="8" class="empty">The bot has not placed a trade yet{% if not bot.auto %} (it is OFF){% endif %}.</td></tr>{% endfor %}</tbody></table></div>
   <a class="btn ghost small" href="{% url 'staff_bot' %}" style="margin-top:12px">All bot trades</a></div>
+</div>
 {% endblock %}

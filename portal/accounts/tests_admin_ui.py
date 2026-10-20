@@ -29,15 +29,16 @@ class AdminSidebarAndLeads(TestCase):
         r = self.client.get("/accounts/staff/customers/?q=lead1")
         self.assertEqual((r.status_code, r["Location"]), (302, reverse("staff_leads") + "?q=lead1"))
 
-    def test_leads_rows_have_icon_actions(self):
+    def test_leads_rows_have_a_three_dot_menu(self):
         web_login(self.client, "owner")
         html = self.client.get(reverse("staff_leads")).content.decode()
-        for label in ("Open chat", "Add signal credits", "Toggle bot access", "Pause or activate", "Edit details", "Set a new password", "Delete account"):
-            self.assertIn(f'aria-label="{label}"', html, label)
+        self.assertIn('class="dots"', html)
+        for label in ("Open chat", "Add signal credits", "Grant bot access", "Pause account", "Edit details", "Set a new password", "Delete account"):
+            self.assertIn(f"<span>{label}", html, label)
         web_login(self.client, "adm")
         admin_html = self.client.get(reverse("staff_leads")).content.decode()
-        self.assertNotIn('aria-label="Delete account"', admin_html)       # destructive action stays superadmin-only
-        self.assertIn('aria-label="Add signal credits"', admin_html)
+        self.assertNotIn("<span>Delete account", admin_html)       # destructive action stays superadmin-only
+        self.assertIn("<span>Add signal credits", admin_html)
 
     def test_customer_actions_work_from_leads(self):
         web_login(self.client, "adm")
