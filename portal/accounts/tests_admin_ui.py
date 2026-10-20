@@ -229,6 +229,7 @@ class ProfileButtonsWork(TestCase):
         for label in ("Choose a picture", "Save profile", "Change password"):
             self.assertIn(label, html)
         self.assertIn('class="actions"><button class="btn primary">Save profile', html)      # spaced away from the last field
+        self.assertIn('.set-grid .actions{margin-top:auto;padding-top:24px', html)           # the spacing rule really ships
         self.client.post(reverse("account_settings"), {"action": "profile", "first_name": "Bo", "email": "btn@example.com"})
         u.refresh_from_db()
         self.assertEqual(u.first_name, "Bo")
