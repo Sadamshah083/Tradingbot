@@ -42,7 +42,7 @@
   .guide{margin-top:12px;padding:14px 18px} .guide details{padding:9px 12px;margin-bottom:6px} .guide summary{font-size:13.5px} .guide ol{font-size:13px;line-height:1.6;margin-top:6px}
   #signals th{padding:8px 10px;font-size:11px} #signals td{padding:8px 10px;font-size:13px}
   @media(max-width:700px){.p-list{columns:1}}
-  @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:1fr !important}.p-big{font-size:32px}}
+  @media(max-width:800px){.grid.g4{grid-template-columns:1fr 1fr}.grid.g2{grid-template-columns:minmax(0,1fr) !important}.grid>*{min-width:0}.p-big{font-size:32px}}
   @media(max-width:520px){.grid.g4{grid-template-columns:1fr}}
 </style>
 {% endblock %}
