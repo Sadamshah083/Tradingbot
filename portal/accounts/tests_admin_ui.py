@@ -219,3 +219,20 @@ class EditAccountPopup(TestCase):
         cust.refresh_from_db()
         self.assertEqual(cust.email, "new2@example.com")
         self.assertTrue(cust.check_password("Fresh-pass-5555"))
+
+
+class ProfileButtonsWork(TestCase):
+    def test_every_button_on_the_settings_page_does_its_job(self):
+        u = make("btn", email="btn@example.com")
+        web_login(self.client, "btn")
+        html = self.client.get(reverse("account_settings")).content.decode()
+        for label in ("Choose a picture", "Save profile", "Change password"):
+            self.assertIn(label, html)
+        self.assertIn('class="actions"><button class="btn primary">Save profile', html)      # spaced away from the last field
+        self.client.post(reverse("account_settings"), {"action": "profile", "first_name": "Bo", "email": "btn@example.com"})
+        u.refresh_from_db()
+        self.assertEqual(u.first_name, "Bo")
+        r = self.client.post(reverse("account_settings"), {"action": "password", "old_password": PW, "new_password1": "Totally-new-pass-9", "new_password2": "Mismatch-pass-9"})
+        self.assertEqual(r.status_code, 200)                           # mismatch shows an error instead of changing anything
+        u.refresh_from_db()
+        self.assertTrue(u.check_password(PW))
