@@ -1,603 +1,389 @@
 {% extends "site/base.html" %}
 {% load static %}
 {% block site_class %}home{% endblock %}
-{% block title %}TradingView Automation for MT5 &amp; Binance | SamBot{% endblock %}
+{% block title %}SamBot | Trading Automation Software for TradingView &amp; MT5{% endblock %}
 {% block seo %}
-<meta name="description" content="Automate TradingView alerts with SamBot. Test in paper mode, configure risk limits, and explore supported MT5 and Binance trading workflows.">
+<meta name="description" content="SamBot connects TradingView alerts, configurable risk controls and supported MT5 and Binance execution into one trading automation workflow. Test in paper mode first.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="{{ SITE_NAME }}"><meta property="og:url" content="{{ canonical }}">
-<meta property="og:title" content="TradingView Automation for MT5 &amp; Binance | SamBot"><meta property="og:description" content="Automate TradingView alerts with SamBot. Test in paper mode, configure risk limits, and explore supported MT5 and Binance trading workflows."><meta property="og:image" content="{{ SITE_URL }}/static/img/logo.jpg"><meta name="twitter:card" content="summary_large_image">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/","logo":"{{ SITE_URL }}/static/img/logo.jpg"{% if SUPPORT_EMAIL %},"email":"{{ SUPPORT_EMAIL }}"{% endif %}},{"@type":"WebSite","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/"},{"@type":"SoftwareApplication","name":"{{ SITE_NAME }}","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trading automation software that connects TradingView alerts with paper trading, risk controls and supported execution environments.","offers":[{"@type":"Offer","price":"{{ PRICE_BOT }}","priceCurrency":"USD","name":"Sambot Access"},{"@type":"Offer","price":"{{ PRICE_SIGNAL }}","priceCurrency":"USD","name":"Signal"}]}]}</script>
+<meta property="og:title" content="SamBot | Trading Automation Software for TradingView &amp; MT5"><meta property="og:description" content="Connect TradingView alerts, risk controls and supported MT5 and Binance execution in one structured trading automation workflow. Start with paper mode."><meta property="og:image" content="{{ SITE_URL }}/static/img/logo.jpg"><meta property="og:image:alt" content="SamBot trading automation software logo">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="SamBot | Trading Automation Software for TradingView &amp; MT5"><meta name="twitter:description" content="Connect TradingView alerts, risk controls and supported MT5 and Binance execution in one structured workflow.">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/","logo":"{{ SITE_URL }}/static/img/logo.jpg"{% if SUPPORT_EMAIL %},"email":"{{ SUPPORT_EMAIL }}"{% endif %}},{"@type":"WebSite","name":"{{ SITE_NAME }}","url":"{{ SITE_URL }}/"},{"@type":"SoftwareApplication","name":"{{ SITE_NAME }}","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trading automation software that connects TradingView alerts with paper trading, risk controls and supported execution environments.","offers":[{"@type":"Offer","price":"{{ PRICE_BOT }}","priceCurrency":"USD","name":"SamBot Access"},{"@type":"Offer","price":"{{ PRICE_SIGNAL }}","priceCurrency":"USD","name":"Signal"}]}]}</script>
 {% endblock %}
 {% block page_head %}
-<style>
-  .home .hero-band{position:relative;padding:36px 0 72px;overflow:hidden}
-  .home .hero-band:before{content:"";position:absolute;inset:-20% -10% auto 40%;width:70%;height:110%;background:
-    radial-gradient(ellipse at 60% 35%,rgba(182,255,46,.32),transparent 52%),
-    radial-gradient(ellipse at 90% 10%,rgba(182,255,46,.14),transparent 48%);pointer-events:none}
-  .home .hero{position:relative;z-index:1;display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
-  .home .eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--accent2);font-size:12px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;margin:0 0 14px}
-  .home .eyebrow:before{content:"";width:8px;height:8px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.22)}
-  .home .hero h1{font-size:clamp(36px,5vw,56px);margin:0 0 16px;letter-spacing:-1.8px;line-height:1.05;color:var(--graphite);max-width:560px;font-family:Manrope,ui-sans-serif,sans-serif;font-weight:800}
-  .home .hero h1 .hi{color:var(--accent2)}
-  .home .hero .lead{font-size:16.5px;line-height:1.65;color:var(--muted);margin:0 0 26px;max-width:480px}
-  .home .cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
-  .home .cta .btn{border-radius:999px;padding:14px 22px;font-size:14.5px}
-  .home .cta .btn.demo{background:#fff;border:1px solid var(--line);color:var(--graphite);box-shadow:0 8px 24px rgba(35,38,47,.06)}
-  .home .cta .btn.demo:hover{border-color:rgba(182,255,46,.7);background:rgba(182,255,46,.1);text-decoration:none}
-  .home .cta .btn svg{width:15px;height:15px}
-  .home .trust{display:flex;flex-wrap:wrap;gap:18px 22px;margin-top:28px;padding-top:22px;border-top:1px solid var(--line);max-width:520px}
-  .home .trust span{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--graphite)}
-  .home .trust i{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:rgba(182,255,46,.18);color:var(--accent2);flex:none}
-  .home .trust i svg{width:14px;height:14px}
-
-  .home .stage{position:relative;min-height:440px;display:flex;align-items:center;justify-content:center;animation:rise .9s .1s cubic-bezier(.22,1,.36,1) both}
-  .home .mock{position:relative;width:100%;max-width:520px}
-  .home .mock-shell{border-radius:22px;overflow:hidden;border:1px solid rgba(35,38,47,.14);background:#23262F;box-shadow:0 32px 80px rgba(35,38,47,.22),0 0 0 1px rgba(182,255,46,.18);padding:18px}
-  .home .mock-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;color:#9AA3B2}
-  .home .mock-top b{color:#fff;font-size:13px}
-  .home .live{display:inline-flex;align-items:center;gap:6px;color:var(--spark);font-weight:700;font-size:11px}
-  .home .live i{width:7px;height:7px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.2);animation:pulse 1.8s infinite}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(182,255,46,.4)}70%{box-shadow:0 0 0 7px transparent}}
-  .home .mock-eq{height:120px;margin:4px 0 14px}
-  .home .mock-eq svg{width:100%;height:100%;display:block}
-  .home .mstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-  .home .mcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px}
-  .home .mcard .lab{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9AA3B2;margin-bottom:4px}
-  .home .mcard .val{font-size:16px;font-weight:800;color:#fff;letter-spacing:-.3px}
-  .home .mcard .val.up{color:var(--spark)}
-  .home .mock-tbl{width:100%;font-size:11px;border-collapse:collapse}
-  .home .mock-tbl th{color:#9AA3B2;font-weight:600;text-align:left;padding:6px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
-  .home .mock-tbl td{padding:7px 4px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.85)}
-  .home .pill{display:inline-block;padding:2px 7px;border-radius:999px;background:rgba(182,255,46,.15);color:var(--spark);font-size:10px;font-weight:700}
-  .home .float-card{position:absolute;top:28px;right:-18px;width:168px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 18px 40px rgba(35,38,47,.14);z-index:3;animation:floaty 3.8s ease-in-out infinite}
-  .home .float-card .fc-live{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--graphite);margin-bottom:10px}
-  .home .float-card .fc-live i{width:8px;height:8px;border-radius:50%;background:var(--spark);box-shadow:0 0 0 4px rgba(182,255,46,.25)}
-  .home .float-card ul{list-style:none;margin:0;padding:0}
-  .home .float-card li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);padding:5px 0}
-  .home .float-card li:before{content:"";width:14px;height:14px;border-radius:50%;background:rgba(182,255,46,.25);border:1.5px solid var(--spark);flex:none;box-shadow:inset 0 0 0 2px #fff}
-
-  .home section.s{padding:88px 0;border-top:1px solid var(--line);text-align:center}
-  .home section.s.alt{background:linear-gradient(180deg,#F7F8FA 0%,#FFFFFF 100%)}
-  .home .feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:left;margin-top:8px}
-  .home .feat-card{padding:24px 22px;border-radius:18px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);transition:transform .25s,box-shadow .25s,border-color .25s}
-  .home .feat-card:hover{transform:translateY(-4px);box-shadow:var(--shadow2);border-color:rgba(182,255,46,.45)}
-  .home .feat-card .ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:rgba(182,255,46,.18);color:var(--accent2);margin-bottom:14px}
-  .home .feat-card .ic svg{width:20px;height:20px}
-  .home .feat-card h3{margin:0 0 8px;font-size:17px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
-  .home .feat-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.55}
-
-  .home .how-split{display:grid;grid-template-columns:280px 1fr;gap:36px;align-items:start;text-align:left;margin-top:8px}
-  .home .how-split .kicker,.home .how-split h2,.home .how-split .sub{text-align:left;margin-left:0;margin-right:0}
-  .home .how-split .sub{max-width:260px;margin-bottom:20px}
-  .home .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-  .home .step{padding:22px 18px;border-radius:16px;background:#fff;border:1px solid var(--line);position:relative}
-  .home .step .n{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:700;color:var(--accent2);letter-spacing:1px;margin-bottom:10px}
-  .home .step .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2);margin-bottom:12px}
-  .home .step .ic svg{width:18px;height:18px}
-  .home .step h3{margin:0 0 6px;font-size:15px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
-  .home .step p{margin:0;font-size:13px;color:var(--muted);line-height:1.5}
-
-  .home .mk-split{display:grid;grid-template-columns:1fr 1.1fr;gap:40px;align-items:center;text-align:left}
-  .home .mk-split .kicker,.home .mk-split h2,.home .mk-split .sub{text-align:left;margin-left:0}
-  .home .mk-icons{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:8px}
-  .home .mk-icon{text-align:center;padding:16px 8px;border-radius:14px;border:1px solid var(--line);background:#fff}
-  .home .mk-icon .ic{width:40px;height:40px;margin:0 auto 8px;border-radius:12px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2)}
-  .home .mk-icon .ic svg{width:18px;height:18px}
-  .home .mk-icon b{display:block;font-size:12.5px;color:var(--graphite)}
-  .home .globe-wrap{position:relative;min-height:320px;display:grid;place-items:center}
-  .home .globe{width:260px;height:260px;border-radius:50%;background:
-    radial-gradient(circle at 35% 30%,rgba(182,255,46,.25),transparent 40%),
-    radial-gradient(circle at 70% 70%,rgba(35,38,47,.08),transparent 45%),
-    #F1F3F6;border:1px solid var(--line);box-shadow:inset 0 0 40px rgba(182,255,46,.12),0 20px 50px rgba(35,38,47,.08);position:relative;overflow:hidden}
-  .home .globe:before,.home .globe:after{content:"";position:absolute;border:1px dashed rgba(35,38,47,.15);border-radius:50%}
-  .home .globe:before{inset:18%;} .home .globe:after{inset:36%}
-  .home .tick{position:absolute;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--graphite);box-shadow:0 10px 28px rgba(35,38,47,.1);white-space:nowrap}
-  .home .tick small{display:block;font-weight:600;font-size:11px;margin-top:2px}
-  .home .tick.up small{color:var(--accent2)} .home .tick.dn small{color:var(--red)}
-  .home .tick.t1{top:18%;left:8%} .home .tick.t2{top:42%;right:0} .home .tick.t3{bottom:16%;left:18%}
-
-  .home .risk-split{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;text-align:left}
-  .home .risk-split .kicker,.home .risk-split h2,.home .risk-split .sub{text-align:left;margin-left:0}
-  .home .risk-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .home .risk-card{padding:16px;border-radius:14px;border:1px solid var(--line);background:#fff}
-  .home .risk-card .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(182,255,46,.16);color:var(--accent2);margin-bottom:10px}
-  .home .risk-card .ic svg{width:16px;height:16px}
-  .home .risk-card h3{margin:0 0 4px;font-size:14.5px;color:var(--graphite);font-family:Manrope,sans-serif;font-weight:800}
-  .home .risk-card p{margin:0;font-size:13px;color:var(--muted);line-height:1.45}
-  .home .risk-ui{background:#23262F;border-radius:20px;padding:22px;border:1px solid rgba(255,255,255,.08);box-shadow:0 28px 60px rgba(35,38,47,.18)}
-  .home .risk-ui h3{margin:0 0 16px;color:#fff;font-size:15px;font-family:Manrope,sans-serif}
-  .home .risk-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.8);font-size:13.5px}
-  .home .risk-row:last-child{border-bottom:0}
-  .home .tog{width:40px;height:22px;border-radius:999px;background:rgba(182,255,46,.35);position:relative;flex:none}
-  .home .tog:after{content:"";position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:var(--spark)}
-  .home .risk-inp{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px 10px;color:#fff;font-size:12.5px;font-family:"JetBrains Mono",monospace}
-
-  .home .perf-split{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;text-align:left}
-  .home .perf-panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
-  .home .perf-panel .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .home .perf-panel .ph b{color:var(--graphite);font-size:15px}
-  .home .perf-panel .ph span{font-size:12px;color:var(--muted)}
-  .home .perf-eq{height:160px;margin:8px 0 16px}
-  .home .perf-eq svg{width:100%;height:100%;display:block}
-  .home .perf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .home .perf-stats div{padding:12px;border-radius:12px;background:var(--bg2);border:1px solid var(--line)}
-  .home .perf-stats .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
-  .home .perf-stats .v{font-size:18px;font-weight:800;color:var(--graphite)}
-  .home .perf-copy .kicker,.home .perf-copy h2,.home .perf-copy .sub{text-align:left;margin-left:0}
-  .home .check{list-style:none;margin:0 0 22px;padding:0}
-  .home .check li{display:flex;align-items:flex-start;gap:10px;padding:8px 0;font-size:14.5px;color:var(--graphite);font-weight:600}
-  .home .check li:before{content:"✓";width:22px;height:22px;border-radius:50%;background:rgba(182,255,46,.22);color:var(--accent2);display:grid;place-items:center;font-size:12px;flex:none;margin-top:1px}
-
-  .home .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;margin:28px auto 0;text-align:left}
-  .home .plan{padding:28px 26px;border-radius:20px;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow)}
-  .home .plan.featured{border-color:transparent;background:var(--graphite);color:#fff;box-shadow:0 24px 60px rgba(35,38,47,.25)}
-  .home .plan .tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent2);margin-bottom:8px}
-  .home .plan.featured .tag{color:var(--spark)}
-  .home .plan h3{margin:0;font-size:22px;font-family:Manrope,sans-serif;font-weight:800;color:var(--graphite)}
-  .home .plan.featured h3{color:#fff}
-  .home .plan .price{font-size:42px;font-weight:800;letter-spacing:-1.5px;margin:12px 0 4px;color:var(--graphite)}
-  .home .plan.featured .price{color:#fff}
-  .home .plan .price small{font-size:14px;font-weight:500;color:var(--muted);letter-spacing:0}
-  .home .plan.featured .price small{color:rgba(255,255,255,.55)}
-  .home .plan ul{list-style:none;padding:0;margin:18px 0 24px}
-  .home .plan li{padding:8px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;font-size:14.5px;color:var(--muted)}
-  .home .plan.featured li{border-bottom-color:rgba(255,255,255,.1);color:rgba(255,255,255,.72)}
-  .home .plan li:before{content:"✓";color:var(--accent2);font-weight:800}
-  .home .plan.featured li:before{color:var(--spark)}
-  .home .plan .btn{width:100%}
-  .home .plan.featured .btn.primary{background:var(--spark);color:var(--graphite)}
-  .home .pay{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:22px;color:var(--muted);font-size:13px}
-  .home .pay span{padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff}
-
-  .home .faq-acc{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:980px;margin:28px auto 0;text-align:left}
-  .home .faq-item{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden}
-  .home .faq-item button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:none;border:0;font:inherit;font-weight:700;font-size:14.5px;color:var(--graphite);cursor:pointer;text-align:left}
-  .home .faq-item button .plus{width:28px;height:28px;border-radius:50%;background:rgba(182,255,46,.2);color:var(--accent2);display:grid;place-items:center;font-size:18px;line-height:1;flex:none;transition:transform .2s}
-  .home .faq-item.open button .plus{transform:rotate(45deg);background:var(--spark);color:var(--graphite)}
-  .home .faq-item .ans{display:none;padding:0 18px 16px;color:var(--muted);font-size:14px;line-height:1.6}
-  .home .faq-item.open .ans{display:block}
-
-  .home .final-cta{position:relative;margin:0;padding:72px 0;background:var(--graphite);overflow:hidden;border-top:0}
-  .home .final-cta:before{content:"";position:absolute;right:-10%;top:-40%;width:55%;height:180%;background:radial-gradient(ellipse,rgba(182,255,46,.28),transparent 60%);pointer-events:none}
-  .home .final-inner{position:relative;z-index:1;display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center}
-  .home .final-inner h2{color:#fff;text-align:left;margin:0 0 12px;font-size:clamp(28px,3.5vw,40px);font-family:Manrope,sans-serif}
-  .home .final-inner .sub{text-align:left;color:rgba(255,255,255,.65);margin:0 0 24px;max-width:440px}
-  .home .final-inner .cta{justify-content:flex-start}
-  .home .final-inner .btn.ghost{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
-  .home .final-inner .btn.ghost:hover{border-color:var(--spark);background:rgba(182,255,46,.12);color:#fff}
-  .home .final-mock{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;box-shadow:0 24px 50px rgba(0,0,0,.25)}
-  .home .final-mock .bar{height:10px;width:40%;background:rgba(182,255,46,.35);border-radius:6px;margin-bottom:12px}
-  .home .final-mock .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .home .final-mock .cell{height:64px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.06)}
-  .home .fine{color:var(--muted);font-size:12.5px;margin-top:16px;line-height:1.55;max-width:560px}
-
-  @media(max-width:1000px){
-    .home .feat-grid{grid-template-columns:1fr 1fr}
-    .home .how-split,.home .mk-split,.home .risk-split,.home .perf-split,.home .final-inner{grid-template-columns:1fr}
-    .home .how-split .kicker,.home .how-split h2,.home .how-split .sub,
-    .home .mk-split .kicker,.home .mk-split h2,.home .mk-split .sub,
-    .home .risk-split .kicker,.home .risk-split h2,.home .risk-split .sub,
-    .home .perf-copy .kicker,.home .perf-copy h2,.home .perf-copy .sub,
-    .home .final-inner h2,.home .final-inner .sub{text-align:center;margin-left:auto;margin-right:auto}
-    .home .how-split .cta,.home .final-inner .cta,.home .perf-copy .cta{justify-content:center}
-    .home .steps{grid-template-columns:1fr 1fr}
-    .home .mk-icons{grid-template-columns:repeat(3,1fr)}
-  }
-  @media(max-width:920px){
-    .home .hero{grid-template-columns:1fr;gap:40px;text-align:center}
-    .home .hero h1,.home .hero .lead{margin-left:auto;margin-right:auto}
-    .home .cta,.home .trust{justify-content:center;margin-left:auto;margin-right:auto}
-    .home .eyebrow{justify-content:center}
-    .home .float-card{right:8px;top:12px}
-  }
-  @media(max-width:720px){
-    .home .feat-grid,.home .steps,.home .plans,.home .faq-acc,.home .risk-grid,.home .perf-stats{grid-template-columns:1fr}
-    .home .mk-icons{grid-template-columns:1fr 1fr}
-    .home .mstats{grid-template-columns:1fr 1fr}
-    .home .mstats .mcard:last-child{grid-column:1/-1}
-  }
-  @media(max-width:560px){
-    .home .hero h1{font-size:32px}
-    .home .cta .btn{width:100%}
-    .home .float-card{display:none}
-  }
-</style>
+<link rel="stylesheet" href="{% static 'css/sambot-home.css' %}?v=2">
 {% endblock %}
 {% block site %}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M5 12a7 7 0 0 1 14 0M8.5 12a3.5 3.5 0 0 1 7 0"/><circle cx="12" cy="12" r="1" /><path d="M12 13v7"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 7.6-8 9-4.8-1.4-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9.5A1.5 1.5 0 0 0 5.8 21h12.4a1.5 1.5 0 0 0 1.3-2.5L14 9V3"/><path d="M7.5 15h9"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3M7 9l3 2.5L7 14M13 14h4"/></symbol>
+  <symbol id="i-coin" viewBox="0 0 24 24"><path d="M12 3l4 4-4 4-4-4zM12 13l4 4-4 4-4-4zM3 12l4-4 4 4-4 4zM13 12l4-4 4 4-4 4z" transform="scale(.9) translate(1.3 1.3)"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-bolt-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+</svg>
 <main id="top">
-<div class="hero-band"><div class="wrap">
-  <section class="hero h2x" aria-labelledby="hero-title">
-    <div class="hero-copy" style="animation:rise .8s cubic-bezier(.22,1,.36,1) both">
-      <p class="eyebrow">Trading automation. On your terms.</p>
-      <h1 id="hero-title">Your strategy.<br>Your rules.<br><span class="hl">Automated.</span></h1>
-      <p class="lead">Turn TradingView alerts into a repeatable trading workflow. Test in paper mode, define your risk limits, and connect supported MT5 or Binance execution.</p>
-      <div class="cta">
-        <a class="btn primary" href="{% url 'register' %}">Create your account <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></svg></a>
-        <a class="btn demo" href="#features">Explore the workflow <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></a>
+
+<!-- ============ HERO ============ -->
+<section class="hm-hero" aria-labelledby="hero-title">
+  <div class="hm-wrap">
+    <div class="hm-hero-grid">
+      <div>
+        <p class="hm-eyebrow"><i></i> Trading automation workflow</p>
+        <h1 id="hero-title">Your Strategy.<br>Your Rules.<br><span class="hl">Automated.</span></h1>
+        <p class="hm-lead">SamBot connects supported trading signals, configurable risk controls and supported execution environments into one structured automation workflow, so every alert follows the same rules and leaves a record you can review.</p>
+        <div class="hm-actions">
+          <a class="btn primary" href="{% url 'register' %}">Create Your Account</a>
+          <a class="btn ghost" href="{% url 'site_how' %}">Explore How It Works</a>
+        </div>
+        <p class="hm-note"><svg class="hm-ic" aria-hidden="true"><use href="#i-flask"/></svg> Start with paper mode before relying on live execution.</p>
       </div>
-      <p class="ticks"><span>&#10003; Free account creation</span><span>&#10003; Paper-test before live trading</span></p>
-    </div>
 
-    <div class="stage">
-      <p class="dv-eyebrow"><i></i> Your workspace. At a glance.</p>
-      <div class="dv-fit" id="dvFit">
-        <div class="dv-stage" id="dvStage" role="img" aria-label="Product concept: SamBot trading overview on a tablet and phone in paper mode, with sample data">
-
-          <!-- tablet -->
-          <div class="tablet">
-            <div class="screen">
-              <aside class="sb">
-                <span class="sb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M8 6h10v10"/></svg></span>
-                <span class="sb-i on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg></span>
-                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg></span>
-                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
-                <span class="sb-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 21V4M6 5h12l-3 4 3 4H6"/></svg></span>
-                <span class="sb-i bot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
-              </aside>
-              <div class="main">
-                <div class="m-head"><b>Trading overview</b><span class="chip">&#9679; Paper mode</span></div>
-                <div class="m-stats">
-                  <div><small>Simulated equity</small><strong id="dvEq">$10,248<em>.60</em></strong></div>
-                  <div><small>Open P/L</small><strong class="up" id="dvPl">+$48.60</strong></div>
-                  <div><small>Bot status</small><span class="st on" id="dvSt"><i></i> Monitoring</span></div>
-                </div>
-                <div class="m-chart">
-                  <div class="c-head"><div><b>XAUUSD</b><small>Gold / US Dollar</small></div><span class="c-note">Illustrative price action</span></div>
-                  <svg id="dvChart" viewBox="0 0 470 150" preserveAspectRatio="none" aria-hidden="true"></svg>
-                  <div class="c-axis"><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span></div>
-                </div>
-                <div class="m-pos">
-                  <div class="p-head"><b>Open positions</b><span class="cnt" id="dvCnt">2</span></div>
-                  <table><thead><tr><th>Symbol</th><th>Side</th><th>Volume</th><th>P/L</th></tr></thead>
-                  <tbody><tr><td>XAUUSD</td><td><span class="buy">BUY</span></td><td>0.01</td><td class="up">+$31.20</td></tr>
-                  <tr><td>BTCUSD</td><td><span class="buy">BUY</span></td><td>0.02</td><td class="up">+$17.40</td></tr></tbody></table>
-                </div>
-              </div>
-            </div>
+      <figure class="hm-console" aria-label="Illustration of the SamBot workflow: signal, validation, risk controls, execution and monitoring, shown in paper mode with sample data">
+        <div class="hm-panel hm-con" aria-hidden="true">
+          <div class="hm-con-top">
+            <b><i><svg class="hm-ic" style="width:15px;height:15px"><use href="#i-signal"/></svg></i> SamBot workspace</b>
+            <span class="chips"><span class="hm-tag mute">XAUUSD</span><span class="hm-tag">Paper mode</span></span>
           </div>
-
-          <!-- phone -->
-          <div class="phone">
-            <div class="pscreen">
-              <span class="notch"></span>
-              <div class="ps-bar"><span>9:41</span><span class="sig"><i></i><i></i><i></i></span></div>
-              <div class="ps-brand"><span class="ps-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18L18 6M8 6h10v10"/></svg></span><b>sambot</b><span class="ps-menu"><i></i><i></i></span></div>
-              <div class="ps-acc">PAPER ACCOUNT <i></i></div>
-              <div class="ps-eq" id="dvEq2">$10,248.60</div>
-              <div class="ps-chg"><em>+$248.60</em> simulated change</div>
-              <svg class="ps-spark" viewBox="0 0 170 48" preserveAspectRatio="none" aria-hidden="true"><path id="dvSpark" d="M0 40 L12 34 L22 38 L34 28 L46 31 L58 22 L70 27 L84 18 L96 24 L110 14 L124 19 L138 9 L152 15 L170 4"/></svg>
-              <div class="ps-bot"><span class="ps-bi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg></span><div><b>Strategy bot</b><small id="dvSt2">Monitoring signals</small></div><i class="pdot" id="dvDot"></i></div>
-              <div class="ps-row"><span>Daily loss limit</span><b>2.0%</b></div>
-              <div class="ps-row"><span>Open positions</span><b>2 / 3</b></div>
-              <button type="button" class="ps-btn" id="dvBtn"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg><span>Pause demo bot</span></button>
-              <div class="ps-nav"><span class="on"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>Overview</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 16c3-6 5 2 9-4s6 0 9-4"/></svg>Markets</span><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>Activity</span></div>
-            </div>
+          <ol class="hm-stages" id="hmStages">
+            <li class="hm-st on"><span class="hm-dot"><i><svg class="hm-ic"><use href="#i-signal"/></svg></i></span><div><b>Signal received</b><small>TradingView alert via webhook</small></div><span class="hm-tag">Received</span></li>
+            <li class="hm-st"><span class="hm-dot"><i><svg class="hm-ic"><use href="#i-check"/></svg></i></span><div><b>Signal validated</b><small>Format and account checked</small></div><span class="hm-tag">Passed</span></li>
+            <li class="hm-st"><span class="hm-dot"><i><svg class="hm-ic"><use href="#i-shield"/></svg></i></span><div><b>Risk controls applied</b><small>Loss limit, open trades, size</small></div><span class="hm-tag">Passed</span></li>
+            <li class="hm-st"><span class="hm-dot"><i><svg class="hm-ic"><use href="#i-flask"/></svg></i></span><div><b>Execution</b><small>Simulated order in paper mode</small></div><span class="hm-tag mute">Simulated</span></li>
+            <li class="hm-st"><span class="hm-dot"><i><svg class="hm-ic"><use href="#i-list"/></svg></i></span><div><b>Activity recorded</b><small>Added to your activity log</small></div><span class="hm-tag">Logged</span></li>
+          </ol>
+          <div class="hm-act">
+            <h3><span>Recent activity</span><span>Sample data</span></h3>
+            <ul>
+              <li>Signal accepted &middot; paper order opened <span>example</span></li>
+              <li>Signal skipped &middot; open-trade limit reached <span>example</span></li>
+              <li>Position closed at target &middot; paper <span>example</span></li>
+            </ul>
           </div>
         </div>
-      </div>
-      <p class="dv-cap">Interactive product concept &middot; sample data &middot; no live trades</p>
-    </div>
-  </section>
-  <div class="statbar" aria-label="SamBot in numbers">
-    {% if stat_users >= 100 %}<div class="sbi"><b class="num" data-to="{{ stat_users }}">{{ stat_users }}</b><span>Registered users</span><small>Live count</small></div>
-    {% else %}<div class="sbi"><b id="sb-bars">&mdash;</b><span>Candles analysed</span><small>XAUUSD 1H &middot; 2024&ndash;2026 data</small></div>{% endif %}
-    {% if stat_signals >= 100 %}<div class="sbi"><b class="num" data-to="{{ stat_signals }}">{{ stat_signals }}</b><span>Signals delivered</span><small>Live count</small></div>
-    {% else %}<div class="sbi"><b id="sb-pf">&mdash;</b><span>Profit factor</span><small>Backtest &middot; historical, not live</small></div>{% endif %}
-    <div class="sbi"><b id="sb-profit">&mdash;</b><span>Backtest profit</span><small>XAUUSD 1H &middot; historical, not live</small></div>
-    <div class="sbi"><b id="sb-trades">&mdash;</b><span>Trades in backtest</span><small>Win rate <i id="sb-wr">&mdash;</i> &middot; historical</small></div>
-  </div>
-</div></div>
-
-<section class="s hc-sec rv" id="features" aria-labelledby="feat-title">
-  <style>
-    .home .hc-sec,.home .hc-sec .hc,.home .hc-sec .hc *,.home .hc-sec .hc-side,.home .hc-sec .hc-side *{text-align:left}
-    .home .hc-sec .hc-side .kicker{margin-left:0 !important;margin-right:auto !important}
-    .home .hc-sec .hc-side h2,.home .hc-sec .hc-side .sub{margin-left:0 !important;max-width:none}
-    .hc-wrap{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:40px;align-items:start}
-    .hc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:stretch;list-style:none;margin:0;padding:0;grid-column:1;grid-row:1}.hc-grid>li{display:flex}.hc-grid>li>.hc{flex:1}
-    .hc{display:flex;flex-direction:column;padding:20px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(32,48,80,.6),rgba(22,36,62,.6));color:var(--text);transition:transform .2s,border-color .2s}
-    .hc:hover,.hc:focus-visible{transform:translateY(-3px);border-color:rgba(182,255,46,.5);text-decoration:none;outline:none}
-    .hc:focus-visible{box-shadow:0 0 0 3px rgba(125,227,255,.35)}
-    .hc-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:rgba(182,255,46,.1);border:1px solid rgba(182,255,46,.25);color:#B6FF2E;margin-bottom:12px}
-    .hc-ic svg{width:20px;height:20px}
-    .hc h3{margin:0 0 6px;font-size:16.5px;color:#fff;font-family:Manrope,sans-serif;font-weight:800;line-height:1.3}
-    .hc p{margin:0 0 14px;font-size:13.5px;line-height:1.6;color:var(--muted)}
-    .hc-more{margin-top:auto;font-size:13px;font-weight:800;color:#B6FF2E} .hc-more i{font-style:normal;display:inline-block;transition:transform .2s} .hc:hover .hc-more i{transform:translateX(3px)}
-    .hc-side{position:sticky;top:84px;grid-column:2;grid-row:1}
-    .hc-side .kicker,.hc-side h2,.hc-side .sub{text-align:left;margin-left:0;margin-right:0}
-    .hc-side h2{font-size:clamp(26px,3vw,34px)} .hc-side .sub{margin-bottom:16px;font-size:15px}
-    .hc-points{list-style:none;margin:0 0 20px;padding:0;display:grid;gap:10px}
-    .hc-points li{display:flex;gap:10px;font-size:14px;color:var(--text);line-height:1.5} .hc-points li:before{content:"\2713";flex:none;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(182,255,46,.14);color:#B6FF2E;font-size:12px;margin-top:1px}
-    .hc-note{margin-top:16px;font-size:12.5px;color:var(--muted);line-height:1.55}
-    @media(max-width:1000px){.hc-wrap{grid-template-columns:1fr;gap:28px}.hc-side{position:static;grid-column:1;grid-row:1}.hc-grid{grid-column:1;grid-row:2}}
-    @media(max-width:560px){.hc-grid{grid-template-columns:1fr}}
-  </style>
-  <div class="wrap">
-    <div class="hc-wrap">
-      <div class="hc-side">
-        <div class="kicker">What SamBot does</div>
-        <h2 id="feat-title">TradingView automation with paper testing and risk controls</h2>
-        <p class="sub">SamBot turns TradingView alerts and platform signals into a workflow you can test and review. Start in paper mode, set your limits, and connect a supported MT5 or Binance account only when you are ready.</p>
-        <ul class="hc-points">
-          <li>Every signal is checked against your own risk limits before an order is considered.</li>
-          <li>Paper mode never places real orders.</li>
-          <li>Your funds stay with your broker or exchange; SamBot is software, not a broker.</li>
-        </ul>
-        <div class="cta" style="justify-content:flex-start"><a class="btn primary" href="{% url 'register' %}">Create a free account</a><a class="btn ghost" href="{% url 'site_how' %}">How it works</a></div>
-        <p class="hc-note">Backtests and paper results are research tools. They do not guarantee future results, and trading involves a risk of loss.</p>
-      </div>
-      <ul class="hc-grid">
-      <li><a class="hc" href="{% url 'site_tradingview' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L10.7 5.2"/><path d="M14 11a5 5 0 0 0-7.07 0L4.8 13.12a5 5 0 0 0 7.07 7.07L13.3 18.8"/></svg></span>
-        <h3>TradingView alert connections</h3>
-        <p>Each account gets its own webhook address and secret. Alerts from your TradingView strategy are validated and recorded before anything else happens.</p>
-        <span class="hc-more">Set up TradingView alerts <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      <li><a class="hc" href="{% url 'site_markets' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
-        <h3>Gold and Bitcoin markets</h3>
-        <p>Gold (XAUUSD) and Bitcoin are the supported focus. SamBot checks market hours before it opens a trade and shows reference prices for both.</p>
-        <span class="hc-more">See supported markets <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      <li><a class="hc" href="{% url 'site_paper' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></span>
-        <h3>Paper trading</h3>
-        <p>The default mode. Signals run through the same rules with simulated fills, so you can check sizing and risk settings before any real order exists.</p>
-        <span class="hc-more">How paper mode works <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      <li><a class="hc" href="{% url 'site_risk' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7l8-4z"/></svg></span>
-        <h3>Trading risk controls</h3>
-        <p>Risk per trade, a daily loss limit, a maximum number of open trades, losing-streak limits and an emergency stop apply to every signal.</p>
-        <span class="hc-more">Review the risk controls <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      <li><a class="hc" href="{% url 'site_mt5' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
-        <h3>MT5 connection</h3>
-        <p>A small bridge runs next to your MetaTrader 5 terminal. SamBot shows Connected only after the bridge reports a live heartbeat for your account.</p>
-        <span class="hc-more">Learn about the MT5 bridge <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      <li><a class="hc" href="{% url 'site_how' %}">
-        <span class="hc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V9M10 19V5M16 19v-7M22 19V8"/></svg></span>
-        <h3>Signal and trade activity</h3>
-        <p>Paid signals appear in your dashboard table when they arrive. Skipped trades are logged with the reason, so you can see why something did not run.</p>
-        <span class="hc-more">See how it works <i aria-hidden="true">&rarr;</i></span>
-      </a></li>
-      </ul>
+        <div class="hm-panel hm-risk-pill" aria-hidden="true">
+          <div>Mode <b>Paper</b></div>
+          <div>Risk checks <b>On</b></div>
+          <div>Emergency stop <b>Armed</b></div>
+        </div>
+        <figcaption class="hm-cap">Illustrative interface. Sample data, no live trades.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
 
-<section class="s alt rv" id="how" aria-labelledby="how-title">
-  <div class="wrap">
-    <div class="how-split">
+<!-- ============ CAPABILITY STRIP ============ -->
+<section class="hm-strip" aria-label="What SamBot connects">
+  <div class="hm-wrap">
+    <ul>
+      <li><span class="ico"><svg class="hm-ic"><use href="#i-signal"/></svg></span><div><b>TradingView</b><span>Signal source</span></div></li>
+      <li><span class="ico"><svg class="hm-ic"><use href="#i-shield"/></svg></span><div><b>Risk engine</b><span>Configurable controls</span></div></li>
+      <li><span class="ico"><svg class="hm-ic"><use href="#i-flask"/></svg></span><div><b>Paper mode</b><span>Test before live</span></div></li>
+      <li><span class="ico"><svg class="hm-ic"><use href="#i-terminal"/></svg></span><div><b>MT5</b><span>Supported execution</span></div></li>
+      <li><span class="ico"><svg class="hm-ic"><use href="#i-coin"/></svg></span><div><b>Binance</b><span>Supported workflow</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ WHY / FEATURE ROWS ============ -->
+<section class="hm-sec" id="features" aria-labelledby="why-title">
+  <div class="hm-wrap">
+    <div class="hm-why-head">
+      <p class="hm-kicker">Why SamBot</p>
+      <h2 class="hm-h wide" id="why-title">Trading Automation Built Around Your Rules</h2>
+      <p class="hm-lead">Automation should not mean handing control to an opaque system. SamBot brings signals, configurable rules, risk controls and supported execution environments into one workflow that can be tested and reviewed.</p>
+    </div>
+
+    <article class="hm-feat rv">
+      <div class="hm-feat-text">
+        <div class="num">01</div>
+        <h3>Connect Your Signals</h3>
+        <p>Each account gets its own TradingView webhook address and secret. When an alert fires, TradingView posts the message to that address and SamBot validates it before anything else happens. Unsupported or malformed messages are rejected and logged.</p>
+        <a class="hm-link" href="{% url 'site_tradingview' %}">TradingView automation <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="hm-panel hm-vis" aria-hidden="true">
+        <div class="hm-row"><span><small>Webhook address</small>Personal to your account</span><span class="hm-tag">Active</span></div>
+        <div class="hm-row"><span><small>Secret</small>Required on every message</span><span class="hm-val">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span></div>
+        <div class="hm-row"><span><small>Alert message</small>Written in your TradingView alert</span><span class="hm-tag mute">Your format</span></div>
+        <div class="hm-row"><span><small>Result</small>Accepted or rejected, with a reason</span><span class="hm-tag">Logged</span></div>
+      </div>
+    </article>
+
+    <article class="hm-feat rv">
+      <div class="hm-feat-text">
+        <div class="num">02</div>
+        <h3>Control the Risk</h3>
+        <p>Set your rules before a signal arrives: risk per trade, a daily loss limit, the number of open trades, a trailing stop and an emergency stop. Every signal is checked against them, and a signal that breaks a rule is skipped rather than traded.</p>
+        <a class="hm-link" href="{% url 'site_risk' %}">Risk controls <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="hm-panel hm-vis" aria-hidden="true">
+        <div class="hm-row" style="display:block"><div style="display:flex;justify-content:space-between"><span>Daily loss limit</span><span class="hm-tag mute">Example</span></div><div class="hm-meter"><i style="width:34%"></i></div></div>
+        <div class="hm-row" style="display:block"><div style="display:flex;justify-content:space-between"><span>Open trades</span><span class="hm-tag mute">Example</span></div><div class="hm-meter"><i style="width:50%"></i></div></div>
+        <div class="hm-row"><span>Trailing stop</span><span class="hm-tog"></span></div>
+        <div class="hm-row"><span>Emergency stop</span><span class="hm-tag">Available</span></div>
+      </div>
+    </article>
+
+    <article class="hm-feat rv">
+      <div class="hm-feat-text">
+        <div class="num">03</div>
+        <h3>Execute With Structure</h3>
+        <p>Validated signals run in paper mode or are routed through a supported MetaTrader 5 or Binance Futures workflow. Execution depends on your broker or exchange, your account permissions and market conditions, so every step is recorded for review.</p>
+        <a class="hm-link" href="{% url 'site_markets' %}">Supported markets <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+      <div class="hm-panel hm-vis" aria-hidden="true">
+        <div class="hm-env">
+          <div><b>MetaTrader 5</b><ul><li>Local bridge</li><li>Heartbeat status</li><li>Broker-side orders</li></ul></div>
+          <div><b>Binance Futures</b><ul><li>API connection</li><li>No withdrawals</li><li>Recorded fills</li></ul></div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ INTERACTIVE FLOW ============ -->
+<section class="hm-sec hm-flow" id="flow" aria-labelledby="flow-title">
+  <div class="hm-wrap">
+    <div class="hm-flow-head">
+      <p class="hm-kicker">The workflow</p>
+      <h2 class="hm-h" id="flow-title">From Signal to Execution</h2>
+      <p class="hm-lead">Every alert passes through the same five stages. Select a stage to see what happens there.</p>
+    </div>
+    <ol class="hm-steps" id="hmSteps">
+      <li class="hm-step on"><button type="button" aria-pressed="true" data-i="0"><span class="n">01</span><b>Signal received</b></button></li>
+      <li class="hm-step"><button type="button" aria-pressed="false" data-i="1"><span class="n">02</span><b>Signal validated</b></button></li>
+      <li class="hm-step"><button type="button" aria-pressed="false" data-i="2"><span class="n">03</span><b>Risk rules applied</b></button></li>
+      <li class="hm-step"><button type="button" aria-pressed="false" data-i="3"><span class="n">04</span><b>Execution triggered</b></button></li>
+      <li class="hm-step"><button type="button" aria-pressed="false" data-i="4"><span class="n">05</span><b>Activity recorded</b></button></li>
+      <li class="fill" id="hmFill" aria-hidden="true"></li>
+    </ol>
+    <div class="hm-panel hm-detail" aria-live="polite">
+      <div class="hm-detail-body" id="hmD"><h3 id="hmDt"></h3><p id="hmDp"></p></div>
+      <ul id="hmDl" aria-label="Status for this stage"></ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRADINGVIEW ============ -->
+<section class="hm-sec" id="tradingview" aria-labelledby="tv-title">
+  <div class="hm-wrap">
+    <div class="hm-split">
+      <div class="hm-panel">
+        <ol class="hm-chain" aria-label="TradingView alert to execution">
+          <li><span class="ico"><svg class="hm-ic"><use href="#i-signal"/></svg></span><div><b>TradingView alert</b><span>Your strategy or indicator fires an alert.</span></div></li>
+          <li><span class="ico"><svg class="hm-ic"><use href="#i-link"/></svg></span><div><b>Webhook</b><span>The alert is posted to your personal webhook address.</span></div></li>
+          <li><span class="ico"><svg class="hm-ic"><use href="#i-check"/></svg></span><div><b>SamBot</b><span>The message and your account are validated.</span></div></li>
+          <li><span class="ico"><svg class="hm-ic"><use href="#i-shield"/></svg></span><div><b>Risk rules</b><span>Your limits decide whether the signal may trade.</span></div></li>
+          <li><span class="ico"><svg class="hm-ic"><use href="#i-terminal"/></svg></span><div><b>Execution</b><span>Paper fill, or a supported MT5 or Binance workflow.</span></div></li>
+        </ol>
+      </div>
       <div>
-        <div class="kicker">How it works</div>
-        <h2 id="how-title">How to Get Started With SamBot</h2>
-        <p class="sub">Four steps from account creation to monitored, supported live execution, with paper mode in between.</p>
-        <a class="btn primary" href="{% url 'site_how' %}">See How It Works</a>
-      </div>
-      <div class="steps">
-        <article class="step">
-          <div class="n">01</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
-          <h3>Create Your Account</h3>
-          <p>Register for a SamBot account and review the available platform features. Account creation is free; paid access unlocks automation.</p>
-        </article>
-        <article class="step">
-          <div class="n">02</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M8 11h6M11 8v6"/></svg></div>
-          <h3>Configure and Test Your Alerts</h3>
-          <p>Set your strategy rules, connect your TradingView webhook, and review your risk settings. Use paper mode before risking real capital.</p>
-        </article>
-        <article class="step">
-          <div class="n">03</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L10.7 5.2"/><path d="M14 11a5 5 0 0 0-7.07 0L4.8 13.12a5 5 0 0 0 7.07 7.07L13.3 18.8"/></svg></div>
-          <h3>Connect a Supported Trading Environment</h3>
-          <p>Confirm compatibility and complete setup for your supported MT5 or Binance workflow. Review permissions and limits before enabling live execution.</p>
-        </article>
-        <article class="step">
-          <div class="n">04</div>
-          <div class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></div>
-          <h3>Monitor and Review Your Activity</h3>
-          <p>Keep checking signals, execution results, and account activity. Revisit your configuration when your strategy or conditions change.</p>
-        </article>
+        <p class="hm-kicker">TradingView integration</p>
+        <h2 class="hm-h" id="tv-title">Turn TradingView Alerts Into an Automated Workflow</h2>
+        <p class="hm-lead">TradingView can act as the signal source for supported SamBot workflows. Alerts are delivered through webhooks and processed through your configured rules before execution.</p>
+        <p class="hm-lead">Because the same checks run on every alert, you can see exactly why a signal was traded, skipped or rejected. TradingView limits webhook alerts to certain plans, so check your plan first.</p>
+        <div class="hm-actions"><a class="btn primary" href="{% url 'site_tradingview' %}">Explore TradingView Automation</a></div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s rv" id="markets" aria-labelledby="mk-title">
-  <div class="wrap">
-    <div class="mk2">
-      <div class="mk2-copy">
-        <div class="kicker">Supported markets</div>
-        <h2 id="mk-title">Explore Supported MT5 and Binance Trading Workflows</h2>
-        <p class="sub">SamBot supports trading workflows involving MetaTrader 5 and Binance Futures. Its current market focus includes gold, commonly listed as XAUUSD, and bitcoin.</p>
-        <p class="mk2-label">Before enabling automation, confirm that:</p>
-        <ul class="check">
-          <li>Your account and instruments are compatible</li>
-          <li>You have reviewed the connection requirements</li>
-          <li>Trading permissions and execution settings are correct</li>
+<!-- ============ PAPER ============ -->
+<section class="hm-sec hm-flow" id="paper" aria-labelledby="paper-title">
+  <div class="hm-wrap">
+    <div class="hm-split rev">
+      <div>
+        <p class="hm-kicker">Paper mode</p>
+        <h2 class="hm-h wide" id="paper-title">Test Your Strategy Before Live Trading</h2>
+        <p class="hm-lead">Paper mode runs your real alerts through the same rules with simulated fills, so you can find problems while nothing is at stake. It will not match live trading exactly, since spreads, slippage and fills differ, but it shows whether the workflow does what you expect.</p>
+        <ul class="hm-checks">
+          <li>Test how signals behave</li><li>Validate your configuration</li>
+          <li>Review the execution workflow</li><li>Understand your risk settings</li>
+          <li>Spot configuration problems</li><li>Observe the strategy over time</li>
         </ul>
-        <div class="cta" style="justify-content:flex-start"><a class="btn primary" href="{% url 'site_mt5' %}">Explore MT5 Trading</a><a class="btn ghost" href="{% url 'site_binance' %}">Explore Binance Automation</a></div>
+        <div class="hm-actions"><a class="btn primary" href="{% url 'register' %}">Try Paper Trading</a><a class="hm-link" href="{% url 'site_paper' %}" style="align-self:center">How paper mode works <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
       </div>
-
-      <div class="mk2-board" aria-label="Supported markets">
-        <article class="mk-card" data-sym="PAXGUSDT">
-          <div class="mk-top"><span class="mk-badge gold">XAU</span><div class="mk-name"><b>Gold</b><small>XAUUSD &middot; MT5</small></div><span class="mk-chg up"><small id="tick-xau">&mdash;</small></span></div>
-          <svg class="mk-spark" viewBox="0 0 160 48" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg>
-          <div class="mk-foot"><span class="mk-price mono">&mdash;</span><span class="mk-note">24h &middot; gold-linked reference</span></div>
-        </article>
-        <article class="mk-card" data-sym="BTCUSDT">
-          <div class="mk-top"><span class="mk-badge btc">BTC</span><div class="mk-name"><b>Bitcoin</b><small>BTCUSDT &middot; Binance</small></div><span class="mk-chg up"><small id="tick-btc">&mdash;</small></span></div>
-          <svg class="mk-spark" viewBox="0 0 160 48" preserveAspectRatio="none" aria-hidden="true"><path class="area"/><path class="line"/></svg>
-          <div class="mk-foot"><span class="mk-price mono">&mdash;</span><span class="mk-note">24h &middot; Binance spot reference</span></div>
-        </article>
-        <a class="mk-link" href="{% url 'site_mt5' %}">
-          <span class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
-          <div><b>MetaTrader 5</b><small>Terminal connector for supported brokers</small></div><i>&rarr;</i>
-        </a>
-        <a class="mk-link" href="{% url 'site_binance' %}">
-          <span class="mk-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l3 3-3 3-3-3 3-3zM6 9l3 3-3 3-3-3 3-3zM18 9l3 3-3 3-3-3 3-3zM12 15l3 3-3 3-3-3 3-3z"/></svg></span>
-          <div><b>Binance Futures</b><small>API workflow, permissions apply</small></div><i>&rarr;</i>
-        </a>
-        <p class="mk-fine">Availability depends on your broker, exchange, account configuration and supported connection. Market data shown for reference only.</p>
+      <div class="hm-panel hm-sim" aria-hidden="true">
+        <div class="hm-sim-head"><b>Paper trading simulation</b><span class="hm-tag">Paper mode</span></div>
+        <ol class="hm-log">
+          <li><i>&#10003;</i><div><b>Signal received</b><small>XAUUSD buy from TradingView</small></div><span class="hm-tag mute">Step 1</span></li>
+          <li><i>&#10003;</i><div><b>Risk check passed</b><small>All configured limits within range</small></div><span class="hm-tag mute">Step 2</span></li>
+          <li><i>&#10003;</i><div><b>Order simulated</b><small>Simulated fill, no real order</small></div><span class="hm-tag mute">Step 3</span></li>
+          <li><i>&#10003;</i><div><b>Position monitored</b><small>Stop and target tracked</small></div><span class="hm-tag mute">Step 4</span></li>
+          <li><i>&#10003;</i><div><b>Trade completed</b><small>Outcome added to the activity log</small></div><span class="hm-tag mute">Step 5</span></li>
+        </ol>
+        <p class="hm-cap" style="margin-top:10px">Illustrative sequence. Sample entries only.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s alt rv" id="testing" aria-labelledby="test-title">
-  <div class="wrap">
-    <div class="kicker">Paper trading &amp; backtests</div>
-    <h2 id="test-title">Test Your Strategy Before Live Trading</h2>
-    <p class="sub">Two different ways to examine a strategy. Neither guarantees future live results, so use them together.</p>
-    <div class="feat-grid" style="grid-template-columns:1fr 1fr;max-width:980px;margin-left:auto;margin-right:auto">
-      <article class="feat-card">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
-        <h3>Check Your Workflow With Paper Trading</h3>
-        <p>Paper trading lets you examine simulated trading activity without placing live orders. Use it to check incoming alerts, review position sizing, and see how your risk rules affect the workflow.</p>
-        <p style="margin-top:10px">Treat this stage as a chance to find setup problems. Simulated results can differ from live trading because real execution involves changing prices, fees, liquidity, and slippage.</p>
-        <p style="margin-top:12px"><a href="{% url 'site_paper' %}">Explore Paper Trading →</a></p>
+<!-- ============ RISK ============ -->
+<section class="hm-sec" id="risk" aria-labelledby="risk-title">
+  <div class="hm-wrap">
+    <div class="hm-split">
+      <div>
+        <p class="hm-kicker">Risk management</p>
+        <h2 class="hm-h wide" id="risk-title">Automation With Risk Controls Built In</h2>
+        <p class="hm-lead">Automation does not remove trading risk. What it can do is apply the rules you chose, the same way, to every signal. Set the limits below before you connect anything, and test how they behave in paper mode.</p>
+        <p class="hm-lead">Controls help you enforce a plan. They cannot guarantee a particular fill price or protect an account from losses.</p>
+        <div class="hm-actions"><a class="btn primary" href="{% url 'site_risk' %}">Learn About Risk Controls</a></div>
+      </div>
+      <div class="hm-panel hm-risk" role="group" aria-label="Example risk control settings">
+        <div class="hm-row"><span><b>Risk per trade</b><small>The share of your account risked on each trade.</small></span><span class="hm-val">% of equity</span></div>
+        <div class="hm-row"><span><b>Daily loss limit</b><small>Stops new trades for the day once the limit is reached.</small></span><span class="hm-val">% per day</span></div>
+        <div class="hm-row"><span><b>Maximum open trades</b><small>Caps how many positions can be open together.</small></span><span class="hm-val">Count</span></div>
+        <div class="hm-row"><span><b>Trailing stop</b><small>Moves the stop as a trade moves in your favour.</small></span><span class="hm-tog" title="On or off"></span></div>
+        <div class="hm-row"><span><b>Emergency stop</b><small>Halts the bot from your dashboard when you need it to.</small></span><span class="hm-tag">Available</span></div>
+        <p class="hm-cap" style="margin:6px 0 14px">Controls shown as in the dashboard. Values are set by you.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MT5 + BINANCE ============ -->
+<section class="hm-sec hm-flow" id="markets" aria-labelledby="env-title">
+  <div class="hm-wrap">
+    <p class="hm-kicker">Execution environments</p>
+    <h2 class="hm-h wide" id="env-title">Supported Execution Environments</h2>
+    <p class="hm-lead">SamBot supports two execution workflows. Check your broker, account type and permissions before enabling automation.</p>
+    <div class="hm-envs">
+      <article class="hm-panel hm-envc rv">
+        <h3>MT5 Automation</h3>
+        <p>A small bridge runs next to your MetaTrader 5 terminal. SamBot sends validated instructions to it, and the dashboard shows Connected only while the bridge reports a live heartbeat for your account.</p>
+        <ul><li>Works with a supported MT5 broker account</li><li>Your broker holds your funds</li><li>Connection status shown in the dashboard</li></ul>
+        <div class="hm-mini" aria-hidden="true"><div><span>Environment</span><b>MetaTrader 5</b></div><div><span>Typical market</span><b>Gold (XAUUSD)</b></div></div>
+        <a class="btn ghost" href="{% url 'site_mt5' %}">Explore MT5 Trading</a>
       </article>
-      <article class="feat-card">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-7M22 19V8"/></svg></div>
-        <h3>Review Historical Strategy Backtests</h3>
-        <p>Backtesting helps you examine how a strategy would have behaved using historical data and stated assumptions. Review the trade list, costs, and periods of loss alongside the overall result.</p>
-        <p style="margin-top:10px">A backtest is a research tool, not evidence of future profitability. Consider it together with paper testing before deciding whether a strategy suits live use.</p>
-        <p style="margin-top:12px"><a href="{% url 'site_strategy-lab' %}">Open Strategy Lab →</a></p>
+      <article class="hm-panel hm-envc rv d1">
+        <h3>Binance Automation</h3>
+        <p>SamBot connects to Binance Futures through the exchange API. Use trade-only keys without withdrawal permission, and try the workflow in paper mode or on testnet before going further.</p>
+        <ul><li>Supported Binance Futures workflow</li><li>Your funds stay on the exchange</li><li>Orders and fills recorded in your log</li></ul>
+        <div class="hm-mini" aria-hidden="true"><div><span>Environment</span><b>Binance Futures</b></div><div><span>Typical market</span><b>Bitcoin (BTCUSDT)</b></div></div>
+        <a class="btn ghost" href="{% url 'site_binance' %}">Explore Binance Automation</a>
       </article>
     </div>
   </div>
 </section>
 
-<section class="s rv" id="risk" aria-labelledby="risk-title">
-  <div class="wrap">
-    <div class="risk-split">
+<!-- ============ WHY SAMBOT (differentiation) ============ -->
+<section class="hm-sec hm-diff" aria-labelledby="diff-title">
+  <div class="hm-wrap">
+    <p class="hm-kicker">Why SamBot?</p>
+    <h2 class="hm-h wide" id="diff-title">Four things the workflow gets right</h2>
+    <div class="hm-diff-grid">
+      <div><div class="big">1</div><h3>Structured Automation</h3><p>Bring signals, rules and execution together in one place instead of a chain of separate tools.</p></div>
+      <div><div class="big">2</div><h3>Configurable Risk</h3><p>Set your rules before execution, and see which rule stopped a trade when one does.</p></div>
+      <div><div class="big">3</div><h3>Paper Mode</h3><p>Test workflows with simulated fills before relying on live execution.</p></div>
+      <div><div class="big">4</div><h3>Auditable Activity</h3><p>Review what happened at each step, including signals that were skipped or rejected.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PERFORMANCE ============ -->
+<section class="hm-sec" id="performance" aria-labelledby="perf-title">
+  <div class="hm-wrap">
+    <div class="hm-split rev">
       <div>
-        <div class="kicker">Risk management</div>
-        <h2 id="risk-title">Set Trading Limits Before Automation Starts</h2>
-        <p class="sub">SamBot includes configurable risk controls such as daily loss limits and maximum open positions. Choose limits that reflect your own trading plan, then check their behavior in paper mode. Risk controls can support a consistent process, but they cannot eliminate losses or guarantee execution at a particular price.</p>
-        <div class="risk-grid">
-          <article class="risk-card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></div>
-            <h3>Daily profit target</h3>
-            <p>Pause new activity after a configured daily goal.</p>
-          </article>
-          <article class="risk-card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 4.3 1.8 19a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0z"/></svg></div>
-            <h3>Daily loss limit</h3>
-            <p>Block new trades when the daily loss threshold is hit.</p>
-          </article>
-          <article class="risk-card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></div>
-            <h3>Max open trades</h3>
-            <p>Cap how many positions can run at once.</p>
-          </article>
-          <article class="risk-card">
-            <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></div>
-            <h3>Trailing stop</h3>
-            <p>Move protection as price moves in your favour.</p>
-          </article>
-        </div>
-        <div class="cta" style="margin-top:20px;justify-content:flex-start"><a class="btn ghost" href="{% url 'site_risk' %}">Explore Trading Risk Controls →</a></div>
+        <p class="hm-kicker">Performance</p>
+        <h2 class="hm-h" id="perf-title">Performance Needs Context</h2>
+        <ul class="hm-points">
+          <li>A win rate does not show position size.</li>
+          <li>A return does not show drawdown.</li>
+          <li>Historical results do not guarantee future performance.</li>
+        </ul>
+        <p class="hm-lead">SamBot publishes its backtests with the period, the costs assumed and the trade history, so you can examine drawdown, trade count and average win and loss before you read the headline.</p>
+        <div class="hm-actions"><a class="btn primary" href="{% url 'site_performance' %}">Explore Performance</a><a class="hm-link" href="{% url 'site_backtesting' %}" style="align-self:center">How we backtest <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
       </div>
-      <div class="risk-ui" aria-hidden="true">
-        <h3>Risk controls</h3>
-        <div class="risk-row"><span>Daily profit target</span><span class="tog"></span></div>
-        <div class="risk-row"><span>Daily loss limit</span><span class="risk-inp">2.0%</span></div>
-        <div class="risk-row"><span>Max open trades</span><span class="risk-inp">3</span></div>
-        <div class="risk-row"><span>Trailing stop</span><span class="tog"></span></div>
-        <div class="risk-row"><span>Emergency stop</span><span class="tog"></span></div>
+      <div class="hm-panel hm-cmp">
+        <div class="hm-cmp-head"><b style="color:#fff">Same trade count, different outcome</b><span class="hm-ill">Illustrative example</span></div>
+        <table>
+          <caption class="sr" style="position:absolute;left:-9999px">Two hypothetical strategies compared</caption>
+          <thead><tr><th scope="col">Per 100 trades</th><th scope="col">Strategy A</th><th scope="col">Strategy B</th></tr></thead>
+          <tbody>
+            <tr><td>Win rate</td><td>60%</td><td>40%</td></tr>
+            <tr><td>Average win</td><td>$20</td><td>$60</td></tr>
+            <tr><td>Average loss</td><td>$40</td><td>$20</td></tr>
+            <tr class="res"><td>Result per trade</td><td class="neg">&minus;$4</td><td class="pos">+$12</td></tr>
+          </tbody>
+        </table>
+        <p>Hypothetical numbers to show why win rate alone misleads. They are not SamBot results and say nothing about future performance.</p>
       </div>
     </div>
   </div>
 </section>
 
-<section class="s rv" id="performance" aria-labelledby="perf-title">
-  <div class="wrap">
-    <div class="perf-split">
-      <div class="perf-panel">
-        <div class="ph"><b>Performance Overview</b><span>Backtest sample · not a promise</span></div>
-        <div class="perf-eq"><svg id="perf-eq" viewBox="0 0 560 160" preserveAspectRatio="none"></svg></div>
-        <div class="perf-stats">
-          <div><div class="k">Total Profit</div><div class="v" id="p-net">—</div></div>
-          <div><div class="k">Win Rate</div><div class="v" id="p-wr">—</div></div>
-          <div><div class="k">Total Trades</div><div class="v" id="p-tr">—</div></div>
-        </div>
-      </div>
-      <div class="perf-copy">
-        <div class="kicker">Performance</div>
-        <h2 id="perf-title">Review Signals and Trading Activity</h2>
-        <p class="sub">Use your activity log to examine incoming signals, trading actions, and recorded rejections. Keep backtest results, paper activity, and live trading results separate when assessing performance. Each provides different information, and none guarantees future returns.</p>
-        <ul class="check">
-          <li>Real-time paper activity tracking</li>
-          <li>Detailed trade history &amp; rejections</li>
-          <li>Transparent backtest methodology</li>
-          <li>Track gold &amp; bitcoin strategies</li>
-        </ul>
-        <div class="cta"><a class="btn primary" href="{% url 'site_performance' %}">Explore the Performance Page</a><a class="btn ghost" href="{% url 'site_strategy-lab' %}">Strategy Lab</a></div>
-      </div>
+<!-- ============ MARKETS ============ -->
+<section class="hm-sec hm-flow" aria-labelledby="mk-title">
+  <div class="hm-wrap">
+    <p class="hm-kicker">Markets</p>
+    <h2 class="hm-h wide" id="mk-title">Focused Support for Supported Markets</h2>
+    <p class="hm-lead">SamBot deliberately focuses on markets and execution workflows that have been implemented and tested, rather than claiming to automate everything. Support also depends on your broker or exchange.</p>
+    <div class="hm-mk">
+      <article class="hm-panel hm-mkc rv">
+        <h3>Gold (XAUUSD)</h3>
+        <dl><div><dt>Market</dt><dd>Spot gold</dd></div><div><dt>Execution environment</dt><dd>MetaTrader 5</dd></div><div><dt>Workflow status</dt><dd><span class="hm-tag">Supported</span></dd></div></dl>
+        <a class="hm-link" href="{% url 'site_gold' %}">Gold automation <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </article>
+      <article class="hm-panel hm-mkc rv d1">
+        <h3>Bitcoin (BTCUSDT)</h3>
+        <dl><div><dt>Market</dt><dd>Bitcoin futures</dd></div><div><dt>Execution environment</dt><dd>Binance Futures</dd></div><div><dt>Workflow status</dt><dd><span class="hm-tag">Supported</span></dd></div></dl>
+        <a class="hm-link" href="{% url 'site_bitcoin' %}">Bitcoin automation <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </article>
     </div>
+    <div class="hm-actions" style="margin-top:28px"><a class="btn primary" href="{% url 'site_markets' %}">View Supported Markets</a></div>
   </div>
 </section>
 
-<section class="s alt rv" id="pricing" aria-labelledby="pr-title">
-  <div class="wrap">
-    <div class="kicker">Pricing</div>
-    <h2 id="pr-title">Simple SamBot Pricing</h2>
-    <p class="sub">Create an account to review the platform and confirm the current access terms before purchasing.</p>
-    <div class="plans">
-      <div class="plan">
-        <div class="tag">Professional</div>
-        <h3>SamBot Access</h3>
-        <p class="muted" style="margin:8px 0 0">Includes the dashboard, paper trading, TradingView webhook connection, configurable risk controls, activity logs, strategy research, backtests, and supported MT5 and Binance workflows.</p>
-        <div class="price">${{ PRICE_BOT }} <small>/ {{ BOT_ACCESS_DAYS }} days</small></div>
-        <ul>
-          <li>Dashboard &amp; paper trading</li>
-          <li>TradingView webhook</li>
-          <li>Risk controls &amp; activity log</li>
-          <li>Supported Binance &amp; MT5 workflows</li>
-          <li>Strategy research &amp; backtests</li>
-          <li>Standard support</li>
-        </ul>
-        <a class="btn primary" href="{% url 'register' %}?next={% url 'checkout' 'bot' %}">Get SamBot Access</a>
-      </div>
-      <div class="plan featured">
-        <div class="tag">Optional</div>
-        <h3>Signal Credits</h3>
-        <p style="margin:8px 0 0;color:rgba(255,255,255,.65);font-size:14px">Available separately for users who want delivered trade signals, including instrument, timeframe, and entry, stop, and target details. Signals provide information for your decisions and do not guarantee a successful trade or a particular return.</p>
-        <div class="price">${{ PRICE_SIGNAL }} <small>per signal</small></div>
-        <ul>
-          <li>Delivered trade signals</li>
-          <li>Instrument, timeframe &amp; levels</li>
-          <li>Entry, stop &amp; target info</li>
-          <li>Pay only for what you use</li>
-          <li>Works with your SamBot account</li>
-        </ul>
-        <a class="btn primary" href="{% url 'register' %}?next={% url 'checkout' 'signals' %}">Explore Signal Credits</a>
-      </div>
+<!-- ============ GET STARTED TIMELINE ============ -->
+<section class="hm-sec" id="how" aria-labelledby="start-title">
+  <div class="hm-wrap">
+    <p class="hm-kicker">Getting started</p>
+    <h2 class="hm-h wide" id="start-title">How to Get Started With SamBot</h2>
+    <p class="hm-lead">Most of the work happens before any live order. Take the steps in order and move on when each one behaves as you expect.</p>
+    <ol class="hm-tl">
+      <li><span class="n">1</span><b>Create your account</b><span>Free to join. Paper mode is available from the start.</span></li>
+      <li><span class="n">2</span><b>Configure your workflow</b><span>Set your risk limits and supported markets.</span></li>
+      <li><span class="n">3</span><b>Connect a supported signal</b><span>Paste your webhook into a TradingView alert.</span></li>
+      <li><span class="n">4</span><b>Test in paper mode</b><span>Watch simulated trades follow your rules.</span></li>
+      <li><span class="n">5</span><b>Review activity</b><span>Check accepted and skipped signals in the log.</span></li>
+      <li><span class="n">6</span><b>Move to live when ready</b><span>Connect MT5 or Binance only if you choose to.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ GUIDES ============ -->
+<section class="hm-sec hm-flow" aria-labelledby="guides-title">
+  <div class="hm-wrap">
+    <p class="hm-kicker">Guides and resources</p>
+    <h2 class="hm-h wide" id="guides-title">Learn the Technology Behind Trading Automation</h2>
+    <div class="hm-guides">
+      <a class="hm-guide rv" href="{% url 'site_tradingview' %}"><span class="cat">TradingView</span><h3>TradingView Webhooks and Automated Signals</h3><p>How an alert becomes a webhook message, and how to check that it arrived and was read correctly.</p><span class="go">Read Guide &rarr;</span></a>
+      <a class="hm-guide rv d1" href="{% url 'site_paper' %}"><span class="cat">Paper trading</span><h3>Paper Trading Before Live Execution</h3><p>What simulated trading shows, what it cannot show, and what to review before going live.</p><span class="go">Read Guide &rarr;</span></a>
+      <a class="hm-guide rv d2" href="{% url 'site_risk' %}"><span class="cat">Risk controls</span><h3>Risk Controls in Automated Trading</h3><p>Loss limits, open-trade caps and stops: what each one does and how to choose your settings.</p><span class="go">Read Guide &rarr;</span></a>
     </div>
-    <div class="pay">Pay with <span>Visa</span><span>Mastercard</span><span>Amex</span> via Stripe, or bank transfer / USDT.</div>
-    <p class="fine" style="margin:16px auto 0;text-align:center">Trading involves substantial risk of loss. Historical results do not guarantee future performance. Free account creation. Paid access is required for automation.</p>
+    <div class="hm-actions" style="margin-top:26px"><a class="hm-link" href="{% url 'blog' %}">View all guides <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a></div>
   </div>
 </section>
 
 {% if reviews %}
-<section class="s rv" id="reviews" aria-labelledby="rev-title">
+<section class="hm-sec tight" id="reviews" aria-labelledby="rev-title">
   <style>
-    .rv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:left}
-    .rv-i{padding:20px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(32,48,80,.6),rgba(22,36,62,.6));display:flex;flex-direction:column;gap:10px}
-    .rv-st{color:#F5C451;font-size:18px;letter-spacing:2px} .rv-i p{margin:0;font-size:14px;line-height:1.65;color:var(--text);white-space:pre-line}
+    .rv-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;text-align:left}
+    .rv-i{padding:22px;border-radius:18px;border:1px solid var(--hm-line);background:var(--hm-glass);display:flex;flex-direction:column;gap:10px}
+    .rv-st{color:#F5C451;font-size:18px;letter-spacing:2px} .rv-i p{margin:0;font-size:14.5px;line-height:1.65;color:var(--text);white-space:pre-line}
     .rv-by{margin-top:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--muted)} .rv-by b{color:#fff}
     .rv-v{padding:2px 8px;border-radius:999px;border:1px solid rgba(156,240,190,.4);color:#9CF0BE;font-size:11px;font-weight:800}
-    @media(max-width:900px){.rv-grid{grid-template-columns:1fr 1fr}} @media(max-width:600px){.rv-grid{grid-template-columns:1fr}}
+    @media(max-width:900px){.rv-grid{grid-template-columns:minmax(0,1fr)}}
   </style>
-  <div class="wrap">
-    <div class="kicker">Customer reviews</div>
-    <h2 id="rev-title">What customers say about SamBot</h2>
-    <p class="sub">Reviews written by SamBot customers and approved by our team. Individual experiences differ and are not a promise of results.</p>
+  <div class="hm-wrap">
+    <p class="hm-kicker">Customer reviews</p>
+    <h2 class="hm-h wide" id="rev-title">What customers say about SamBot</h2>
+    <p class="hm-lead">Reviews written by SamBot customers and approved by our team. Individual experiences differ and are not a promise of results.</p>
     <div class="rv-grid">
       {% for r in reviews %}
       <figure class="rv-i" style="margin:0">
@@ -611,66 +397,30 @@
 </section>
 {% endif %}
 
-<section class="s rv" id="faq" aria-labelledby="faq-title">
-  <div class="wrap">
-    <div class="kicker">FAQ</div>
-    <h2 id="faq-title">Frequently Asked Questions About SamBot</h2>
-    <p class="sub">Quick answers about TradingView, MT5, Binance, testing and pricing.</p>
-    <div class="faq-acc" id="faq-acc">
-      <div class="faq-item open">
-        <button type="button" aria-expanded="true">What is SamBot? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">SamBot is trading automation software that connects TradingView alerts with paper trading, configurable risk controls, and supported execution workflows. It is not a broker and does not hold your trading capital.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">How does SamBot connect to TradingView? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">TradingView sends alert messages to the webhook endpoint assigned to your SamBot account. You configure the alert and test its behavior before using supported live execution.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">Can I use SamBot with MetaTrader 5? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">SamBot lists support for MT5 trading workflows. Confirm your broker, account compatibility, connector requirements, and trading permissions before enabling automation.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">Does SamBot support Binance? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">SamBot lists supported Binance Futures workflows. Availability depends on the supported connection, account permissions, and applicable access restrictions.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">Can I test SamBot without placing live trades? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">Yes. Paper mode simulates trading activity so you can inspect signals and configured rules without placing live orders. Paper results may differ from actual market execution.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">What is the difference between paper trading and backtesting? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">Backtesting applies strategy rules to historical data. Paper trading simulates trading as new signals arrive. Both can help you examine a strategy, but neither guarantees future live results.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">Does SamBot guarantee profits? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">No. Automated trading involves a risk of loss. Market conditions, trading costs, slippage, strategy behavior, and technical interruptions can affect results.</div>
-      </div>
-      <div class="faq-item">
-        <button type="button" aria-expanded="false">How much does SamBot cost? <span class="plus" aria-hidden="true">+</span></button>
-        <div class="ans">The current listed price is ${{ PRICE_BOT }} for {{ BOT_ACCESS_DAYS }} days of SamBot Access, with optional signal credits at ${{ PRICE_SIGNAL }} per signal. Confirm the latest pricing and purchase terms at checkout.</div>
-      </div>
+<!-- ============ FAQ ============ -->
+<section class="hm-sec" id="faq" aria-labelledby="faq-title">
+  <div class="hm-wrap">
+    <div class="hm-faq-head">
+      <div><p class="hm-kicker">FAQ</p><h2 class="hm-h wide" id="faq-title" style="margin:0">Frequently Asked Questions About SamBot</h2></div>
+      <a class="hm-link" href="{% url 'site_faq' %}">View all FAQs <svg class="hm-ic" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="hm-faq" id="hmFaq">
+      {% for q, a in home_faqs %}
+      <div class="hm-q{% if forloop.first %} open{% endif %}"><button type="button" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">{{ q }}<span class="pl" aria-hidden="true">+</span></button><div class="ans"><div>{{ a }}</div></div></div>
+      {% endfor %}
     </div>
   </div>
 </section>
 
-<section class="cta-band rv" aria-labelledby="cta-title">
-  <div class="wrap">
-    <div class="cta-card">
-      <div class="cta-copy">
-        <h2 id="cta-title">Start With Paper Trading. Build From What You Learn.</h2>
-        <p class="sub">Create your SamBot account to explore the platform, connect your alerts, and review simulated activity. Take time to understand your workflow before deciding whether to enable live trading.</p>
-        <div class="cta-btns">
-          <a class="btn primary" href="{% url 'register' %}">Create Your SamBot Account</a>
-          <a class="btn ghost" href="{% url 'site_contact' %}">Contact SamBot</a>
-        </div>
-      </div>
-      <ol class="cta-steps" aria-label="Getting started">
-        <li><i>1</i><div><b>Create your account</b><span>Free to join</span></div></li>
-        <li><i>2</i><div><b>Connect your TradingView alerts</b><span>Webhook set up in minutes</span></div></li>
-        <li><i>3</i><div><b>Review paper activity</b><span>Signals, sizing and risk rules</span></div></li>
-        <li><i>4</i><div><b>Decide on live trading</b><span>Only when you are ready</span></div></li>
-      </ol>
-      <p class="cta-fine">Risk disclosure: SamBot provides software and informational tools, not personalised financial advice. Trading involves substantial risk of loss. Historical backtests and paper simulations do not guarantee future performance. You are responsible for your trading decisions.</p>
+<!-- ============ FINAL CTA ============ -->
+<section class="hm-final" aria-labelledby="cta-title">
+  <div class="hm-wrap">
+    <div class="hm-fin">
+      <h2 id="cta-title">Start With Paper Trading. Build From What You Learn.</h2>
+      <p class="lead">Explore the workflow, test your configuration and understand how signals, risk controls and execution work before relying on live automation.</p>
+      <div class="hm-actions"><a class="btn primary" href="{% url 'register' %}">Create Your SamBot Account</a><a class="btn ghost" href="{% url 'site_how' %}">Explore the Platform</a></div>
+      <p class="price">SamBot Access is <b>${{ PRICE_BOT }} for {{ BOT_ACCESS_DAYS }} days</b>, with optional signals at <b>${{ PRICE_SIGNAL }}</b> each. <a href="{% url 'site_pricing' %}">See pricing</a></p>
+      <p class="fine">Risk disclosure: SamBot provides software and informational tools, not personalised financial advice. Trading involves substantial risk of loss. Historical backtests and paper simulations do not guarantee future performance. You are responsible for your trading decisions. <a href="{% url 'site_disclaimer' %}">Read the full disclosure</a>.</p>
     </div>
   </div>
 </section>
@@ -678,189 +428,46 @@
 {% endblock %}
 {% block page_scripts %}
 <script>
-  const fmt = (n, d = 2) => (n === null || n === undefined) ? '—' : Number(n).toLocaleString(undefined, {minimumFractionDigits: d, maximumFractionDigits: d});
-  const money = n => (n < 0 ? '−$' : '$') + fmt(Math.abs(n), 0);
+(function () {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  document.querySelectorAll('#faq-acc .faq-item button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const item = btn.parentElement;
-      const open = item.classList.contains('open');
-      document.querySelectorAll('#faq-acc .faq-item').forEach(i => { i.classList.remove('open'); i.querySelector('button').setAttribute('aria-expanded', 'false'); });
-      if (!open) { item.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
-    });
-  });
+  // hero: the highlighted stage moves slowly through the pipeline
+  const stages = document.querySelectorAll('#hmStages .hm-st');
+  if (stages.length && !reduce) {
+    let i = 0;
+    setInterval(() => { stages[i].classList.remove('on'); i = (i + 1) % stages.length; stages[i].classList.add('on'); }, 2600);
+  }
 
-
-  (function countUp() {
-    const els = document.querySelectorAll('.statbar .num');
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    els.forEach(el => {
-      const to = +el.dataset.to || 0; if (reduce || to === 0) { el.textContent = to.toLocaleString(); return; }
-      const t0 = performance.now(), dur = 1200;
-      const f = t => { const k = Math.min(1, (t - t0) / dur); el.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))).toLocaleString(); if (k < 1) requestAnimationFrame(f); };
-      requestAnimationFrame(f);
-    });
-  })();
-
-  (function heroDevices() {
-    const fit = document.getElementById('dvFit'), stage = document.getElementById('dvStage'), svg = document.getElementById('dvChart');
-    if (!fit || !stage) return;
-    const DW = 640, DH = 540;
-    const rescale = () => { const k = Math.min(1.3, fit.clientWidth / DW); stage.style.transform = 'scale(' + k + ')'; stage.style.left = Math.max(0, (fit.clientWidth - DW * k) / 2) + 'px'; fit.style.height = (DH * k) + 'px'; };
-    rescale(); addEventListener('resize', rescale);
-    if (window.ResizeObserver) new ResizeObserver(rescale).observe(fit);
-
-    // candle chart: climb, then consolidate (illustrative)
-    let seed = 11; const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-    const N = 38, W = 470, H = 150, PX = 4, PT = 8, PB = 8, cs = []; let prev = 100;
-    for (let i = 0; i < N; i++) {
-      const drift = i < 11 ? 1.9 : (i < 15 ? 0.5 : (i % 2 ? -.15 : .18));
-      const o = prev, c = o + drift + (rnd() - .5) * (i < 11 ? 1.6 : 2.2);
-      cs.push({o, c, h: Math.max(o, c) + rnd() * 1.1, l: Math.min(o, c) - rnd() * 1.1}); prev = c;
-    }
-    const hi = Math.max(...cs.map(k => k.h)), lo = Math.min(...cs.map(k => k.l));
-    const y = v => PT + (H - PT - PB) * (1 - (v - lo) / (hi - lo)), st = (W - PX * 2) / N, x = i => PX + st * (i + .5), bw = st * .56;
-    let g = '';
-    for (let k = 0; k <= 4; k++) { const gy = PT + (H - PT - PB) * k / 4; g += '<line x1="0" x2="' + W + '" y1="' + gy + '" y2="' + gy + '" class="gl"/>'; }
-    const lvl = y(cs[N - 1].c);
-    g += '<line x1="0" x2="' + W + '" y1="' + lvl + '" y2="' + lvl + '" class="lv"/>';
-    let ma = '', can = '<g class="candles">';
-    cs.forEach((k, i) => {
-      const up = k.c >= k.o, cls = up ? 'cu' : 'cd';
-      can += '<line x1="' + x(i) + '" x2="' + x(i) + '" y1="' + y(k.h) + '" y2="' + y(k.l) + '" class="' + cls + 'w"/><rect x="' + (x(i) - bw / 2) + '" y="' + y(Math.max(k.o, k.c)) + '" width="' + bw + '" height="' + Math.max(1.5, Math.abs(y(k.o) - y(k.c))) + '" rx="1" class="' + cls + '"/>';
-      const win = cs.slice(Math.max(0, i - 6), i + 1), avg = win.reduce((a, q) => a + q.c, 0) / win.length;
-      ma += (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(avg).toFixed(1);
-    });
-    svg.innerHTML = g + '<path d="' + ma + '" class="ma"/>' + can + '</g>';
-
-    // light interactivity: pause / resume the demo bot, gentle simulated P/L drift
-    const btn = document.getElementById('dvBtn'), dot = document.getElementById('dvDot');
-    const st1 = document.getElementById('dvSt'), st2 = document.getElementById('dvSt2'), eq = document.getElementById('dvEq'), eq2 = document.getElementById('dvEq2'), pl = document.getElementById('dvPl');
-    let running = true, pnl = 48.6;
-    const money = v => v.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    const paint = () => {
-      const e = 10200 + pnl, m = money(e).split('.');
-      eq.innerHTML = '$' + m[0] + '<em>.' + m[1] + '</em>'; eq2.textContent = '$' + money(e);
-      pl.textContent = (pnl >= 0 ? '+' : '-') + '$' + money(Math.abs(pnl)); pl.className = pnl >= 0 ? 'up' : 'dn';
+  // interactive flow
+  const STEPS = [
+    ['Signal received', 'A TradingView alert reaches your personal webhook address. SamBot records that it arrived, and when.', [['Source', 'TradingView'], ['Channel', 'Webhook'], ['Status', 'Received']]],
+    ['Signal validated', 'The message is checked for a valid secret, a supported market and a usable format. Anything that fails is rejected and the reason is kept.', [['Secret', 'Checked'], ['Market', 'Supported only'], ['Duplicates', 'Screened']]],
+    ['Risk rules applied', 'Your limits are evaluated before an order exists: daily loss limit, open trades, size and the emergency stop. A signal that breaks a rule is skipped.', [['Loss limit', 'Evaluated'], ['Open trades', 'Evaluated'], ['Result', 'Pass or skip']]],
+    ['Execution triggered', 'In paper mode the fill is simulated. With a supported connection, the instruction goes to MT5 or Binance Futures. Fills depend on the market.', [['Paper mode', 'Simulated fill'], ['MT5', 'Via bridge'], ['Binance', 'Via API']]],
+    ['Activity recorded', 'Every step is written to your activity log, including skipped and rejected signals, so you can review what happened and why.', [['Accepted', 'Logged'], ['Skipped', 'Logged with reason'], ['Review', 'Any time']]]
+  ];
+  const wrap = document.getElementById('hmSteps');
+  if (wrap) {
+    const items = wrap.querySelectorAll('.hm-step'), fill = document.getElementById('hmFill');
+    const t = document.getElementById('hmDt'), p = document.getElementById('hmDp'), l = document.getElementById('hmDl'), d = document.getElementById('hmD');
+    const show = n => {
+      items.forEach((el, k) => { el.classList.toggle('on', k === n); el.classList.toggle('done', k < n); el.querySelector('button').setAttribute('aria-pressed', k === n ? 'true' : 'false'); });
+      fill.style.width = (80 * n / (items.length - 1)) + '%';
+      const s = STEPS[n]; t.textContent = s[0]; p.textContent = s[1];
+      l.innerHTML = ''; s[2].forEach(r => { const li = document.createElement('li'); li.textContent = r[0] + ' '; const sp = document.createElement('span'); sp.textContent = r[1]; li.appendChild(sp); l.appendChild(li); });
+      d.style.animation = 'none'; void d.offsetWidth; d.style.animation = '';
     };
-    btn.addEventListener('click', () => {
-      running = !running;
-      st1.classList.toggle('on', running); st1.lastChild.textContent = running ? ' Monitoring' : ' Paused';
-      st2.textContent = running ? 'Monitoring signals' : 'Paused (demo)';
-      dot.classList.toggle('off', !running);
-      btn.classList.toggle('paused', !running);
-      btn.querySelector('span').textContent = running ? 'Pause demo bot' : 'Resume demo bot';
-    });
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setInterval(() => { if (!running) return; pnl = Math.max(20, Math.min(90, pnl + (rnd() - .48) * 4)); paint(); }, 1800);
-    }
-  })();
-
-  (function marketBoard() {
-    const fmtP = v => Number(v).toLocaleString(undefined, {maximumFractionDigits: v > 1000 ? 0 : 2});
-    const ph = 'M0 34 L20 30 L40 33 L60 24 L80 27 L100 18 L120 21 L140 12 L160 14';
-    document.querySelectorAll('.mk-card[data-sym]').forEach(card => {
-      const sym = card.dataset.sym, line = card.querySelector('.line'), area = card.querySelector('.area');
-      line.setAttribute('d', ph); area.setAttribute('d', ph + ' L160 48 L0 48 Z');
-      Promise.all([
-        fetch('https://api.binance.com/api/v3/klines?symbol=' + sym + '&interval=1h&limit=24').then(r => r.json()),
-        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=' + sym).then(r => r.json())
-      ]).then(([k, t]) => {
-        const cl = k.map(x => +x[4]), lo = Math.min(...cl), hi = Math.max(...cl), W = 160, H = 48, pad = 4;
-        const pts = cl.map((v, i) => [i * W / (cl.length - 1), pad + (H - 2 * pad) * (1 - (v - lo) / ((hi - lo) || 1))]);
-        const d = pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join(' ');
-        line.setAttribute('d', d); area.setAttribute('d', d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z');
-        const p = +t.priceChangePercent, chg = card.querySelector('.mk-chg');
-        chg.classList.toggle('up', p >= 0); chg.classList.toggle('dn', p < 0);
-        chg.firstElementChild.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
-        card.querySelector('.mk-price').textContent = '$' + fmtP(+t.lastPrice);
-      }).catch(() => {
-        fetch('https://api.binance.com/api/v3/ticker/price?symbol=' + sym).then(r => r.json()).then(t => {
-          card.querySelector('.mk-price').textContent = '$' + fmtP(+t.price);
-        }).catch(() => {});
-      });
-    });
-  })();
-
-  function drawEq(svg, pts, W, H) {
-    if (!svg || !pts || pts.length < 2) return;
-    const P = {l: 4, r: 4, t: 10, b: 8};
-    const ys = pts.map(p => p[1]);
-    let lo = Math.min(0, ...ys), hi = Math.max(0, ...ys); if (hi === lo) hi = lo + 1;
-    const pad = (hi - lo) * .08; lo -= pad; hi += pad;
-    const x = i => P.l + (W - P.l - P.r) * i / Math.max(1, pts.length - 1);
-    const y = v => P.t + (H - P.t - P.b) * (1 - (v - lo) / (hi - lo));
-    const line = pts.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p[1]).toFixed(1)).join(' ');
-    const area = line + ` L${x(pts.length - 1).toFixed(1)} ${H - P.b} L${x(0).toFixed(1)} ${H - P.b} Z`;
-    const gid = 'g' + Math.random().toString(36).slice(2, 7);
-    const len = Math.max(800, pts.length * 8);
-    svg.innerHTML = `<defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#B6FF2E" stop-opacity=".4"/><stop offset="1" stop-color="#B6FF2E" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${gid})"/><path d="${line}" fill="none" stroke="#B6FF2E" stroke-width="2.4" stroke-linejoin="round" stroke-dasharray="${len}" stroke-dashoffset="${len}"><animate attributeName="stroke-dashoffset" from="${len}" to="0" dur="1.5s" fill="freeze"/></path><circle cx="${x(pts.length - 1).toFixed(1)}" cy="${y(pts[pts.length - 1][1]).toFixed(1)}" r="4" fill="#C8FF66"/>`;
+    items.forEach((el, k) => { const b = el.querySelector('button'); b.addEventListener('click', () => show(k)); b.addEventListener('mouseenter', () => { if (matchMedia('(hover:hover)').matches) show(k); }); b.addEventListener('focus', () => show(k)); });
+    show(0);
   }
 
-  fetch("{% static 'data/backtests.json' %}").then(r => r.json()).then(j => {
-    const g = (j.sets || []).find(s => s.key === 'gold_1h') || (j.sets || [])[0];
-    if (!g) return;
-    const pts = [[g.start, 0]].concat(g.equity || []);
-    drawEq(document.getElementById('hero-eq'), pts, 420, 120);
-    drawEq(document.getElementById('perf-eq'), pts, 560, 160);
-    const netEl = document.getElementById('hero-net');
-    if (netEl) netEl.textContent = money(g.net);
-    const wr = document.getElementById('h-wr'); if (wr) wr.textContent = fmt(g.win_rate, 1) + '%';
-    const tr = document.getElementById('h-tr'); if (tr) tr.textContent = g.trades.toLocaleString();
-    const sbp = document.getElementById('sb-profit'); if (sbp) sbp.textContent = money(g.net);
-    const sbt = document.getElementById('sb-trades'); if (sbt) sbt.textContent = g.trades.toLocaleString();
-    const sbb = document.getElementById('sb-bars'); if (sbb) sbb.textContent = (g.bars || 0).toLocaleString();
-    const sbf = document.getElementById('sb-pf'); if (sbf) sbf.textContent = fmt(g.profit_factor, 2);
-    const sbw = document.getElementById('sb-wr'); if (sbw) sbw.textContent = fmt(g.win_rate, 1) + '%';
-    const pNet = document.getElementById('p-net'); if (pNet) pNet.textContent = money(g.net);
-    const pWr = document.getElementById('p-wr'); if (pWr) pWr.textContent = fmt(g.win_rate, 1) + '%';
-    const pTr = document.getElementById('p-tr'); if (pTr) pTr.textContent = g.trades.toLocaleString();
-    const rows = document.getElementById('dash-rows');
-    if (rows && g.trades_list) {
-      rows.innerHTML = g.trades_list.slice(-3).reverse().map(t =>
-        `<tr><td>${g.market}</td><td>${t.side}</td><td class="mono ${t.profit >= 0 ? 'g' : 'r'}">${t.profit >= 0 ? '+' : ''}${fmt(t.profit)}</td><td><span class="pill">closed</span></td></tr>`
-      ).join('');
-    }
-  }).catch(() => {});
-
-  async function refreshTicks() {
-    try {
-      const [btc, xau] = await Promise.all([
-        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT').then(r => r.json()),
-        fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=PAXGUSDT').then(r => r.json()),
-      ]);
-      const bEl = document.getElementById('tick-btc');
-      const xEl = document.getElementById('tick-xau');
-      if (bEl && btc.priceChangePercent) {
-        const p = Number(btc.priceChangePercent);
-        bEl.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
-        bEl.parentElement.classList.toggle('up', p >= 0);
-        bEl.parentElement.classList.toggle('dn', p < 0);
-      }
-      if (xEl && xau.priceChangePercent) {
-        const p = Number(xau.priceChangePercent);
-        xEl.textContent = (p >= 0 ? '+' : '') + p.toFixed(2) + '%';
-        xEl.parentElement.classList.toggle('up', p >= 0);
-        xEl.parentElement.classList.toggle('dn', p < 0);
-      }
-    } catch (_) {}
-  }
-  refreshTicks();
-  setInterval(refreshTicks, 30000);
+  // faq accordion (one open at a time)
+  document.querySelectorAll('#hmFaq .hm-q button').forEach(btn => btn.addEventListener('click', () => {
+    const item = btn.parentElement, open = item.classList.contains('open');
+    document.querySelectorAll('#hmFaq .hm-q').forEach(q => { q.classList.remove('open'); q.querySelector('button').setAttribute('aria-expanded', 'false'); });
+    if (!open) { item.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+  }));
+})();
 </script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [
-    {"@type":"Question","name":"Is SamBot a broker?","acceptedAnswer":{"@type":"Answer","text":"No. SamBot is trading-automation software. Your funds stay with the broker or exchange you connect."}},
-    {"@type":"Question","name":"Which markets are supported?","acceptedAnswer":{"@type":"Answer","text":"Primary focus is gold/XAUUSD and bitcoin, with supported Binance Futures and MetaTrader 5 workflows."}},
-    {"@type":"Question","name":"Can I test without going live?","acceptedAnswer":{"@type":"Answer","text":"Yes. Paper mode simulates execution so you can verify alerts, sizing and risk rules first."}},
-    {"@type":"Question","name":"Does SamBot guarantee profits?","acceptedAnswer":{"@type":"Answer","text":"No. Trading results cannot be guaranteed. Backtests and simulations do not predict future performance."}},
-    {"@type":"Question","name":"How does TradingView connect?","acceptedAnswer":{"@type":"Answer","text":"Each account gets a webhook URL. TradingView alerts post to that endpoint when your strategy conditions fire."}},
-    {"@type":"Question","name":"Are backtests live results?","acceptedAnswer":{"@type":"Answer","text":"No. A backtest is a historical simulation under stated assumptions, costs and data."}},
-    {"@type":"Question","name":"Is this financial advice?","acceptedAnswer":{"@type":"Answer","text":"No. SamBot provides software and informational tools only — not personalised investment advice."}}
-  ]
-}
-</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{% for q, a in home_faqs %}{"@type":"Question","name":"{{ q|escapejs }}","acceptedAnswer":{"@type":"Answer","text":"{{ a|escapejs }}"}}{% if not forloop.last %},{% endif %}{% endfor %}]}</script>
 {% endblock %}
