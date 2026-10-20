@@ -559,3 +559,51 @@ def sitemap_xml(request):
         + "</urlset>"
     )
     return HttpResponse(xml, content_type="application/xml; charset=utf-8")
+
+
+@login_required
+def account_settings(request):
+    """Profile settings for any signed-in user: name, e-mail, picture and password."""
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.forms import PasswordChangeForm
+
+    from blog.views import image_error
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+    pw_form = PasswordChangeForm(request.user)
+    for f in pw_form.fields.values():
+        f.widget.attrs.update({"autocomplete": "current-password" if f is pw_form.fields["old_password"] else "new-password"})
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "profile":
+            name = request.POST.get("first_name", "").strip()[:30]
+            email = request.POST.get("email", "").strip().lower()[:254]
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            if email and email != request.user.email and User.objects.filter(email__iexact=email).exclude(pk=request.user.pk).exists():
+                messages.error(request, "That e-mail address is already used by another account.")
+            else:
+                request.user.first_name = name
+                if email:
+                    request.user.email = email
+                request.user.save(update_fields=["first_name", "email"])
+                upload = request.FILES.get("avatar")
+                if upload:
+                    problem = image_error(upload)
+                    if problem:
+                        messages.error(request, problem)
+                        return redirect("account_settings")
+                    profile.avatar = upload
+                    profile.save(update_fields=["avatar"])
+                elif request.POST.get("remove_avatar"):
+                    profile.avatar = None
+                    profile.save(update_fields=["avatar"])
+                messages.success(request, "Profile saved.")
+            return redirect("account_settings")
+        if action == "password":
+            pw_form = PasswordChangeForm(request.user, request.POST)
+            if pw_form.is_valid():
+                pw_form.save()
+                update_session_auth_hash(request, request.user)      # stay signed in on this device
+                messages.success(request, "Password changed.")
+                return redirect("account_settings")
+    return render(request, "accounts/settings.html", {"profile": profile, "pw_form": pw_form, "noindex": True})

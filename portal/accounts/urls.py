@@ -7,6 +7,7 @@ urlpatterns = [
     path("logout/", views.CustomerLogoutView.as_view(), name="logout"),
     path("register/", views.register, name="register"),
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("settings/", views.account_settings, name="account_settings"),
     # admin side (superadmin only)
     path("staff/", staff.entry, name="staff_entry"),   # old URL: forwards to the canonical /admin/Dashboard
     path("staff/bot/mode/", staff.bot_mode, name="staff_bot_mode"),

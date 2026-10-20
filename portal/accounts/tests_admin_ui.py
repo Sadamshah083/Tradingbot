@@ -136,3 +136,60 @@ class PaidDeliveryTables(TestCase):
         SignalDelivery.objects.all().delete()
         html = self.client.get(reverse("staff_manual")).content.decode()
         self.assertIn("No customer has paid for a signal yet", html)
+
+
+class ProfileSettings(TestCase):
+    def setUp(self):
+        self.u = make("pat", email="pat@example.com")
+
+    def test_settings_page_and_navbar_menu(self):
+        web_login(self.client, "pat")
+        html = self.client.get(reverse("account_settings")).content.decode()
+        self.assertIn("Change password", html)
+        self.assertIn('id="umBtn"', html)
+        self.assertIn(reverse("account_settings"), html)
+        self.assertIn('id="umBtn"', self.client.get("/").content.decode())     # public site navbar too
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("account_settings")).status_code, 302)
+
+    def test_picture_upload_name_and_validation(self):
+        import shutil, tempfile
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.test import override_settings
+        tmp = tempfile.mkdtemp()
+        with override_settings(MEDIA_ROOT=tmp):
+            web_login(self.client, "pat")
+            png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
+            self.client.post(reverse("account_settings"), {"action": "profile", "first_name": "Pat", "email": "pat@example.com", "avatar": SimpleUploadedFile("a.png", png, content_type="image/png")})
+            self.u.refresh_from_db(); self.u.profile.refresh_from_db()
+            self.assertEqual(self.u.first_name, "Pat")
+            self.assertTrue(self.u.profile.avatar.name.startswith("avatars/"))
+            self.assertIn(self.u.profile.avatar.url, self.client.get(reverse("dashboard")).content.decode())
+            self.client.post(reverse("account_settings"), {"action": "profile", "first_name": "Pat", "email": "pat@example.com", "avatar": SimpleUploadedFile("evil.png", b"<script>", content_type="image/png")})
+            self.u.profile.refresh_from_db()
+            self.assertTrue(self.u.profile.avatar)                      # fake picture rejected, old one kept
+        shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_email_must_be_unique_and_password_change_checks_old_password(self):
+        make("other", email="other@example.com")
+        web_login(self.client, "pat")
+        self.client.post(reverse("account_settings"), {"action": "profile", "first_name": "", "email": "other@example.com"})
+        self.u.refresh_from_db()
+        self.assertEqual(self.u.email, "pat@example.com")
+        self.client.post(reverse("account_settings"), {"action": "password", "old_password": "wrong", "new_password1": "Another-pass-4321", "new_password2": "Another-pass-4321"})
+        self.u.refresh_from_db()
+        self.assertTrue(self.u.check_password(PW))
+        self.client.post(reverse("account_settings"), {"action": "password", "old_password": PW, "new_password1": "Another-pass-4321", "new_password2": "Another-pass-4321"})
+        self.u.refresh_from_db()
+        self.assertTrue(self.u.check_password("Another-pass-4321"))
+        self.assertEqual(self.client.get(reverse("dashboard")).status_code, 200)   # still signed in
+
+    def test_admin_can_set_a_customer_password_and_leads_has_no_private_note(self):
+        make("owner", superuser=True)
+        web_login(self.client, "owner")
+        html = self.client.get(reverse("staff_leads")).content.decode()
+        self.assertNotIn("Private note", html)
+        self.assertIn("<th>Password</th>", html)
+        self.client.post(reverse("staff_customer_update", args=[self.u.id]), {"action": "set_password", "password": "Set-by-admin-123"})
+        self.u.refresh_from_db()
+        self.assertTrue(self.u.check_password("Set-by-admin-123"))

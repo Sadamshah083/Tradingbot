@@ -109,7 +109,7 @@
         <li><a href="{% url 'chat_room' %}" class="{% if request.resolver_match.url_name == 'chat_room' %}active{% endif %}"><span class="txt">Live chat</span> {% if unread_chat %}<span class="badge">{{ unread_chat }}</span>{% endif %}</a></li>
         <li><a href="{% url 'landing' %}">Home</a></li>
       {% endif %}
-      <li><form method="post" action="{% url 'logout' %}" style="display:inline">{% csrf_token %}<button class="btn ghost small" type="submit">Log out</button></form></li>
+      <li>{% include "_usermenu.html" %}</li>
     {% else %}
       <li><a href="{% url 'site_pricing' %}">Pricing</a></li><li><a href="{% url 'login' %}">Log in</a></li><li><a class="btn primary small" href="{% url 'register' %}">Create account</a></li>
     {% endif %}

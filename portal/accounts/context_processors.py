@@ -44,8 +44,14 @@ def site(request):
         new_leads = Profile.objects.filter(lead_status="new", role="customer", user__is_superuser=False).count()
     if role == "customer" and hasattr(request, "session"):
         open_chat = bool(request.session.pop("open_chat_popup", False))
+    avatar_url, display_name = "", ""
+    if request.user.is_authenticated:
+        prof = getattr(request.user, "profile", None)
+        avatar_url = prof.avatar.url if prof is not None and prof.avatar else ""
+        display_name = request.user.first_name or request.user.username
     home = staff_home_name(request.user)
     return {
+        "avatar_url": avatar_url, "display_name": display_name,
         "new_leads": new_leads, "open_chat_popup": open_chat,
         "role": role, "is_superadmin": role == "superadmin", "can_admin": role in ("superadmin", "admin"),
         "staff_home_url": reverse(home) if home else "", "staff_home_label": "Admin" if role in ("superadmin", "admin") else "Inbox",

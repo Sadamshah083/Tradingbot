@@ -92,3 +92,12 @@
     });
   });
 })();
+
+(function () {
+  const btn = document.getElementById('umBtn'), menu = document.getElementById('umMenu');
+  if (!btn || !menu) return;
+  const set = o => { menu.hidden = !o; btn.setAttribute('aria-expanded', o); };
+  btn.addEventListener('click', e => { e.stopPropagation(); set(menu.hidden); });
+  document.addEventListener('click', e => { if (!menu.hidden && !e.target.closest('#um')) set(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') set(false); });
+})();

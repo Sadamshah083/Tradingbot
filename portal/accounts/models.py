@@ -1,5 +1,12 @@
 from django.conf import settings
+import os
+import uuid
+
 from django.db import models
+
+
+def avatar_upload_to(instance, filename):
+    return f"avatars/{uuid.uuid4().hex}{os.path.splitext(filename)[1].lower()}"
 
 
 class Profile(models.Model):
@@ -16,6 +23,7 @@ class Profile(models.Model):
     bot_access_until = models.DateTimeField(null=True, blank=True, help_text="Bot access expires here; each $ package payment adds BOT_ACCESS_DAYS.")
     tradingview_username = models.CharField(max_length=60, blank=True, help_text="For invite-only access to the strategy on TradingView.")
     tv_access_granted = models.BooleanField(default=False, help_text="Admin has added this TradingView username to the invite-only strategy.")
+    avatar = models.FileField(upload_to=avatar_upload_to, blank=True, help_text="Profile picture.")
     role = models.CharField(max_length=10, default="customer", choices=[("customer", "Customer"), ("agent", "Agent"), ("admin", "Admin")],
                             help_text="Staff role. The single superadmin is the Django superuser, not a role.")
     LEAD_STATUS = [("new", "New"), ("contacted", "Contacted"), ("qualified", "Interested"), ("customer", "Customer"), ("lost", "Not interested")]

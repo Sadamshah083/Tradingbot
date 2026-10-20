@@ -53,3 +53,22 @@ html.sd-lock{overflow:hidden}
 .cp-badge[hidden]{display:none}
 @media(max-width:560px){.cp{right:10px;bottom:10px}.cp-panel{width:calc(100vw - 20px);height:calc(100vh - 90px)}.cp-fab-txt{display:none}.cp-fab{padding:13px}}
 @media(prefers-reduced-motion:reduce){.cp-panel{animation:none}}
+
+
+/* Account menu (templates/_usermenu.html) */
+.um{position:relative}
+.um-btn{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border-radius:999px;border:1px solid rgba(160,185,230,.3);background:rgba(255,255,255,.04);color:#E8EEFA;cursor:pointer;font:700 13px Manrope,sans-serif}
+.um-btn:hover{border-color:rgba(182,255,46,.5)}
+.um-av{width:30px;height:30px;border-radius:50%;object-fit:cover;flex:none;display:inline-grid;place-items:center}
+.um-ph{background:linear-gradient(135deg,#B6FF2E,#7DE3FF);color:#0F1A2E;font-weight:800;font-size:13px}
+.um-av.big{width:42px;height:42px;font-size:17px}
+.um-car{width:14px;height:14px;opacity:.7}
+.um-menu{position:absolute;right:0;top:calc(100% + 8px);min-width:230px;padding:8px;border-radius:14px;background:#15254A;border:1px solid rgba(160,185,230,.28);box-shadow:0 20px 50px rgba(0,0,0,.55);z-index:200;text-align:left}
+.um-menu[hidden]{display:none}
+.um-head{display:flex;gap:10px;align-items:center;padding:8px 8px 10px;border-bottom:1px solid rgba(160,185,230,.18);margin-bottom:6px}
+.um-head b{display:block;color:#fff;font-size:14px}.um-head small{color:#9FB0CA;font-size:12px;word-break:break-all}
+.um-menu a,.um-out{display:block;width:100%;padding:9px 10px;border-radius:9px;color:#E8EEFA;font:600 13.5px Manrope,sans-serif;text-align:left;background:none;border:0;cursor:pointer}
+.um-menu a:hover,.um-out:hover{background:rgba(160,185,230,.12);text-decoration:none}
+.um-out{color:#FF9B94}
+.um-menu form{margin:0}
+@media(max-width:700px){.um-name{display:none}.um-btn{padding:4px}.um-car{display:none}}

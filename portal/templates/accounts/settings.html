@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Profile & settings · {{ SITE_NAME }}{% endblock %}
+{% block head %}
+<style>
+  .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start} @media(max-width:860px){.set-grid{grid-template-columns:1fr}}
+  .av-row{display:flex;gap:16px;align-items:center;margin:6px 0 4px}
+  .av-big{width:84px;height:84px;border-radius:50%;object-fit:cover;display:grid;place-items:center;font-size:32px;font-weight:800}
+  .av-ph{background:linear-gradient(135deg,#B6FF2E,#7DE3FF);color:#0F1A2E}
+  .av-ctl{display:flex;flex-direction:column;gap:8px;align-items:flex-start} .av-ctl label{margin:0;font-weight:500}
+  .pwerr{color:#FF9B94;font-size:13px;margin:4px 0 0;list-style:none;padding:0}
+</style>
+{% endblock %}
+{% block content %}
+<h1>Profile &amp; settings</h1>
+<p class="lead">Your picture, name, e-mail and password.</p>
+<div class="set-grid">
+  <form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}<input type="hidden" name="action" value="profile">
+    <h2>Profile</h2>
+    <div class="av-row">
+      {% if avatar_url %}<img class="av-big" id="avPrev" src="{{ avatar_url }}" alt="Your picture">{% else %}<span class="av-big av-ph" id="avPrev">{{ display_name|slice:":1"|upper }}</span>{% endif %}
+      <div class="av-ctl">
+        <input type="file" name="avatar" id="avFile" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
+        <button type="button" class="btn primary small" onclick="document.getElementById('avFile').click()">Choose a picture</button>
+        <span class="muted" id="avName">JPG, PNG, GIF or WEBP, up to 5 MB</span>
+        {% if avatar_url %}<label><input type="checkbox" name="remove_avatar" value="1" style="width:auto"> Remove my picture</label>{% endif %}
+      </div>
+    </div>
+    <label for="fn">Name</label><input id="fn" name="first_name" maxlength="30" value="{{ user.first_name }}" placeholder="{{ user.username }}">
+    <label for="em">E-mail</label><input id="em" name="email" type="email" value="{{ user.email }}" required>
+    <label>Username</label><input value="{{ user.username }}" disabled>
+    <button class="btn primary" style="margin-top:16px">Save profile</button>
+  </form>
+  <form method="post" class="card">{% csrf_token %}<input type="hidden" name="action" value="password">
+    <h2>Change password</h2>
+    {% for f in pw_form %}<label for="{{ f.id_for_label }}">{{ f.label }}</label>{{ f }}{% if f.errors %}<ul class="pwerr">{% for e in f.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}{% endfor %}
+    <button class="btn primary" style="margin-top:16px">Change password</button>
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">You stay signed in on this device. Use at least 8 characters.</p>
+  </form>
+</div>
+<script>
+  document.getElementById('avFile').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    document.getElementById('avName').textContent = f.name;
+    const box = document.getElementById('avPrev'); const img = document.createElement('img'); img.className = 'av-big'; img.id = 'avPrev'; img.alt = ''; img.src = URL.createObjectURL(f); box.replaceWith(img);
+  });
+</script>
+{% endblock %}
