@@ -206,8 +206,13 @@ def customer_update(request, user_id):
         pw = request.POST.get("password", "").strip()
         changed = []
         if email and email != user.email.lower():
-            if "@" not in email or User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
-                messages.error(request, "That e-mail is invalid or already used by another account.")
+            import re as _re
+            if not _re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+                messages.error(request, f"'{email}' is not a valid e-mail address.")
+                return redirect(request.POST.get("next") or "staff_leads")
+            other = User.objects.filter(email__iexact=email).exclude(pk=user.pk).first()
+            if other:
+                messages.error(request, f"{email} already belongs to another account ({other.username}, id {other.id}). Use a different e-mail.")
                 return redirect(request.POST.get("next") or "staff_leads")
             user.email = email
             user.save(update_fields=["email"])
