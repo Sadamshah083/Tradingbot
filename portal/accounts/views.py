@@ -201,11 +201,11 @@ SITE_PAGES = {
         "cta_url": "register",
     },
     "contact": {
-        "title": "Have a question about Sambot?",
+        "title": "Have a question about SamBot?",
         "seo_title": "Contact Sambot | Trading Automation Support",
         "meta": "Contact Sambot for questions about accounts, TradingView setup, paper mode, supported integrations and platform functionality.",
         "kicker": "Contact",
-        "lead": "Tell us what you are trying to understand and we will help with the platform, setup or documentation.",
+        "lead": "Ask about your account, TradingView alerts, paper mode, the MT5 bridge or billing. Write to us and we reply by e-mail; signed-in customers can also use the 24/7 chat.",
         "section": "site/sections/contact.html",
         "backtest": False,
         "cta_label": "Contact Sambot Support",

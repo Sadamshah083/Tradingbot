@@ -15,6 +15,8 @@
     .c-ok{padding:18px 20px;border-radius:14px;border:1px solid rgba(182,255,46,.5);background:rgba(182,255,46,.08);margin-bottom:16px}
     .c-ok b{display:block;color:#fff;font-size:16px;margin-bottom:4px}
     .c-alert{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,107,98,.5);background:rgba(255,107,98,.08);color:#FFB4AE;margin-bottom:12px;font-size:14px}
+    .c-stack{display:grid;gap:16px}.c-note{margin:0 4px;font-size:12.5px;line-height:1.6}
+    .c-ways{list-style:none;padding:0 !important}.c-ways li{display:grid;gap:2px;padding:10px 0;border-top:1px solid var(--line)}.c-ways li:first-child{border-top:0;padding-top:2px}.c-ways b{color:#fff;font-size:14.5px}.c-ways span{font-size:13.5px;line-height:1.6}.c-ways em{color:var(--lime,#B6FF2E);font-style:normal;font-weight:700}
     .c-side ul{margin:10px 0 0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.8}
   </style>
   <div class="kicker">Contact</div>
@@ -45,11 +47,25 @@
       </form>
       {% endif %}
     </div>
-    <aside class="panel c-card c-side" aria-label="What we can help with">
-      <h3>We can help with</h3>
-      <ul><li>account access and passwords</li><li>connecting TradingView alerts and webhooks</li><li>paper mode and risk settings</li><li>the MT5 bridge and Binance connection</li><li>billing and signal credits</li><li>how the backtests were produced</li></ul>
-      <p class="muted" style="margin:16px 0 0;font-size:13px">Looking for a quick answer? Read the <a href="{% url 'site_faq' %}">FAQ</a> or <a href="{% url 'site_how' %}">how SamBot works</a>.</p>
-      <p class="muted" style="margin:12px 0 0;font-size:12.5px">For questions about personal investment decisions, speak with a qualified financial professional.</p>
-    </aside>
+    <div class="c-stack">
+      <aside class="panel c-card c-side" aria-label="Fastest ways to get help">
+        <h3>Fastest ways to get help</h3>
+        <ul class="c-ways">
+          <li><b>Live chat, 24/7</b><span>{% if user.is_authenticated %}Use the <em>Chat with us</em> button at the bottom right of any page.{% else %}Available to signed-in customers. <a href="{% url 'login' %}">Log in</a> or <a href="{% url 'register' %}">create an account</a> to start a chat.{% endif %}</span></li>
+          <li><b>FAQ</b><span>28 answers on testing, risk, integrations and billing. <a href="{% url 'site_faq' %}">Read the FAQ</a></span></li>
+          <li><b>How it works</b><span>The path from TradingView alert to order. <a href="{% url 'site_how' %}">See the steps</a></span></li>
+        </ul>
+      </aside>
+      <aside class="panel c-card c-side" aria-label="What we can help with">
+        <h3>What we can help with</h3>
+        <ul><li>Account access and password resets</li><li>Connecting TradingView alerts and webhooks</li><li>Paper mode and risk settings</li><li>The MT5 bridge and Binance connection</li><li>Billing and signal credits</li><li>How the backtests were produced</li></ul>
+      </aside>
+      <aside class="panel c-card c-side" aria-label="Before you write">
+        <h3>Help us answer faster</h3>
+        <ul><li>Say what you were trying to do and what happened instead.</li><li>Mention whether you use paper or live mode.</li><li>Include any error text you saw.</li></ul>
+        <p class="muted" style="margin:14px 0 0;font-size:12.5px"><b style="color:#fff">Never send passwords, API secrets or your webhook secret</b> in a message. We will never ask for them.</p>
+      </aside>
+      <p class="muted c-note">SamBot provides software, not investment advice. For questions about personal investment decisions, speak with a qualified financial professional.</p>
+    </div>
   </div>
 </section>
