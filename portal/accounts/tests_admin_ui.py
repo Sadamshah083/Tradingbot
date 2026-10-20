@@ -33,7 +33,7 @@ class AdminSidebarAndLeads(TestCase):
         web_login(self.client, "owner")
         html = self.client.get(reverse("staff_leads")).content.decode()
         self.assertIn('class="dots"', html)
-        for label in ("Open chat", "Add signal credits", "Grant bot access", "Pause account", "Edit details", "Set a new password", "Delete account"):
+        for label in ("Open chat", "Add signal credits", "Grant bot access", "Pause account", "Edit details", "Edit e-mail &amp; password", "Delete account"):
             self.assertIn(f"<span>{label}", html, label)
         web_login(self.client, "adm")
         admin_html = self.client.get(reverse("staff_leads")).content.decode()
@@ -196,3 +196,26 @@ class ProfileSettings(TestCase):
         self.client.post(reverse("staff_customer_update", args=[self.u.id]), {"action": "set_password", "password": "Set-by-admin-123"})
         self.u.refresh_from_db()
         self.assertTrue(self.u.check_password("Set-by-admin-123"))
+
+
+class EditAccountPopup(TestCase):
+    def test_email_and_password_in_one_action(self):
+        make("owner", superuser=True)
+        cust = make("c1", email="c1@example.com")
+        make("c2", email="c2@example.com")
+        web_login(self.client, "owner")
+        url = reverse("staff_customer_update", args=[cust.id])
+        self.client.post(url, {"action": "account", "email": "new1@example.com", "password": "Fresh-pass-5555"})
+        cust.refresh_from_db()
+        self.assertEqual(cust.email, "new1@example.com")
+        self.assertTrue(cust.check_password("Fresh-pass-5555"))
+        self.client.post(url, {"action": "account", "email": "c2@example.com", "password": ""})      # taken by someone else
+        cust.refresh_from_db()
+        self.assertEqual(cust.email, "new1@example.com")
+        self.client.post(url, {"action": "account", "email": "new1@example.com", "password": "short"})
+        cust.refresh_from_db()
+        self.assertTrue(cust.check_password("Fresh-pass-5555"))
+        self.client.post(url, {"action": "account", "email": "new2@example.com", "password": ""})    # e-mail only keeps the password
+        cust.refresh_from_db()
+        self.assertEqual(cust.email, "new2@example.com")
+        self.assertTrue(cust.check_password("Fresh-pass-5555"))

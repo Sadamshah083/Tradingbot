@@ -200,6 +200,30 @@ def customer_update(request, user_id):
             user.email = email
             user.save(update_fields=["email"])
         messages.success(request, f"Saved details for {user.email or user.username}.")
+    elif action == "account":
+        # one pop-up: change the e-mail and/or the password of this account
+        email = request.POST.get("email", "").strip().lower()[:254]
+        pw = request.POST.get("password", "").strip()
+        changed = []
+        if email and email != user.email.lower():
+            if "@" not in email or User.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+                messages.error(request, "That e-mail is invalid or already used by another account.")
+                return redirect(request.POST.get("next") or "staff_leads")
+            user.email = email
+            user.save(update_fields=["email"])
+            changed.append("e-mail")
+        if pw:
+            if len(pw) < 8:
+                messages.error(request, "Password must be at least 8 characters.")
+                return redirect(request.POST.get("next") or "staff_leads")
+            user.set_password(pw)
+            user.save(update_fields=["password"])
+            changed.append("password")
+            messages.success(request, f"New password for {user.email or user.username}: {pw}  - copy it now, it is not shown again.")
+        if changed:
+            messages.success(request, f"Updated {' and '.join(changed)} for {user.email or user.username}.")
+        else:
+            messages.info(request, "Nothing was changed.")
     elif action == "set_password":
         # Passwords are stored hashed and can never be shown; the owner sets a new one and hands it to the customer.
         pw = request.POST.get("password", "").strip() or secrets.token_urlsafe(9)
