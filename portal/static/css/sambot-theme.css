@@ -394,3 +394,14 @@ html,body{overflow-x:clip !important}
 .fab-badge{position:absolute;top:-6px;right:-4px;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#FF5A52;color:#fff;font-size:12px;display:grid;place-items:center;border:2px solid #0F1A2E}
 @media(max-width:560px){.chat-fab{right:14px;bottom:14px;padding:13px}.chat-fab .fab-txt{display:none}}
 .fab-badge[hidden]{display:none}
+
+/* tighter spacing on the home page */
+.home .hero-band{padding-top:4px !important;padding-bottom:16px !important}
+.home .hero h1{margin-bottom:12px}
+.home .hero .lead{margin-bottom:18px}
+.home .eyebrow{margin-bottom:10px}
+.dv-eyebrow{margin-bottom:2px}.dv-cap{margin-top:2px}
+.statbar{margin-top:8px}.statbar .sbi{padding:16px 22px}
+.home section.s{padding:56px 0}
+.home .cta-band{padding:36px 0 40px}
+@media(max-width:700px){.home section.s{padding:40px 0}.home .hero-band{padding-bottom:10px !important}}
