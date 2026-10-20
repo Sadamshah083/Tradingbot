@@ -405,3 +405,11 @@ html,body{overflow-x:clip !important}
 .home section.s{padding:56px 0}
 .home .cta-band{padding:36px 0 40px}
 @media(max-width:700px){.home section.s{padding:40px 0}.home .hero-band{padding-bottom:10px !important}}
+
+/* hero mock-up sits flush right on desktop, a little smaller to save height */
+@media(min-width:921px){
+  .home .hero.h2x{gap:12px}
+  .dv-fit{max-width:740px;margin:0 0 0 auto}
+  .h2x .dv-eyebrow,.h2x .dv-cap{max-width:740px;margin-left:auto;margin-right:0}
+  .home .hero-band{padding-top:0 !important;padding-bottom:10px !important}
+}
