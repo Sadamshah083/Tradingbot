@@ -183,3 +183,15 @@ class AiCrawlersAndLlms(TestCase):
         self.assertIn("## Pricing", full)
         self.assertIn("does not guarantee", full)
         self.assertNotIn("/admin/", full)
+
+
+class FriendlyErrorPages(TestCase):
+    def test_customer_on_a_staff_url_sees_a_helpful_403_and_missing_pages_a_404(self):
+        make("cust403")
+        web_login(self.client, "cust403")
+        r = self.client.get("/admin/Dashboard")
+        self.assertEqual(r.status_code, 403)
+        self.assertIn("Go to my dashboard", r.content.decode())
+        r = self.client.get("/no-such-page/")
+        self.assertEqual(r.status_code, 404)
+        self.assertIn("Page not found", r.content.decode())

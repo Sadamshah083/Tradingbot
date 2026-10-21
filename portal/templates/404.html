@@ -1,0 +1,16 @@
+{% extends "site/base.html" %}
+{% block title %}Page not found | SamBot{% endblock %}
+{% block seo %}<meta name="robots" content="noindex,nofollow">{% endblock %}
+{% block site %}
+<main id="top" style="min-height:62vh;display:grid;place-items:center;padding:72px 20px">
+  <section style="max-width:560px;text-align:center" aria-labelledby="err-title">
+    <p style="margin:0 0 10px;font-size:13px;font-weight:800;letter-spacing:1.6px;color:var(--spark)">ERROR 404</p>
+    <h1 id="err-title" style="margin:0 0 12px;font-size:clamp(30px,5vw,44px);line-height:1.1;color:#fff">We could not find that page</h1>
+    <p style="margin:0 0 26px;color:var(--muted);line-height:1.7;font-size:16px">The address may be mistyped or the page may have moved. Use the links below to get back on track.</p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      {% if user.is_authenticated %}<a class="btn primary" href="{% url 'dashboard' %}">Go to my dashboard</a>{% else %}<a class="btn primary" href="{% url 'login' %}">Log in</a>{% endif %}
+      <a class="btn ghost" href="{% url 'landing' %}">Back to home</a>
+    </div>
+  </section>
+</main>
+{% endblock %}
